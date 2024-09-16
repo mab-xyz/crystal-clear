@@ -42,7 +42,7 @@ pip install -r requirements.txt
 
 ### 4. Configure the Project
 
-Edit the config.py file to set your Ethereum node URL and other settings:
+Edit the config.py file to set your Ethereum node URL:
 ```bash
 # config.py
 
@@ -51,5 +51,11 @@ ETHEREUM_NODE_URL = 'http://localhost:8545'
 
 ## Usage
 ```bash
-python scsc.py --block <block_number> --offset <blocks_offset> --address <contract_address>
+python scsc.py [--block <block_number>] [--offset <blocks_offset>] --address <contract_address> [--calls]
 ```
+
+`<block_number>`: Block number that is analyzed. When not provided, assumes the `latest` block number of Ethereum Mainnet.
+
+`<blocks_offset>`: The number of blocks before `<block_number>` that are also analyzed. When not provided, assume the value `0`.
+
+`--calls`: flag that outputs the call trees of each transaction that was analyzed
