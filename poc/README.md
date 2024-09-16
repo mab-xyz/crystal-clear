@@ -20,8 +20,8 @@ A command-line tool to interact with Ethereum traces and fetch information about
 First, clone the repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/ethereum_trace_cli.git
-cd ethereum_trace_cli
+git clone https://github.com/chains-project/scsc.git
+cd poc
 ```
 
 ### 2. Set Up a Virtual Environment (Optional but Recommended)
@@ -47,10 +47,9 @@ Edit the config.py file to set your Ethereum node URL and other settings:
 # config.py
 
 ETHEREUM_NODE_URL = 'http://localhost:8545'
-BLOCK_OFFSET = 10  # Optional: Adjust the block range offset if needed
 ```
 
 ## Usage
 ```bash
-python scsc.py --block <block_number> --address <contract_address>
+python scsc.py --block <block_number> --offset <blocks_offset> --address <contract_address>
 ```
