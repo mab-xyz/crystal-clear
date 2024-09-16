@@ -1,5 +1,5 @@
 
-from evm_trace import CallType, ParityTraceList, get_unique_addresses_from_parity_trace
+from evm_trace import CallType, ParityTraceList, get_calltree_from_parity_trace, get_unique_addresses_from_parity_trace
 
 def get_block_calltree(web3, block_number, contract_address):
     raw_trace_list = web3.manager.request_blocking("trace_block", [block_number])
@@ -31,6 +31,7 @@ def get_blocks_calltree(web3, start_block, end_block, contract_address):
             print("Block Number:", block)
             print("Tx Hash:", tx_hash)
             print(calltrees[tx_hash])
+            print()
 
 
 def get_blocks_called_addresses(web3, start_block, end_block, contract_address):
@@ -46,6 +47,7 @@ def get_blocks_called_addresses(web3, start_block, end_block, contract_address):
         print("Addresses:")
         for a in addresses:
             print(a)
+        print()
 
 
 def get_block_called_addresses(web3, block_number, contract_address):
