@@ -91,7 +91,7 @@ def get_block_called_addresses(web3, block_number, contract_address):
     for tx_hash in list_hashes:
         traces = [tr for tr in raw_trace_list if tr["transactionHash"] == tx_hash]
 
-        # 计算每个地址在这个交易中被调用的次数
+        # calculate called times of each address in this transaction
         for trace in traces:
             if "action" in trace and "to" in trace["action"]:
                 to_address = trace["action"]["to"].lower()
@@ -104,7 +104,7 @@ def get_block_called_addresses(web3, block_number, contract_address):
                 created_address = trace["result"]["address"].lower()
                 addresses[created_address] = addresses.get(created_address, 0) + 1
 
-    # 移除合约自身的地址
+    # remove the address of the contract itself
     if contract_address.lower() in addresses:
         del addresses[contract_address.lower()]
 
