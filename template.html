@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -187,7 +187,7 @@
                 tooltip.transition()
                     .duration(200)
                     .style("opacity", .9);
-                tooltip.html("From: " + d.source.id + "<br/>to: " + d.target.id + "<br/>类型: " + d.type)
+                tooltip.html("From: " + d.source.id + "<br/>to: " + d.target.id + "<br/>call_type: " + d.type)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 28) + "px");
             }
