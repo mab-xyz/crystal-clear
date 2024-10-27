@@ -54,6 +54,7 @@ def get_blocks_called_addresses(
         for addr, count in called.items():
             addresses[addr] = addresses.get(addr, 0) + count
 
+    # generate json result
     result = {
         "main_contract": contract_address,
         "called_contracts": [
