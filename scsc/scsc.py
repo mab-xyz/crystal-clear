@@ -22,6 +22,7 @@ def main():
     )
     parser.add_argument("--address", type=str, required=True, help="Address")
     parser.add_argument("--calls", action="store_true", help="Print call trees")
+    parser.add_argument("--json", action="store_true", help="Save result as a json file")
 
     args = parser.parse_args()
     if args.block is None:
@@ -31,6 +32,7 @@ def main():
     offset = args.offset
     address = args.address
     calls = args.calls
+    save_as_json_file = args.json
 
     print("Analyzing Supply Chain of Contract:", address)
     print(f"Start block: {block_number - offset}")
@@ -44,9 +46,10 @@ def main():
         get_blocks_calltree(w3, block_number - offset, block_number + 1, address)
 
     # save result as json file
-    date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    output_file = f"try_exp/{address}_{block_number}_{date_str}.json"
-    save_result_as_json(result, output_file)
+    if save_as_json_file:
+        date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        output_file = f"try_exp/{address}_{block_number}_{date_str}.json"
+        save_result_as_json(result, output_file)
 
 
 if __name__ == "__main__":

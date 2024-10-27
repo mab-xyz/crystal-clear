@@ -57,11 +57,11 @@ def get_blocks_called_addresses(
     # generate json result
     result = {
         "main_contract": contract_address,
+        "total_calls": sum(addresses.values()),
+        "unique_contracts": len(addresses),
         "called_contracts": [
             {"address": addr, "count": count} for addr, count in addresses.items()
         ],
-        "total_calls": sum(addresses.values()),
-        "unique_contracts": len(addresses),
     }
 
     if show_calls:
