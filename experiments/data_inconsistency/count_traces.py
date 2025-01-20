@@ -1,22 +1,8 @@
-from web3 import Web3
 from multiprocessing import Pool, Manager, Lock
 import time
 import config
-
-
-def get_block(w3, block_number):
-    """Fetch block trace using Web3."""
-    return w3.manager.request_blocking("trace_block", [block_number])
-
-
-def count_traces(w3, block_number):
-    """Count traces in a given block."""
-    try:
-        block_traces = get_block(w3, block_number)
-        return len(block_traces)
-    except Exception as e:
-        print(f"Error processing block {block_number}: {e}")
-        return 0
+import json
+from traces import Traces
 
 
 def generate_block_ranges(start_block, end_block, chunk_size):
@@ -27,17 +13,17 @@ def generate_block_ranges(start_block, end_block, chunk_size):
 
 def process_chunk(block_range, node_url, total_traces, lock):
     """Process a range of blocks and update the total trace count."""
-    w3 = Web3(Web3.HTTPProvider(node_url))  # Create a Web3 instance in each process
+    traces = Traces(node_url, str(block_range))
     local_count = 0
 
     for block_number in block_range:
-        local_count += count_traces(w3, block_number)
+        res = traces.get_block(block_number)
+        local_count += len(res)
 
     with lock:  # Safely update the shared total
         total_traces.value += local_count
 
     return local_count
-
 
 def main():
     """Main function to process blocks using multiprocessing."""
