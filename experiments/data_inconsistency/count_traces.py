@@ -1,7 +1,6 @@
-from multiprocessing import Pool, Manager, Lock
+from multiprocessing import Pool, Manager
 import time
 import config
-import json
 from traces import Traces
 
 
