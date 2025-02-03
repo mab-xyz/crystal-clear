@@ -49,19 +49,18 @@ ETHEREUM_NODE_URL = 'http://localhost:8545'
 Computes the supply chain of a smart-contract at a given block (or over a block period TODO)
 
 ```bash
-python scsc.py [--block <block_number>] [--offset <blocks_offset>] --address <contract_address> [--calls]
+python scsc.py [--block <block_number>] [--offset <blocks_offset>] --address <contract_address> [--calls]  [--json]
 ```
 
 `<block_number>`: Block number that is analyzed. When not provided, assumes the `latest` block number of Ethereum Mainnet.
 
 `<blocks_offset>`: The number of blocks before `<block_number>` that are also analyzed. When not provided, assume the value `0`.
 
-`--calls`: flag that outputs the call trees of each transaction that was analyzed
+`--calls`: Flag that outputs the call trees of each transaction that was analyzed
 
-#### Future feature - Export to machine readable format:
+`--json`: Save result as a json file
 
-    ./scsc --json  --block 1234 --address 0xabcdef012345678 (TODO)
-
+## Future features
 ### Contract graph 
 
     ./scsc --graph --from-block 1234 --to-block 2234  --output graph.dot
