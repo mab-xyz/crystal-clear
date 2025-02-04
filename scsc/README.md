@@ -1,61 +1,114 @@
-# SCSC CLI
+# Smart Contract Supply Chain (SCSC) 🔗
 
-A command-line tool to interact with Ethereum traces and fetch information about smart contract calls within specific blocks.
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Poetry](https://img.shields.io/badge/poetry-dependency%20manager-blue)](https://python-poetry.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+Analyze and visualize Ethereum smart contract dependencies with ease. SCSC helps you understand contract interactions by generating detailed call graphs from on-chain data.
 
-- Retrieve call trees for a range of blocks.
-- Analyze smart contract interactions based on Ethereum traces.
-- Configurable Ethereum node URL.
+## ✨ Features
 
-## Prerequisites
+- 📊 Generate comprehensive call graphs from smart contract interactions
+- 🔍 Analyze contract dependencies across specified block ranges
+- 📈 Export visualizations in DOT format for further analysis
+- ⚙️ Flexible configuration options for node connections and logging
+- 🚀 Built with modern Python and best practices
 
-- Python 3.7 or higher
-- An Ethereum node (e.g., Geth, Parity) running and accessible via HTTP
+## 🚀 Quick Start
 
-## Installation
+### Prerequisites
 
-### 1. Clone the Repository
+- Python 3.12 or higher
+- Access to an Ethereum node (local or remote)
+- Poetry
 
-First, clone the repository to your local machine:
+### Installation
 
 ```bash
-git clone https://github.com/chains-project/scsc.git
-cd poc
+# Clone the repository
+git clone https://github.com/chains-project/crystal-clear.git
+cd scsc
+
+# Install with Poetry
+poetry install
+
+# Activate the environment
+poetry shell
 ```
 
-### 2. Set Up a Virtual Environment (Optional but Recommended)
+## 💻 Usage
 
-It's recommended to use a virtual environment to manage dependencies:
+### Basic Command Structure
+
 ```bash
-python -m venv venv
-source venv/bin/activate
+scsc --url <node_url> \
+     --address <contract_address> \
+     --from-block <block> \
+     --to-block <block> \
+     [options]
 ```
 
-### 3. Install Dependencies
+### Key Parameters
 
-Install the required Python packages using pip:
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `--url` | Ethereum node URL | `http://localhost:8545` |
+| `--address` | Contract address to analyze | `0xE592427A0AEce92De3Edee1F18E0157C05861564` |
+| `--from-block` | Starting block number (hex/decimal) | `0x14c3b86` or `21665670` |
+| `--to-block` | Ending block number (hex/decimal) | `0x14c3b90` or `21665680` |
+| `--log-level` | Logging verbosity | `ERROR`, `INFO`, `DEBUG` |
+| `--export-dot` | Output file for DOT graph | `output.dot` |
+| `--export-json` | Output file for JSON | `output.json` |
+
+### Example
+
 ```bash
-pip install -r requirements.txt
+scsc --url http://localhost:8545 \
+     --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
+     --from-block 0x14c3b86 \
+     --to-block 0x14c3b90 \
+     --log-level ERROR \
+     --export-dot call_graph.dot
 ```
 
+## 🛠️ Development
 
-### 4. Configure the Project
+We use modern Python tools to maintain high code quality:
 
-Edit the config.py file to set your Ethereum node URL:
+- **Black**: Code formatting
+- **isort**: Import sorting
+- **Ruff**: Fast Python linting
+- **pre-commit**: Git hooks
+
+Set up the development environment:
+
 ```bash
-# config.py
+# Install development dependencies
+poetry install --with dev
 
-ETHEREUM_NODE_URL = 'http://localhost:8545'
+# Set up pre-commit hooks
+pre-commit install
 ```
 
-## Usage
-```bash
-python scsc.py [--block <block_number>] [--offset <blocks_offset>] --address <contract_address> [--calls]
-```
+## 📚 Documentation [TODO]
 
-`<block_number>`: Block number that is analyzed. When not provided, assumes the `latest` block number of Ethereum Mainnet.
+For more detailed information about SCSC features and usage, check out our documentation:
 
-`<blocks_offset>`: The number of blocks before `<block_number>` that are also analyzed. When not provided, assume the value `0`.
+- [Installation Guide](docs/installation.md)
+- [Usage Examples](docs/examples.md)
+- [Configuration Options](docs/configuration.md)
+- [Contributing Guide](CONTRIBUTING.md)
 
-`--calls`: flag that outputs the call trees of each transaction that was analyzed
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+---
+
+<div align="center">
+Made with ❤️ by the SCSC team
+</div>

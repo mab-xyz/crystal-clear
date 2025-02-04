@@ -1,0 +1,62 @@
+name: SCSC Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'scsc/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scsc/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scsc
+
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.7.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: scsc/.venv
+        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('scsc/poetry.lock') }}
+
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --with dev
+
+    - name: Run linting
+      run: |
+        poetry run ruff check .
+        poetry run black . --check
+        poetry run isort . --check
+
+    - name: Run tests
+      run: |
+        poetry run python -m unittest discover -s tests
+
+    - name: Check if tests passed
+      if: failure()
+      run: exit 1
