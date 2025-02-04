@@ -1,13 +1,14 @@
 import logging
 from typing import List, Dict, Any, Set
 from web3 import Web3
+from hexbytes import HexBytes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class TraceCollector:
-    def __init__(self, url: str, log_level: int = logging.ERROR):
+    def __init__(self, url: str, log_level: int = logging.INFO):
         """
         Initializes the TraceCollector with a URL and log level.
         """
@@ -37,7 +38,7 @@ class TraceCollector:
 
         if res is None:
             return set()
-        tx_hashes = {r['transactionHash'].to_0x_hex() for r in res if r['type'] == 'call'}
+        tx_hashes = {r['transactionHash'].to_0x_hex() if type(r['transactionHash']) is HexBytes else r['transactionHash'] for r in res if r['type'] == 'call'}
         self.logger.info(f"Found {len(tx_hashes)} transactions.")
         return tx_hashes
     

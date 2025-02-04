@@ -8,7 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12,<4"
 dependencies = [
-    "web3 (>=7.8.0,<8.0.0)",
+    "web3[tester] (>=7.8.0,<8.0.0)",
     "networkx (>=3.4.2,<4.0.0)",
     "pydot (>=3.0.4,<4.0.0)"
 ]
