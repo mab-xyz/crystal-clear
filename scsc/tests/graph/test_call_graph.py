@@ -2,7 +2,7 @@ import unittest
 import json
 import os
 import shutil
-from scsc.call_graph import CallGraph
+from scsc.graph import CallGraph
 
 class TestCallGraph(unittest.TestCase):
 

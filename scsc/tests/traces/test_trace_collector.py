@@ -1,8 +1,8 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from web3.providers.eth_tester import EthereumTesterProvider
 from web3 import Web3
-from scsc.trace_collector import TraceCollector
+from scsc.traces import TraceCollector
 
 class TestTraceCollector(unittest.TestCase):
 

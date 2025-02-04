@@ -10,9 +10,12 @@ requires-python = ">=3.12,<4"
 dependencies = [
     "web3[tester] (>=7.8.0,<8.0.0)",
     "networkx (>=3.4.2,<4.0.0)",
-    "pydot (>=3.0.4,<4.0.0)"
+    "pydot (>=3.0.4,<4.0.0)",
+    "click (>=8.1.8,<9.0.0)"
 ]
 
+[tool.poetry.scripts]
+scsc = "scsc.cli:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

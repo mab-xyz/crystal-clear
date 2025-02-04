@@ -1,7 +1,7 @@
 from typing import Any
 import logging
-from trace_collector import TraceCollector
-from call_graph import CallGraph
+from scsc.traces import TraceCollector
+from scsc.graph import CallGraph
 
 class SupplyChain:
     """
@@ -29,6 +29,12 @@ class SupplyChain:
             self.logger.info(f"Collected {len(calls)} calls.")
         except Exception as e:
             self.logger.error(f"Error collecting calls: {e}")
+    def get_all_dependencies(self) -> None:
+        """
+        Collects all dependencies of the contract.
+        """
+        self.logger.info(f"Collecting all dependencies of the contract.")
+        return self.cg.get_callee_contracts(self.cg.contract_address)
 
     def export_dot(self, filename: str) -> None:
         """
