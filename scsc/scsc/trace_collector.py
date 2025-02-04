@@ -4,16 +4,13 @@ from web3 import Web3
 from hexbytes import HexBytes
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 class TraceCollector:
-    def __init__(self, url: str, log_level: int = logging.INFO):
+    def __init__(self, url: str):
         """
         Initializes the TraceCollector with a URL and log level.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(log_level)
 
         self.w3 = Web3(Web3.HTTPProvider(url))
         if not self.w3.is_connected():
