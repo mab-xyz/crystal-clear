@@ -4,7 +4,8 @@
 [![Poetry](https://img.shields.io/badge/poetry-dependency%20manager-blue)](https://python-poetry.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Analyze and visualize Ethereum smart contract dependencies with ease. SCSC helps you understand contract interactions by generating detailed call graphs from on-chain data.
+Analyze and visualize Ethereum smart contract dependencies with ease.
+SCSC helps you understand contract interactions by generating detailed call graphs from on-chain data.
 
 ## ✨ Features
 
