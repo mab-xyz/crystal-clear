@@ -111,5 +111,5 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ---
 
 <div align="center">
-Made with ❤️ by the SCSC team
+Made with ❤️ by the crystal-clear team
 </div>

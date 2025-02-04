@@ -1,68 +1,68 @@
-# SCSC
+<div align="center">
 
-Analyzing the smart contract supply chain.
+# 🔍 Crystal Clear
 
-## Prerequisites
+A powerful research platform for analyzing smart contract supply chains on Ethereum
 
-- Python 3.7 or higher
-- An Ethereum node (e.g., Geth, Parity) running and accessible via HTTP
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Made with Python](https://img.shields.io/badge/Made%20with-Python-blue.svg)](https://python.org)
+[![Tests](https://img.shields.io/badge/Tests-passing-brightgreen.svg)](https://github.com/chains-project/crystal-clear/actions)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-## Installation
+</div>
 
-### 1. Clone the Repository
+---
 
-First, clone the repository to your local machine:
-
-```bash
-git clone https://github.com/chains-project/scsc.git
-cd scsc
-```
-
-### 2. Set Up a Virtual Environment (Optional but Recommended)
-
-It's recommended to use a virtual environment to manage dependencies:
-```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-Install the required Python packages using pip:
-```bash
-pip install -r requirements.txt
-```
-
-
-### 4. Configure the Project
-
-Edit the config.py file to set your Ethereum node URL:
-```bash
-# config.py
-
-ETHEREUM_NODE_URL = 'http://localhost:8545'
-```
-## Usage
-
-### Single contract supply chain
-
-Computes the supply chain of a smart-contract at a given block (or over a block period TODO)
+## 🚀 Quick Start
 
 ```bash
-python scsc.py [--block <block_number>] [--offset <blocks_offset>] --address <contract_address> [--calls]  [--json]
+git clone https://github.com/chains-project/crystal-clear.git
+cd crystal-clear/scsc
+poetry install
+
+# Example: Analyze Uniswap V3 Router
+scsc --url http://localhost:8545 \
+     --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
+     --from-block 0x14c3b86 \
+     --to-block 0x14c3b90 \
+     --export-dot graph.dot
 ```
 
-`<block_number>`: Block number that is analyzed. When not provided, assumes the `latest` block number of Ethereum Mainnet.
+## 🏗️ Project Structure
 
-`<blocks_offset>`: The number of blocks before `<block_number>` that are also analyzed. When not provided, assume the value `0`.
+```
+crystal-clear/
+├── scsc/         # 🛠️ Core Analysis Tool
+├── data/         # 📊 Contract Interaction Datasets
+├── notebooks/    # 📈 Analysis & Visualization
+└── experiments/  # 🧪 Research Implementations
+```
 
-`--calls`: Flag that outputs the call trees of each transaction that was analyzed
+## 📦 Components
 
-`--json`: Save result as a json file
+### Core Tool (`/scsc`)
+The main analysis engine for smart contract supply chains.
 
-## Future features
-### Contract graph 
+### Data & Analysis
+- 📊 `/data` - Comprehensive contract interaction datasets
+- 📈 `/notebooks` - Interactive analysis & visualization tools
+- 🧪 `/experiments` - Cutting-edge research implementations
 
-    ./scsc --graph --from-block 1234 --to-block 2234  --output graph.dot
+## 📚 Documentation
+- [📖 Tool Guide](scsc/README.md)
 
-TODO: explain the medadata available on the graph (supplier, mutable, vulnerable, ...)
+## 🔮 Upcoming Features
+Smart contract supply chain graphs will be enriched with metadata including supplier identification, mutability status, and security metrics.
+
+## 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
+---
+
+<div align="center">
+Made with transparency 🔍 by the crystal-clear team
+</div>
