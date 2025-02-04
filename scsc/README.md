@@ -58,6 +58,7 @@ scsc --url <node_url> \
 | `--to-block` | Ending block number (hex/decimal) | `0x14c3b90` or `21665680` |
 | `--log-level` | Logging verbosity | `ERROR`, `INFO`, `DEBUG` |
 | `--export-dot` | Output file for DOT graph | `output.dot` |
+| `--export-json` | Output file for JSON | `output.json` |
 
 ### Example
 
