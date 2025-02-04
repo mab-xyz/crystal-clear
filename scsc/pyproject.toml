@@ -14,9 +14,29 @@ dependencies = [
     "click (>=8.1.8,<9.0.0)"
 ]
 
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+isort = "^6.0.0"
+ruff = "^0.9.4"
+pre-commit = "^4.1.0"
+
 [tool.poetry.scripts]
 scsc = "scsc.cli:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.black]
+line-length = 79
+target-version = ['py312']
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.ruff]
+line-length = 79
+select = ["E", "F", "W", "I", "B"]
+ignore = ["E203", "E266", "E501"]
