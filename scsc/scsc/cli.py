@@ -6,7 +6,12 @@ from scsc.supply_chain import SupplyChain
 
 
 @click.command()
-@click.option("--url", required=True, type=str, help="Ethereum node URL")
+@click.option(
+    "--url",
+    default="http://localhost:8545",
+    type=str,
+    help="Ethereum node URL",
+)
 @click.option("--address", required=True, type=str, help="Contract address")
 @click.option(
     "--from-block", required=True, type=str, help="Starting block number"
@@ -16,7 +21,7 @@ from scsc.supply_chain import SupplyChain
 )
 @click.option("--export-dot", type=str, help="Export call graph to DOT file")
 @click.option("--export-json", type=str, help="Export call graph to JSON file")
-@click.option("--log-level", default="INFO", type=str, help="Logging level")
+@click.option("--log-level", default="ERROR", type=str, help="Logging level")
 def main(
     url, address, from_block, to_block, export_dot, export_json, log_level
 ):
