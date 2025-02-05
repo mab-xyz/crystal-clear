@@ -5,7 +5,6 @@
 A powerful research platform for analyzing smart contract supply chains on Ethereum
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Made with Python](https://img.shields.io/badge/Made%20with-Python-blue.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/Tests-passing-brightgreen.svg)](https://github.com/chains-project/crystal-clear/actions)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
