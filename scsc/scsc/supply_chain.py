@@ -21,7 +21,7 @@ class SupplyChain:
             f"Initialized SupplyChain for contract {contract_address}."
         )
 
-    def collect_calls(self, from_block: int, to_block: int) -> None:
+    def collect_calls(self, from_block: str, to_block: str) -> None:
         """
         Collects calls from the blockchain and adds them to the call graph.
         """
@@ -29,8 +29,14 @@ class SupplyChain:
             f"Collecting calls from block {from_block} to {to_block}."
         )
         try:
+            from_block_hex = (
+                hex(int(from_block)) if from_block.isdigit() else from_block
+            )
+            to_block_hex = (
+                hex(int(to_block)) if to_block.isdigit() else to_block
+            )
             calls = self.tc.get_calls_from(
-                from_block, to_block, self.cg.contract_address
+                from_block_hex, to_block_hex, self.cg.contract_address
             )
             for c in calls:
                 self.cg.add_call(c["from"], c["to"], data=c["type"])

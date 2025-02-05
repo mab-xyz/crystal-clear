@@ -18,7 +18,7 @@ class TraceCollector:
         self.logger.info("Connected to the Ethereum node.")
 
     def _filter_txs_from(
-        self, from_block: int, to_block: int, contract_address: str
+        self, from_block: str, to_block: str, contract_address: str
     ) -> Set[str]:
         """
         Filters transactions from a given block range and contract address.
@@ -112,7 +112,7 @@ class TraceCollector:
         return calls
 
     def get_calls_from(
-        self, from_block: int, to_block: int, contract_address: str
+        self, from_block: str, to_block: str, contract_address: str
     ) -> List[Dict[str, str]]:
         """
         Gets calls from a given block range and contract address.
