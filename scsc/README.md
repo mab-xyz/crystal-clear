@@ -13,6 +13,7 @@ SCSC helps you understand contract interactions by generating detailed call grap
 - 📊 Generate comprehensive call graphs from smart contract interactions
 - 🔍 Analyze contract dependencies across specified block ranges
 - 📈 Export visualizations in DOT format for further analysis
+- 🌐 Interactive web interface for visualizing contract interactions
 - ⚙️ Flexible configuration options for node connections and logging
 - 🚀 Built with modern Python and best practices
 
@@ -40,14 +41,27 @@ poetry shell
 
 ## 💻 Usage
 
-### Basic Command Structure
+SCSC provides two main commands:
+
+### 1. Analyze Command (CLI Analysis)
 
 ```bash
-scsc --url <node_url> \
-     --address <contract_address> \
-     --from-block <block> \
-     --to-block <block> \
-     [options]
+scsc analyze --url <node_url> \
+            --address <contract_address> \
+            --from-block <block> \
+            --to-block <block> \
+            [options]
+```
+
+### 2. Web Interface
+
+```bash
+scsc web --url <node_url> \
+         --address <contract_address> \
+         --from-block <block> \
+         --to-block <block> \
+         [--port <port>] \
+         [--debug]
 ```
 
 ### Key Parameters
@@ -58,19 +72,30 @@ scsc --url <node_url> \
 | `--address` | Contract address to analyze | `0xE592427A0AEce92De3Edee1F18E0157C05861564` |
 | `--from-block` | Starting block number (hex/decimal) | `0x14c3b86` or `21665670` |
 | `--to-block` | Ending block number (hex/decimal) | `0x14c3b90` or `21665680` |
-| `--log-level` | Logging verbosity | `ERROR`, `INFO`, `DEBUG` |
-| `--export-dot` | Output file for DOT graph | `output.dot` |
-| `--export-json` | Output file for JSON | `output.json` |
+| `--log-level` | Logging verbosity (analyze only) | `ERROR`, `INFO`, `DEBUG` |
+| `--export-dot` | Output file for DOT graph (analyze only) | `output.dot` |
+| `--export-json` | Output file for JSON (analyze only) | `output.json` |
+| `--port` | Web server port (web only) | `8050` |
+| `--debug` | Enable debug mode (web only) | |
 
-### Example
+### Examples
 
+CLI Analysis:
 ```bash
-scsc --url http://localhost:8545 \
-     --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
-     --from-block 0x14c3b86 \
-     --to-block 0x14c3b90 \
-     --log-level ERROR \
-     --export-dot call_graph.dot
+scsc analyze --url http://localhost:8545 \
+            --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
+            --from-block 0x14c3b86 \
+            --to-block 0x14c3b90 \
+            --export-dot call_graph.dot
+```
+
+Web Interface:
+```bash
+scsc web --url http://localhost:8545 \
+         --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
+         --from-block 0x14c3b86 \
+         --to-block 0x14c3b90 \
+         --port 8050
 ```
 
 ## 🛠️ Development
@@ -112,5 +137,5 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ---
 
 <div align="center">
-Made with ❤️ by the crystal-clear team
+Made with transparency 🔍 by the crystal-clear team
 </div>
