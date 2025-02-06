@@ -11,7 +11,10 @@ dependencies = [
     "web3[tester] (>=7.8.0,<8.0.0)",
     "networkx (>=3.4.2,<4.0.0)",
     "pydot (>=3.0.4,<4.0.0)",
-    "click (>=8.1.8,<9.0.0)"
+    "click (>=8.1.8,<9.0.0)",
+    "dash (>=2.18.2,<3.0.0)",
+    "dash-cytoscape (>=1.0.2,<2.0.0)",
+    "eth-utils (>=5.2.0,<6.0.0)"
 ]
 
 [tool.poetry.group.dev.dependencies]
