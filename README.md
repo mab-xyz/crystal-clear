@@ -19,12 +19,16 @@ git clone https://github.com/chains-project/crystal-clear.git
 cd crystal-clear/scsc
 poetry install
 
-# Example: Analyze Uniswap V3 Router
-scsc --url http://localhost:8545 \
-     --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
-     --from-block 0x14c3b86 \
-     --to-block 0x14c3b90 \
-     --export-dot graph.dot
+# CLI Analysis Example
+scsc analyze --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
+            --from-block 0x14c3b86 \
+            --to-block 0x14c3b90 \
+            --export-dot graph.dot
+
+# Or launch the interactive web interface
+scsc web --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
+         --from-block 0x14c3b86 \
+         --to-block 0x14c3b90
 ```
 
 ## 🏗️ Project Structure
@@ -40,7 +44,10 @@ crystal-clear/
 ## 📦 Components
 
 ### Core Tool (`/scsc`)
-The main analysis engine for smart contract supply chains.
+The main analysis engine for smart contract supply chains, featuring:
+- 📊 Command-line interface for data extraction and analysis
+- 🌐 Interactive web visualization dashboard
+- 🔍 Comprehensive contract dependency tracking
 
 ### Data & Analysis
 - 📊 `/data` - Comprehensive contract interaction datasets
