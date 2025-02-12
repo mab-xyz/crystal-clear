@@ -97,7 +97,13 @@ def create_app(
 
     source_node = sc.cg.contract_address
     elements = [
-        {"data": {"id": node, "label": humanize_hexstr(node)}}
+        {
+            "data": {
+                "id": node,
+                "label": humanize_hexstr(node),
+                "metadata": sc.cg.G.nodes[node]["metadata"],
+            }
+        }
         for node in sc.cg.G.nodes()
     ]
     elements += [
@@ -302,8 +308,9 @@ def create_app(
         Input("cytoscape", "tapNode"),
     )
     def display_tap_node(data):
-        if data:
-            data = data["data"]
+        # if data:
+        #     metadata = data["metadata"]
+        #     data = data["data"]
         return json.dumps(data, indent=2)
 
     @callback(

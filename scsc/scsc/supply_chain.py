@@ -1,6 +1,7 @@
 import logging
 
 from scsc.graph import CallGraph
+from scsc.metadata import ENSProvider
 from scsc.traces import TraceCollector
 
 
@@ -16,12 +17,19 @@ class SupplyChain:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.tc = TraceCollector(url)
+        self.metadata = ENSProvider(url)
         self.cg = CallGraph(contract_address)
         self.logger.info(
             f"Initialized SupplyChain for contract {contract_address}."
         )
 
-    def collect_calls(self, from_block: str, to_block: str) -> None:
+    def collect_calls(
+        self,
+        from_block: str,
+        to_block: str,
+        data: bool = True,
+        metadata: bool = True,
+    ) -> None:
         """
         Collects calls from the blockchain and adds them to the call graph.
         """
@@ -41,6 +49,14 @@ class SupplyChain:
             for c in calls:
                 self.cg.add_call(c["from"], c["to"], data=c["type"])
             self.logger.info(f"Collected {len(calls)} calls.")
+
+            if metadata:
+                nodes = self.cg.G.nodes()
+                for node in nodes:
+                    print(node)
+                    metadata = self.metadata.get_metadata(node)
+                    print(metadata)
+                    self.cg.G.nodes[node]["metadata"] = metadata
         except Exception as e:
             self.logger.error(f"Error collecting calls: {e}")
 
