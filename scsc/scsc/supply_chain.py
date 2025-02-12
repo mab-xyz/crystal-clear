@@ -32,7 +32,6 @@ class SupplyChain:
             return hex(block)
 
         if isinstance(block, str):
-            # Check if it's already hex
             if block.startswith("0x"):
                 try:
                     int(block, 16)
@@ -42,7 +41,6 @@ class SupplyChain:
                         f"Invalid hex block number: {block}"
                     ) from e
 
-            # Check if it's decimal
             if block.isdigit():
                 return hex(int(block))
 
@@ -79,29 +77,31 @@ class SupplyChain:
         self.logger.info(
             f"Collecting calls from block {from_block} to {to_block}."
         )
-        try:
-            from_block_hex = self._validate_and_convert_block(from_block)
-            to_block_hex = self._validate_and_convert_block(to_block)
+        from_block_hex = self._validate_and_convert_block(from_block)
+        to_block_hex = self._validate_and_convert_block(to_block)
 
-            if int(from_block_hex, 16) > int(to_block_hex, 16):
-                raise ValueError(
-                    f"from_block ({from_block}) must be less than or equal to to_block ({to_block})"
-                )
-
-            calls = self.tc.get_calls_from(
-                from_block_hex, to_block_hex, self.cg.contract_address
+        if int(from_block_hex, 16) > int(to_block_hex, 16):
+            raise ValueError(
+                f"from_block ({from_block}) must be less than or equal to to_block ({to_block})"
             )
-            for c in calls:
-                self.cg.add_call(c["from"], c["to"], data=c["type"])
-            self.logger.info(f"Collected {len(calls)} calls.")
-        except Exception as e:
-            self.logger.error(f"collect_calls: {e}")
 
-    def get_all_dependencies(self) -> None:
+        calls = self.tc.get_calls_from(
+            from_block_hex, to_block_hex, self.cg.contract_address
+        )
+        for c in calls:
+            self.cg.add_call(c["from"], c["to"], data=c["type"])
+        self.logger.info(f"Collected {len(calls)} calls.")
+
+    def get_all_dependencies(self) -> list:
         """
-        Collects all dependencies of the contract.
+        Collects all contracts in the call graph excluding the main contract address.
         """
-        return self.cg.get_callee_contracts(self.cg.contract_address)
+        all_contracts = self.cg.get_all_contracts()
+        return [
+            contract
+            for contract in all_contracts
+            if contract != self.cg.contract_address
+        ]
 
     def export_dot(self, filename: str) -> None:
         """

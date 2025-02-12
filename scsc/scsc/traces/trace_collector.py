@@ -17,6 +17,32 @@ class TraceCollector:
             raise ConnectionError("Failed to connect to the Ethereum node.")
         self.logger.info("Connected to the Ethereum node.")
 
+        # Reference bytecode for "x0" - this should be the actual bytecode
+        self.x0_bytecode = "x0"  # Replace with actual x0 bytecode
+
+    def _validate_contract(self, address: str, block: str) -> bool:
+        """
+        Validates contract address and checks if it's different from x0
+        """
+        if not Web3.is_address(address):
+            self.logger.error(f"Invalid contract address format: {address}")
+            return False
+
+        try:
+            code = self.w3.eth.get_code(address, block_identifier=block)
+            if len(code) == 0:
+                self.logger.error(f"No code at address: {address}")
+                return False
+
+            if code.hex() == self.x0_bytecode:
+                self.logger.info(f"Contract at {address} matches x0 contract")
+                return False
+
+            return True
+        except Exception as e:
+            self.logger.error(f"Error validating contract: {e}")
+            return False
+
     def _filter_txs_from(
         self, from_block: str, to_block: str, contract_address: str
     ) -> Set[str]:
@@ -111,6 +137,19 @@ class TraceCollector:
         self.logger.info(f"Extracted {len(calls)} calls.")
         return calls
 
+    def _filter_contract_calls(
+        self, calls: List[Dict[str, str]], to_block
+    ) -> List[Dict[str, str]]:
+        """
+        Filters calls to contract addresses.
+        """
+        return [
+            c
+            for c in calls
+            if self._validate_contract(c["to"], to_block)
+            and self._validate_contract(c["from"], to_block)
+        ]
+
     def get_calls_from(
         self, from_block: str, to_block: str, contract_address: str
     ) -> List[Dict[str, str]]:
@@ -121,7 +160,10 @@ class TraceCollector:
             f"Getting calls from block {from_block} \
             to {to_block} for contract {contract_address}."
         )
+        if not self._validate_contract(contract_address, to_block):
+            raise ValueError("Invalid contract address or bytecode.")
         tx_hashes = self._filter_txs_from(
             from_block, to_block, contract_address
         )
-        return self.get_calls(tx_hashes, contract_address)
+        calls = self.get_calls(tx_hashes, contract_address)
+        return self._filter_contract_calls(calls, to_block)
