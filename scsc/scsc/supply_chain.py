@@ -21,20 +21,55 @@ class SupplyChain:
             f"Initialized SupplyChain for contract {contract_address}."
         )
 
-    def collect_calls(self, from_block: str, to_block: str) -> None:
+    def _validate_and_convert_block(self, block: str) -> str:
+        """
+        Validates if block number is decimal or hex and returns hex format.
+        """
+        if isinstance(block, int):
+            return hex(block)
+
+        if isinstance(block, str):
+            # Check if it's already hex
+            if block.startswith("0x"):
+                try:
+                    int(block, 16)
+                    return block
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid hex block number: {block}"
+                    ) from e
+
+            # Check if it's decimal
+            if block.isdigit():
+                return hex(int(block))
+
+        raise ValueError(
+            f"Block number must be decimal or hexadecimal: {block}"
+        ) from None
+
+    def collect_calls(
+        self, from_block: str | int, to_block: str | int
+    ) -> None:
         """
         Collects calls from the blockchain and adds them to the call graph.
+        Args:
+            from_block: Block number in decimal or hex format
+            to_block: Block number in decimal or hex format
+        Raises:
+            ValueError: If from_block is greater than to_block
         """
         self.logger.info(
             f"Collecting calls from block {from_block} to {to_block}."
         )
         try:
-            from_block_hex = (
-                hex(int(from_block)) if from_block.isdigit() else from_block
-            )
-            to_block_hex = (
-                hex(int(to_block)) if to_block.isdigit() else to_block
-            )
+            from_block_hex = self._validate_and_convert_block(from_block)
+            to_block_hex = self._validate_and_convert_block(to_block)
+
+            if int(from_block_hex, 16) > int(to_block_hex, 16):
+                raise ValueError(
+                    f"from_block ({from_block}) must be less than or equal to to_block ({to_block})"
+                )
+
             calls = self.tc.get_calls_from(
                 from_block_hex, to_block_hex, self.cg.contract_address
             )
@@ -42,7 +77,7 @@ class SupplyChain:
                 self.cg.add_call(c["from"], c["to"], data=c["type"])
             self.logger.info(f"Collected {len(calls)} calls.")
         except Exception as e:
-            self.logger.error(f"Error collecting calls: {e}")
+            self.logger.error(f"collect_calls: {e}")
 
     def get_all_dependencies(self) -> None:
         """
