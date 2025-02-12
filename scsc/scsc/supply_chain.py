@@ -1,5 +1,7 @@
 import logging
 
+from web3 import Web3
+
 from scsc.graph import CallGraph
 from scsc.traces import TraceCollector
 
@@ -16,6 +18,7 @@ class SupplyChain:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.tc = TraceCollector(url)
+        contract_address = self._validate_and_convert_address(contract_address)
         self.cg = CallGraph(contract_address)
         self.logger.info(
             f"Initialized SupplyChain for contract {contract_address}."
@@ -46,6 +49,21 @@ class SupplyChain:
         raise ValueError(
             f"Block number must be decimal or hexadecimal: {block}"
         ) from None
+
+    def _validate_and_convert_address(self, address: str) -> str:
+        """
+        Validates if the address is a valid Ethereum address and converts to checksum.
+
+        Args:
+            address: Ethereum address
+        Returns:
+            Checksum address
+        Raises:
+            ValueError: If address is invalid
+        """
+        if not Web3.is_address(address):
+            raise ValueError(f"Invalid Ethereum address: {address}")
+        return Web3.to_checksum_address(address)
 
     def collect_calls(
         self, from_block: str | int, to_block: str | int
