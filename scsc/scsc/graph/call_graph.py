@@ -34,6 +34,12 @@ class CallGraph:
         """
         self.G.add_edge(from_address, to_address, data=data)
 
+    def get_all_contracts(self) -> List[str]:
+        """
+        Returns a list of all contracts in the graph.
+        """
+        return list(self.G.nodes())
+
     def get_callee_contracts(self, address: str) -> List[str]:
         """
         Returns a list of contracts called by the given address.

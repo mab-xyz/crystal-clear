@@ -8,7 +8,6 @@ from scsc.traces import TraceCollector
 
 
 class TestTraceCollector(unittest.TestCase):
-
     @patch("web3.Web3.is_connected", return_value=True)
     def setUp(self, mock_is_connected):
         # Use EthereumTesterProvider instead of HTTPProvider
@@ -31,8 +30,11 @@ class TestTraceCollector(unittest.TestCase):
     @patch.object(
         TraceCollector, "_filter_txs_from", return_value={"0x123", "0x456"}
     )
+    @patch.object(TraceCollector, "_validate_contract", return_value=True)
     @patch("web3.Web3")
-    def test_get_calls_from(self, MockWeb3, mock_filter_txs_from):
+    def test_get_calls_from(
+        self, MockWeb3, mock_validate_contract, mock_filter_txs_from
+    ):
         # Mock tracing.trace_filter to return sample data
         mock_w3_instance = MockWeb3.return_value
         mock_w3_instance.tracing.trace_filter.return_value = [
@@ -62,6 +64,9 @@ class TestTraceCollector(unittest.TestCase):
         self.assertEqual(result[0]["from"], "0xabc")
         self.assertEqual(result[0]["to"], "0xdef")
         self.assertEqual(result[0]["type"], "call")
+
+        # Verify that _validate_contract was called
+        mock_validate_contract.assert_called_with(contract_address, to_block)
 
     @patch("web3.Web3")
     def test_filter_txs_from(self, MockWeb3):

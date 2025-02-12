@@ -36,19 +36,25 @@ def analyze(
     logging.basicConfig(level=log_level.upper())
     logger = logging.getLogger(__name__)
 
-    supply_chain = SupplyChain(url, address)
-    supply_chain.collect_calls(from_block, to_block)
+    try:
+        supply_chain = SupplyChain(url, address)
+        supply_chain.collect_calls(from_block, to_block)
 
-    for dep in supply_chain.get_all_dependencies():
-        print(dep)
+        print(f"Contract address: {address}")
+        print("Called addresses:")
+        for dep in supply_chain.get_all_dependencies():
+            print(dep)
+        print(f"Total addresses: {len(supply_chain.get_all_dependencies())}")
 
-    if export_dot:
-        supply_chain.export_dot(export_dot)
-        logger.info(f"Call graph exported to DOT file: {export_dot}")
+        if export_dot:
+            supply_chain.export_dot(export_dot)
+            logger.info(f"Call graph exported to DOT file: {export_dot}")
 
-    if export_json:
-        supply_chain.export_json(export_json)
-        logger.info(f"Call graph exported to JSON file: {export_json}")
+        if export_json:
+            supply_chain.export_json(export_json)
+            logger.info(f"Call graph exported to JSON file: {export_json}")
+    except Exception as e:
+        logger.error(f"analyze: {e}")
 
 
 @main.command(name="web")

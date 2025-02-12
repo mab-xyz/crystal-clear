@@ -263,6 +263,45 @@ def create_app(
                                 ],
                             ),
                             dcc.Tab(
+                                label="Selection",
+                                style=styles["tab-label"],
+                                selected_style=styles["tab-label"],
+                                children=[
+                                    html.Div(
+                                        style=styles["tab"],
+                                        children=[
+                                            html.H2(
+                                                "Selected Elements",
+                                                style=styles["heading"],
+                                            ),
+                                            html.Div(
+                                                id="highlighted-elements",
+                                                children=[
+                                                    html.P(
+                                                        "Selected Node:",
+                                                        style=styles[
+                                                            "label-text"
+                                                        ],
+                                                    ),
+                                                    html.Div(
+                                                        id="selected-node"
+                                                    ),
+                                                    html.P(
+                                                        "Connected Nodes:",
+                                                        style=styles[
+                                                            "label-text"
+                                                        ],
+                                                    ),
+                                                    html.Div(
+                                                        id="connected-nodes"
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
+                                    )
+                                ],
+                            ),
+                            dcc.Tab(
                                 label="JSON",
                                 style=styles["tab-label"],
                                 selected_style=styles["tab-label"],
@@ -398,15 +437,47 @@ def create_app(
 
         return stylesheet
 
-    return app
-
-
-# Replace the direct initialization with the create_app function
-if __name__ == "__main__":
-    app = create_app(
-        "http://localhost:8545",
-        "0xE592427A0AEce92De3Edee1F18E0157C05861564",
-        "0x14c3b86",
-        "0x14c3b90",
+    @callback(
+        [
+            Output("selected-node", "children"),
+            Output("connected-nodes", "children"),
+        ],
+        [Input("cytoscape", "tapNode")],
+        State("cytoscape", "elements"),
     )
-    app.run_server(debug=True)
+    def update_highlighted_elements(node, elements):
+        if not node:
+            return "No node selected", "No connected nodes"
+
+        selected_id = node["data"]["id"]
+        selected_node = html.A(
+            selected_id,
+            href=get_etherscan_url(selected_id),
+            target="_blank",
+            style=styles["contract-address"],
+        )
+
+        # Find connected nodes
+        connected_nodes = [
+            edge["data"]["target"]
+            for edge in elements
+            if "source" in edge["data"]
+            and edge["data"]["source"] == selected_id
+        ]
+
+        connected_elements = [
+            html.A(
+                node_id,
+                href=get_etherscan_url(node_id),
+                target="_blank",
+                style=styles["contract-address"],
+            )
+            for node_id in connected_nodes
+        ]
+
+        return (
+            selected_node,
+            connected_elements if connected_elements else "No connected nodes",
+        )
+
+    return app

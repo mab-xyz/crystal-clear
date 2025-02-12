@@ -1,5 +1,7 @@
 import logging
 
+from web3 import Web3
+
 from scsc.graph import CallGraph
 from scsc.traces import TraceCollector
 
@@ -16,39 +18,90 @@ class SupplyChain:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.tc = TraceCollector(url)
+        contract_address = self._validate_and_convert_address(contract_address)
         self.cg = CallGraph(contract_address)
         self.logger.info(
             f"Initialized SupplyChain for contract {contract_address}."
         )
 
-    def collect_calls(self, from_block: str, to_block: str) -> None:
+    def _validate_and_convert_block(self, block: str) -> str:
+        """
+        Validates if block number is decimal or hex and returns hex format.
+        """
+        if isinstance(block, int):
+            return hex(block)
+
+        if isinstance(block, str):
+            if block.startswith("0x"):
+                try:
+                    int(block, 16)
+                    return block
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid hex block number: {block}"
+                    ) from e
+
+            if block.isdigit():
+                return hex(int(block))
+
+        raise ValueError(
+            f"Block number must be decimal or hexadecimal: {block}"
+        ) from None
+
+    def _validate_and_convert_address(self, address: str) -> str:
+        """
+        Validates if the address is a valid Ethereum address and converts to checksum.
+
+        Args:
+            address: Ethereum address
+        Returns:
+            Checksum address
+        Raises:
+            ValueError: If address is invalid
+        """
+        if not Web3.is_address(address):
+            raise ValueError(f"Invalid Ethereum address: {address}")
+        return Web3.to_checksum_address(address)
+
+    def collect_calls(
+        self, from_block: str | int, to_block: str | int
+    ) -> None:
         """
         Collects calls from the blockchain and adds them to the call graph.
+        Args:
+            from_block: Block number in decimal or hex format
+            to_block: Block number in decimal or hex format
+        Raises:
+            ValueError: If from_block is greater than to_block
         """
         self.logger.info(
             f"Collecting calls from block {from_block} to {to_block}."
         )
-        try:
-            from_block_hex = (
-                hex(int(from_block)) if from_block.isdigit() else from_block
-            )
-            to_block_hex = (
-                hex(int(to_block)) if to_block.isdigit() else to_block
-            )
-            calls = self.tc.get_calls_from(
-                from_block_hex, to_block_hex, self.cg.contract_address
-            )
-            for c in calls:
-                self.cg.add_call(c["from"], c["to"], data=c["type"])
-            self.logger.info(f"Collected {len(calls)} calls.")
-        except Exception as e:
-            self.logger.error(f"Error collecting calls: {e}")
+        from_block_hex = self._validate_and_convert_block(from_block)
+        to_block_hex = self._validate_and_convert_block(to_block)
 
-    def get_all_dependencies(self) -> None:
+        if int(from_block_hex, 16) > int(to_block_hex, 16):
+            raise ValueError(
+                f"from_block ({from_block}) must be less than or equal to to_block ({to_block})"
+            )
+
+        calls = self.tc.get_calls_from(
+            from_block_hex, to_block_hex, self.cg.contract_address
+        )
+        for c in calls:
+            self.cg.add_call(c["from"], c["to"], data=c["type"])
+        self.logger.info(f"Collected {len(calls)} calls.")
+
+    def get_all_dependencies(self) -> list:
         """
-        Collects all dependencies of the contract.
+        Collects all contracts in the call graph excluding the main contract address.
         """
-        return self.cg.get_callee_contracts(self.cg.contract_address)
+        all_contracts = self.cg.get_all_contracts()
+        return [
+            contract
+            for contract in all_contracts
+            if contract != self.cg.contract_address
+        ]
 
     def export_dot(self, filename: str) -> None:
         """
