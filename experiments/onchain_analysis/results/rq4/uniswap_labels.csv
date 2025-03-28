@@ -1,36 +1,39 @@
 address,uniswap,label,verified
-0x1f98431c8ad98523631ae4a59f267346ea31f984,True,V3: UniswapV3Factory,True
-0x5ba1e12693dc8f9c48aad8770482f4739beed696,True,V3: Multicall2,True
-0xb753548f6e010e7e680ba186f9ca1bdab2e90cf2,True,V3: ProxyAdmin,True
-0xbfd8137f7d1516d3ea5ca83523914859ec47f573,True,V3: TickLens,True
-0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6,True,V3: Quoter,True
-0xe592427a0aece92de3edee1f18e0157c05861564,True,V3: SwapRouter,True
-0x42b24a95702b9986e82d421cc3568932790a48ec,True,V3: NFTDescriptor,True
-0x91ae842a5ffd8d12023116943e72a606179294f3,True,V3: NonfungibleTokenPositionDescriptor,True
-0xee6a57ec80ea46401049e92587e52f5ec1c24785,True,V3: TransparentUpgradeableProxy,True
+0x1f98431c8ad98523631ae4a59f267346ea31f984,True,Uniswap V3: Factory,True
+0x1f98415757620b543a52e61c46b32eb19261f984,True,Uniswap V3: Multicall,True
+0x5ba1e12693dc8f9c48aad8770482f4739beed696,True,Uniswap V3: Multicall 2,True
+0xb753548f6e010e7e680ba186f9ca1bdab2e90cf2,True,Uniswap V3: Proxy Admin,True
+0xbfd8137f7d1516d3ea5ca83523914859ec47f573,True,Uniswap V3: Tick Lens,True
+0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6,True,Uniswap V3: Quoter,True
+0xe592427a0aece92de3edee1f18e0157c05861564,True,Uniswap V3: Router,True
+0x42b24a95702b9986e82d421cc3568932790a48ec,True,Uniswap V3: NFT Descriptor,True
+0x91ae842a5ffd8d12023116943e72a606179294f3,True,Uniswap V3: LP Descriptor NFT,True
+0xee6a57ec80ea46401049e92587e52f5ec1c24785,True,Uniswap V3: Transparent Upgradeable Proxy,True
 0xc36442b4a4522e871399cd717abdd847ab11fe88,True,Uniswap V3: Positions NFT,True
-0xa5644e29708357803b5a882d272c41cc0df92b34,True,V3: V3Migrator,True
-0x61ffe014ba17989e743c5f6cb21bf9697530b21e,True,V3: QuoterV2,True
-0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45,True,V3: SwapRouter02,True
+0xa5644e29708357803b5a882d272c41cc0df92b34,True,Uniswap V3:  Migrator,True
+0x61ffe014ba17989e743c5f6cb21bf9697530b21e,True,Uniswap: Quoter V2,True
+0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45,True,Uniswap V3: Router 2,True
 0x000000000022d473030f116ddee9f6b43ac78ba3,True,Uniswap Protocol: Permit2,True
-0x66a9893cc07d91d95644aedd05d03f95e1dba8af,True,UniversalRouter,True
-0xe34139463ba50bd61336e0c446bd8c0867c6fe65,True,v3StakerAddress,True
+0x66a9893cc07d91d95644aedd05d03f95e1dba8af,True,Uniswap V4: Universal Router,True
+0xe34139463ba50bd61336e0c446bd8c0867c6fe65,True,Uniswap V3: Staker 1.0.2,True
 0x000000000004444c5dc75cb358380d2e3de08a90,True,Uniswap V4: Pool Manager,True
-0xd1428ba554f4c8450b763a0b2040a4935c63f06c,True,V4: PositionDescriptor,True
-0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e,True,V4: PositionManager,True
-0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203,True,V4: Quoter,True
-0x7ffe42c4a5deea5b0fec41c94c136cf115597227,True,V4: StateView,True
-0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f,True,V2: Factory Contract,True
-0x7a250d5630b4cf539739df2c5dacb4c659f2488d,True,V2Router02 Contract,True
-0x00000011f84b9aa48e5f8aa8b9897600006289be,True,V2DutchOrderReactor,True
-0x6000da47483062a0d734ba3dc7576ce6a0b645c4,True,ExclusiveDutchOrderReactor,True
+0xd1428ba554f4c8450b763a0b2040a4935c63f06c,True,Uniswap V4: Position Descriptor,True
+0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e,True,Uniswap V4: Position Manager,True
+0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203,True,Uniswap V4: Quoter,True
+0x7ffe42c4a5deea5b0fec41c94c136cf115597227,True,Uniswap V4: State View,True
+0x00000011f84b9aa48e5f8aa8b9897600006289be,True,Dutch Order Reactor V2,True
+0x6000da47483062a0d734ba3dc7576ce6a0b645c4,True,Dutch Order Reactor,True
 0x54539967a06fc0e3c3ed0ee320eb67362d13c5ff,True,OrderQuoter,True
+0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f,True,Uniswap V2: Factory Contract,True
+0x7a250d5630b4cf539739df2c5dacb4c659f2488d,True,Uniswap V2: Router 2,True
+0xf164fc0ec4e93095b804a4795bbe1e041497b92a,True,Uniswap V2: Router,True
+0xc0a47dfe034b400b47bdad5fecda2621de6c4d95,True,Uniswap: Factory Contract,True
+0x53a328f4086d7c0f1fa19e594c9b842125263026,True,GovernorBravoDelegator,True
 0x1f9840a85d5af5bf1d1762f925bdaddc4201f984,True,Uniswap Protocol: UNI token,True
 0x1a9c8182c09f50c8318d769245bea52c32be35bc,True,Uniswap V2: UNI Timelock,True
 0x5e4be8bc9637f0eaa1a755019e06a68ce081d58f,True,Uniswap V2: UNI Governance Contract,True
 0xc4e172459f1e7939d522503b81afaac1014ce6f6,True,Uniswap: Governor Alpha,True
-0x408ed6354d4973f66138c91495f2f2fcbd8724c3,True,Uniswap: Governor Bravo (proxy),True
-0x53a328F4086d7C0F1Fa19e594c9b842125263026,True,Uniswap: Governor Bravo (implementation),True
+0x408ed6354d4973f66138c91495f2f2fcbd8724c3,True,Uniswap: Governor Bravo,True
 0x090d4613473dee047c3f2706764f49e0821d256e,True,Uniswap: Token Distributor,True
 0x3032ab3fa8c01d786d29dade018d7f2017918e12,True,Staking Rewards Factory,True
 0x6c3e4cb2e96b01f4b866965a91ed4437839a121a,True,Uniswap V2: ETH/USDT UNI Pool,True
@@ -116,14 +119,14 @@ address,uniswap,label,verified
 0x60594a405d53811d3bc4766596efd80fd545a270,False,Uniswap V3: DAI 2,True
 0x2f62f2b4c5fcd7570a709dec05d68ea19c82a9ec,False,Uniswap V3: SHIB,True
 0xc7bbec68d12a0d1830360f8ec58fa599ba1b0e9b,False,Uniswap V3: USDT 9,True
-0x0d0e364aa7852291883c162b22d6d81f6355428f,False,,True
+0x0d0e364aa7852291883c162b22d6d81f6355428f,False,0x: Settler V1.7,True
 0xeff6cb8b614999d130e537751ee99724d01aa167,False,,False
 0xb02f39e382c90160eb816de5e0e428ac771d77b5,False,,False
 0x000000fee13a103a10d593b9ae06b3e05f2e7e1c,False,,True
 0x225a38bc71102999dd13478bfabd7c4d53f2dc17,False,,False
 0x0330e9b4d0325ccff515e81dfbc7754f2a02ac57,False,,True
 0x9a6f0891564325ab3846a50cf256a2fe7f1506da,False,,True
-0x5dff25915d8652233cd5a8bf4498c2dac077d5f4,False,,True
+0x5dff25915d8652233cd5a8bf4498c2dac077d5f4,False,,False
 0xf56e8f864653bba68d72621728c87e4efd44af78,False,Uniswap V2: trAIde,True
 0xc0dda965e8545591b20832c010f4546c02970401,False,Uniswap V2: SHIBASTEIN 6,True
 0xee1f8992de34aaf4abc6d7eca66ae5eb8a6c99a2,False,Uniswap V2: DEFAI,True
@@ -133,7 +136,7 @@ address,uniswap,label,verified
 0xddeb011a4de06e33ba12ab01e146c28190420d1e,False,Uniswap V2: Babykishu 4,True
 0x37a8f295612602f2774d331e562be9e61b83a327,False,,True
 0xc1de0e023d1efe8e8df9d64508f8f4190562aa6f,False,,True
-0x9328b7b9a935c8a9eb958468786faeb119649f6e,False,,True
+0x9328b7b9a935c8a9eb958468786faeb119649f6e,False,,False
 0xd4f69d02ef082f612558588d103994a7e3cf29c9,False,,False
 0xd4bc53434c5e12cb41381a556c3c47e1a86e80e3,False,,False
 0x43ee35d5542f5b826fa92832bd97caff153675a8,False,,False
@@ -155,4 +158,10 @@ address,uniswap,label,verified
 0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e,False,ENS: Registry with Fallback,True
 0x866e82a600a1414e583f7f13623f1ac5d58b0afa,False,,True
 0xbb2b8038a1640196fbe3e38816f3e67cba72d940,False,Uniswap V2: WBTC,True
-0x53a328f4086d7c0f1fa19e594c9b842125263026,False,,True
+0x7c8406384f7a5c147a6add16407803be146147e4,False,,True
+0x6da3be5c443be54567128409f078ceaee08e9828,False,,False
+0x509fde8900840c1f8900f3325c0000bdaa00b500,False,,False
+0xfa244e8ee58197f0acdc2254358bdae3769b7b7a,False,,False
+0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb,False,CryptoPunks:  Ͼ Token,True
+0x9161000056093dc4a9d2001a7a00002f4a0064c0,False,,False
+0xa43fe16908251ee70ef74718545e4fe6c5ccec9f,False,,True
