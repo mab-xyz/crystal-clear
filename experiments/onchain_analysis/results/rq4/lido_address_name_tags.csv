@@ -1,0 +1,48 @@
+address,name_tag,category
+0x2b33cf282f867a7ff693a66e11b0fcc5552e4425,Lido: DAO Impl 1.0.0,Lido
+0x17144556fd3424edc8fc8a4c940b2d04936d17eb,Lido: stETH Token Impl 2.0.0,Lido
+0xe42c659dc09109566720ea8b2de186c2be7d94d9,Lido: Withdrawal Queue Impl 1.0.0,Lido
+0xde3a93028f2283cc28756b3674bd657eafb992f4,Lido: Aragon Token Manager Impl,Lido
+0x00000000219ab540356cbb839cbe05303d7705fa,Beacon Deposit Contract,External
+0xd8784e748f59ba711fb5643191ec3fadd50fb6df,Lido: Staking Router Impl 1.0.0,Lido
+0x47ebab13b806773ec2a2d16873e2df770d130b50,Liquid staked Ether 2.0 (stETH),Lido
+0x9f3b9198911054b122fdb865f8a5ac516201c339,Lido: Aragon ACL Impl,Lido
+0x9305c1dbfe22c12c66339184c0025d7006f0f1cc,Lido: Oracle Report Sanity Checker,Lido
+0xa29b819654ce6224a222bb5f586920105e2d7e0e,Lido: Legacy Oracle Impl 4.0.0,Lido
+0x72fb5253ad16307b9e773d2a78cac58e309d5ba4,Lido: Aragon Voting Impl,Lido
+0xcc52f17756c04bba7e377716d7062fc36d7f69fd,Lido: Withdrawal Vault Impl 1.0.0,Lido
+0xf165148978fa3ce74d76043f833463c340cfb704,Lido: Lido Token Impl 1.0.0,Lido
+0x3a93c17fc82cc33420d1809dda9fb715cc89dd37,Lido: Agent Impl,Lido
+0x836835289a2e81b66ae5d95b7c8dbc0480dcf9da,Lido: Finance,Lido
+0xe6793b9e4fba7de0ee833f9d02bba7db5eb27823,,External
+0x853cc0d5917f49b57b8e9f89e491f5e18919093a,AppProxyPinned,Lido
+0x5ceb19e1890f677c3676d5ecdf7c501eba01a054,CallsScript,Lido
+0x1430194905301504e8830ce4b0b0df7187e84abd,LidoOracle,External
+0x6b175474e89094c44da98b954eedeac495271d0f,MakerDAO: Dai Token,External
+0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,Circle: USDC Token,External
+0xdac17f958d2ee523a2206206994597c13d831ec7,Tether: USDT Stablecoin,External
+0x468efc7aceb906c7923fb7180144cf21ddf5f5c1,KernelProxy,Lido
+0x40757238d800e0c1d88cdbd3331669d36b6c53a1,,Lido
+0x76943c0d61395d8f2edf9060e1533529cae05de6,Lido: Optimism L1 ERC20 Token Bridge,Lido
+0x55a7e1cbd678d9ebd50c7d69dc75203b0dbdd431,Lido: Composite Post Rebase Report Receiver,Lido
+0xa8a358e9bbb9ff60d4b89cbe5b2fe88f98b51b9d,Lido: Repo Impl,Lido
+0x231ac69a1a37649c6b06a71ab32ddd92158c80b8,Lido: TRP LDO Allowed Recipients Registry,Lido
+0x1af7214cad048206462fcbd1cc1658fbe348d8e6,,Lido
+0x32ecab571d114968306e093e16aa7a8e72dccfd5,,External
+0x1a7cfa9efb4d5bffde87b0faeb1fc65d653868c0,,Lido
+0xa818ff9ec93122bf9401ab4340c42de638cd600a,ShapellaUpgradeTemplate,Lido
+0x973693cd07f9b3b60a899ad1cc8415a25150bc48,Proxy_9736_bc48,External
+0x2ff2b86c156583b1135c584fd940a1996fa4230b,,External
+0x25ace71c97b33cc4729cf772ae268934f7ab5fa1,Optimism: Proxy OVM L1 Cross Domain Messenger,External
+0x83a67f510ccbeb4430753950942f3c7b51ff4656,,External
+0x111111111117dc0aa78b770fa6a738034120c302,1inch: 1INCH Token,External
+0xdffcd3bf14796a62a804c1b16f877cf7120379db,Lido: PML DAI Allowed Recipients Registry,Lido
+0x56930ebcc87cff84dccacf2121f79b7746a23e74,,External
+0xcc2ca22aaefe22a0144a0260731a40a725affff0,GnosisSafeProxy_cc2c_fff0,External
+0x11116b04c19ac7266c856cdc623b2903e102218d,,External
+0xe07305f43b11f230eaa951002f6a55a16419b707,Lido: ATC DAI Allowed Recipients Registry,Lido
+0xa89ea51fdde660f67d1850e03c9c9862d33bc42c,Lido: Validators Exit Bus Oracle Impl 1.0.0,Lido
+0x1d920cc5bacf7ee506a271a5259f2417cadece1d,Lido: Locator Impl 1.0.0,Lido
+0xf3c5e0a67f32cf1dc07a8817590efa102079a1af,Lido: Accounting Oracle Impl 1.0.0,Lido
+0x39afe23ce59e8ef196b81f0dcb165e9ad38b9463,LidoLocator,External
+0xaf9edbfca7b0c053a1cf8fd8aef2bd9ccfceaeca,GnosisSafeProxy,External

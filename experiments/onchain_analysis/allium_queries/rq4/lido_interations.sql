@@ -1,0 +1,54 @@
+SELECT
+    from_address,
+    to_address,
+    COUNT(*) AS call_count
+FROM ethereum.raw.traces
+WHERE
+    LOWER(from_address) IN (
+    '0xc1d0b3de6792bf6b4b37eccdcc24e45978cfd2eb',
+    '0x3abc4764f0237923d52056cfba7e9aebf87113d3',
+    '0xae7ab96520de3a18e5e111b5eaab095312d7fe84',
+    '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0',
+    '0x8f73e4c2a6d852bb4ab2a45e6a9cf5715b3228b7',
+    '0xfddf38947afb03c621c71b06c9c70bce73f12999',
+    '0x89eda99c0551d4320b56f82dde8df2f8d2ef81aa',
+    '0xffa96d84def2ea035c7ab153d8b991128e3d72fd',
+    '0x388c818ca8b9251b393131c08a736a67ccb19297',
+    '0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f',
+    '0xd15a672319cf0352560ee76d9e89eab0889046d3',
+    '0xf95f069f9ad107938f6ba802a3da87892298610e',
+    '0x7e70de6d1877b3711b2beda7ba00013c7142d993',
+    '0x852ded011285fe67063a08005c71a85690503cee',
+    '0x0e65898527e77210fb0133d00dd4c0e86dc29bc7',
+    '0xd624b08c83baecf0807dd2c6880c3154a5f0b288',
+    '0x0de4ea0184c2ad0baca7183356aea5b8d5bf5c6e',
+    '0x7fadbd358950c5faa66cb5eb8ee5147de3df355a',
+    '0x6232397ebac4f5772e53285b26c47914e9461e75',
+    '0xbf05a929c3d7885a6aead833a992da6e5ac23b09',
+    '0x442af784a788a5bd6f42a01ebe9f287a871243fb',
+    '0xb8ffc3cd6e7cf5a098a1c92f48009765b24088dc',
+    '0x5a98fcbea516cf06857215779fd812ca3bef1b32',
+    '0x2e59a20f205bb85a89c53f1936454680651e618e',
+    '0xf73a1260d222f447210581ddf212d915c09a3249',
+    '0xb9e5cbb9ca5b0d659238807e84d0176930753d86',
+    '0x3e40d73eb977dc6a537af587d48316fee66e9c8c',
+    '0x9895f0f17cc1d1891b6f18ee0b483b6f221b37bb',
+    '0x0cb113890b04b49455dfe06554e2d784598a29c9',
+    '0x4ee3118e3858e8d7164a634825bfe0f73d99c792',
+    '0xf5dc67e54fc96f993cd06073f71ca732c1e654b1',
+    '0xf9339de629973c60c4d2b76749c81e6f40960e3a',
+    '0x0d97e876ad14db2b183cfeeb8aa1a5c788eb1831',
+    '0x2325b0a607808de42d918db07f925ffcffbb2968',
+    '0x8b3f33234abd88493c0cd28de33d583b70bede35',
+    '0xee06ea501f7d9dc6f4200385a8d910182d155d3e',
+    '0x6c82877cac5a7a739f16ca0a89c0a328b8764a24',
+    '0x79243345edbe01a7e42edff5900156700d22611c'
+    )
+    AND trace_type = 'call'
+    AND status = 1
+    AND block_number > 17244958
+GROUP BY
+    from_address,
+    to_address
+ORDER BY
+    call_count DESC;
