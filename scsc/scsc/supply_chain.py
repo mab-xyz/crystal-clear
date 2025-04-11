@@ -49,7 +49,7 @@ class SupplyChain:
             from_block_hex, to_block_hex, self.cg.contract_address
         )
         for c in calls:
-            self.cg.add_call(c["from"], c["to"], data=c["type"])
+            self.cg.add_call(c["from"], c["to"], c["type"])
         self.logger.info(f"Collected {len(calls)} calls.")
 
     def get_all_dependencies(self) -> list:

@@ -106,7 +106,7 @@ def create_app(
                 "id": u + "-" + v,
                 "source": u,
                 "target": v,
-                "label": sc.cg.G[u][v]["data"],
+                "types": sc.cg.G[u][v]["types"],
             }
         }
         for u, v in sc.cg.G.edges()
@@ -449,7 +449,7 @@ def create_app(
         if not node:
             return "No node selected", "No connected nodes"
 
-        selected_id = node["data"]["id"]
+        selected_id = node["id"]
         selected_node = html.A(
             selected_id,
             href=get_etherscan_url(selected_id),
