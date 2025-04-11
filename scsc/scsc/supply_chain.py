@@ -39,11 +39,13 @@ class SupplyChain:
             to_block = latest_block
 
         self.collect_calls(from_block, to_block)
-        json = self.cg.to_json()["edges"]
-        json["contract_address"] = self.cg.contract_address
-        json["from_block"] = from_block
-        json["to_block"] = to_block
-        return json
+        edges = self.cg.to_json()["edges"]
+        return {
+            "contract_address": self.cg.contract_address,
+            "from_block": from_block,
+            "to_block": to_block,
+            "edges": edges,
+        }
 
     def collect_calls(
         self, from_block: str | int, to_block: str | int
