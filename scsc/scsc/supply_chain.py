@@ -1,9 +1,8 @@
 import logging
 
-from web3 import Web3
-
 from scsc.graph import CallGraph
 from scsc.traces import TraceCollector
+from scsc.utils import validate_and_convert_address, validate_and_convert_block
 
 
 class SupplyChain:
@@ -18,50 +17,11 @@ class SupplyChain:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.tc = TraceCollector(url)
-        contract_address = self._validate_and_convert_address(contract_address)
+        contract_address = validate_and_convert_address(contract_address)
         self.cg = CallGraph(contract_address)
         self.logger.info(
             f"Initialized SupplyChain for contract {contract_address}."
         )
-
-    def _validate_and_convert_block(self, block: str) -> str:
-        """
-        Validates if block number is decimal or hex and returns hex format.
-        """
-        if isinstance(block, int):
-            return hex(block)
-
-        if isinstance(block, str):
-            if block.startswith("0x"):
-                try:
-                    int(block, 16)
-                    return block
-                except ValueError as e:
-                    raise ValueError(
-                        f"Invalid hex block number: {block}"
-                    ) from e
-
-            if block.isdigit():
-                return hex(int(block))
-
-        raise ValueError(
-            f"Block number must be decimal or hexadecimal: {block}"
-        ) from None
-
-    def _validate_and_convert_address(self, address: str) -> str:
-        """
-        Validates if the address is a valid Ethereum address and converts to checksum.
-
-        Args:
-            address: Ethereum address
-        Returns:
-            Checksum address
-        Raises:
-            ValueError: If address is invalid
-        """
-        if not Web3.is_address(address):
-            raise ValueError(f"Invalid Ethereum address: {address}")
-        return Web3.to_checksum_address(address)
 
     def collect_calls(
         self, from_block: str | int, to_block: str | int
@@ -77,8 +37,8 @@ class SupplyChain:
         self.logger.info(
             f"Collecting calls from block {from_block} to {to_block}."
         )
-        from_block_hex = self._validate_and_convert_block(from_block)
-        to_block_hex = self._validate_and_convert_block(to_block)
+        from_block_hex = validate_and_convert_block(from_block)
+        to_block_hex = validate_and_convert_block(to_block)
 
         if int(from_block_hex, 16) > int(to_block_hex, 16):
             raise ValueError(
