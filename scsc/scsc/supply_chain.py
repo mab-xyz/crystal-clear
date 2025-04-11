@@ -23,14 +23,20 @@ class SupplyChain:
             f"Initialized SupplyChain for contract {contract_address}."
         )
 
-    def get_network(self, blocks: int = 10) -> dict:
+    def get_network(
+        self,
+        from_block: str | int | None,
+        to_block: str | int | None,
+        blocks: int = 10,
+    ) -> dict:
         """
         Collects calls from the last 10 blocks and returns the call graph in JSON format.
         """
-        self.logger.info("Collecting calls from the last n blocks.")
-        latest_block = self.tc.w3.eth.block_number
-        from_block = latest_block - blocks
-        to_block = latest_block
+        if from_block is None and to_block is None:
+            self.logger.info("Collecting calls from the last n blocks.")
+            latest_block = self.tc.w3.eth.block_number
+            from_block = latest_block - blocks
+            to_block = latest_block
 
         self.collect_calls(from_block, to_block)
         json = self.cg.to_json()["edges"]
