@@ -1,10 +1,8 @@
-from random import randint
 import matplotlib.pyplot as plt
 import networkx as nx
 import nxviz as nv
 from nxviz import annotate
 import pandas as pd
-import json
 import numpy as np
 import requests
 import requests_cache

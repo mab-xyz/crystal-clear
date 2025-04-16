@@ -75,4 +75,4 @@ if __name__ == "__main__":
     file1_renamed, file2_renamed = clean_data(args.file1, args.file2)
     different_addresses_df = compare_from_number(file1_renamed, file2_renamed)
     if len(different_addresses_df) > 0:
-        different_addresses_df.to_csv(f"different_addresses_1000.csv", index=False)
+        different_addresses_df.to_csv("different_addresses_1000.csv", index=False)
