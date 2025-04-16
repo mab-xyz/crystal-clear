@@ -2,7 +2,7 @@ import logging
 
 import click
 
-from scsc.app import create_app
+from cli.app import create_app
 from scsc.supply_chain import SupplyChain
 
 

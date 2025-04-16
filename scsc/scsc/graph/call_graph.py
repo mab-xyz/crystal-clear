@@ -16,23 +16,23 @@ class CallGraph:
         """
         self.G = nx.DiGraph()
         self.contract_address = contract_address
-        self.add_contract(contract_address)
 
-    def add_contract(
-        self, address: str, data: Any = None, metadata: Dict[str, Any] = None
-    ) -> None:
-        """
-        Adds a contract node to the graph.
-        """
-        self.G.add_node(address, data=data, metadata=metadata)
+    def _add_labeled_edge(self, u, v, label):
+        if self.G.has_edge(u, v):
+            # If edge already exists, update the label count
+            types = self.G[u][v].setdefault("types", {})
+            types[label] = types.get(label, 0) + 1
+        else:
+            # New edge with initial label count
+            self.G.add_edge(u, v, types={label: 1})
 
     def add_call(
-        self, from_address: str, to_address: str, data: Any = None
+        self, from_address: str, to_address: str, call_type: str
     ) -> None:
         """
         Adds a call edge to the graph.
         """
-        self.G.add_edge(from_address, to_address, data=data)
+        self._add_labeled_edge(from_address, to_address, call_type)
 
     def get_all_contracts(self) -> List[str]:
         """

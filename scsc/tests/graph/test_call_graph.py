@@ -7,7 +7,6 @@ from scsc.graph import CallGraph
 
 
 class TestCallGraph(unittest.TestCase):
-
     def setUp(self):
         self.contract_address = "0x123"
         self.call_graph = CallGraph(self.contract_address)
@@ -17,33 +16,24 @@ class TestCallGraph(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    def test_add_contract(self):
-        address = "0x456"
-        self.call_graph.add_contract(
-            address, data="TestData", metadata={"key": "value"}
-        )
-        node_data = self.call_graph.G.nodes[address]
-        self.assertEqual(node_data["data"], "TestData")
-        self.assertEqual(node_data["metadata"], {"key": "value"})
-
     def test_add_call(self):
         from_address = "0x123"
         to_address = "0x456"
-        self.call_graph.add_call(from_address, to_address, data="CallData")
-        edge_data = self.call_graph.G.edges[from_address, to_address]
-        self.assertEqual(edge_data["data"], "CallData")
+        self.call_graph.add_call(from_address, to_address, "CALL")
+        edge_data = self.call_graph.G.edges[from_address, to_address]["types"]
+        self.assertEqual(edge_data["CALL"], 1)
 
     def test_get_callee_contracts(self):
         from_address = "0x123"
         to_address = "0x456"
-        self.call_graph.add_call(from_address, to_address)
+        self.call_graph.add_call(from_address, to_address, "CALL")
         callees = self.call_graph.get_callee_contracts(from_address)
         self.assertIn(to_address, callees)
 
     def test_get_caller_contracts(self):
         from_address = "0x123"
         to_address = "0x456"
-        self.call_graph.add_call(from_address, to_address)
+        self.call_graph.add_call(from_address, to_address, "CALL")
         callers = self.call_graph.get_caller_contracts(to_address)
         self.assertIn(from_address, callers)
 
