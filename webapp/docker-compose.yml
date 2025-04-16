@@ -1,0 +1,11 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: cc-api-backend
+    image: cc-api-backend
+    network_mode: "host"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
