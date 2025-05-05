@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     api_host: str
     api_port: int
 
+    # maximum block range for analysis
+    MAX_BLOCK_RANGE: int = 7000
+
     # Logging Configuration
     log_level: str = "INFO"
 
