@@ -34,6 +34,12 @@ def analyze_contract_dependencies(
     try:
         # Perform analysis
         logger.info(f"Analyzing contract {address}")
+
+        if to_block is not None and from_block is not None:
+            if int(to_block) - int(from_block) > settings.MAX_BLOCK_RANGE:
+                raise ValueError(
+                    f"Block range exceeds maximum limit of {settings.MAX_BLOCK_RANGE} blocks."
+                )
         sc = SupplyChain(settings.eth_node_url, address)
         network = sc.get_network(from_block, to_block)
 
