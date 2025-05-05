@@ -44,7 +44,7 @@ cp backend/.env.example backend/.env
 
 3. Start the services:
 ```bash
-docker-compose up --build
+docker-compose up --build [-d]
 ```
 
 4. Access the API:
