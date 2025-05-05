@@ -19,7 +19,7 @@ class ExternalServiceError(HTTPException):
         )
 
 
-class ValidationError(HTTPException):
+class InputValidationError(HTTPException):
     """Exception raised when input validation fails."""
 
     def __init__(self, detail: str):
