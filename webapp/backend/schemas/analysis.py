@@ -36,3 +36,14 @@ class ContractRiskResponse(BaseModel):
     risk_factors: Dict[str, Any] = Field(
         ..., description="Detailed risk factors"
     )
+
+class BlockRangeRequest(BaseModel):
+    """Request model for block range of the last n days."""
+
+    days: int = Field(..., ge=1, description="Number of days to look back")
+
+class BlockRangeResponse(BaseModel):
+    """Response model for block range of the last n days."""
+
+    from_block: int = Field(None, description="Start block")
+    to_block: int = Field(None, description="End block")
