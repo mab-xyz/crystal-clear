@@ -17,6 +17,7 @@ class ContractDependenciesResponse(BaseModel):
     address: str
     from_block: int
     to_block: int
+    n_nodes: int
     edges: List[Dict[str, Any]]
 
 

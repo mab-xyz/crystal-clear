@@ -44,6 +44,7 @@ class SupplyChain:
             "contract_address": self.cg.contract_address,
             "from_block": from_block,
             "to_block": to_block,
+            "n_nodes": len(self.cg.get_all_contracts()),
             "edges": edges,
         }
 
