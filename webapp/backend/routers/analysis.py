@@ -58,6 +58,7 @@ async def get_contract_dependencies(
             from_block=network["from_block"],
             to_block=network["to_block"],
             n_nodes=network["n_nodes"],
+            nodes=network["nodes"],
             edges=network["edges"],
         )
 
