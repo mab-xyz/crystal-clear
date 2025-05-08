@@ -34,7 +34,8 @@ yarn run dev
 
 3. Open your browser and navigate to:
 ```bash
-http://localhost:5173
+http://localhost: **PORT**
 ```
+See the port number in the terminal output.
 
 Note: it is important to use the correct port 8000 for the backend at this moment

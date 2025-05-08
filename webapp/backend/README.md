@@ -89,4 +89,3 @@ The application uses loguru for logging. Log levels can be configured through th
 
 ## License
 
-[Your License Here]
