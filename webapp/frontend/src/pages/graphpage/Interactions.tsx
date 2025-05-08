@@ -637,7 +637,7 @@ export default function Interactions({
                                                 textAlign: "left",
                                                 cursor: "pointer",
                                                 position: "relative",
-                                                width: "350px",
+                                                width: "300px",
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
@@ -659,9 +659,11 @@ export default function Interactions({
                                                     textAlign: "right",
                                                     cursor: "pointer",
                                                     position: "relative",
-                                                    minWidth: "100px",
-                                                    width: "auto",
-                                                    whiteSpace: "normal",
+                                                    minWidth: "140px",
+                                                    width: "140px",
+                                                    whiteSpace: "nowrap",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
                                                 }}
                                                 onClick={() => handleSort(type)}
                                             >
@@ -798,8 +800,10 @@ export default function Interactions({
                                                         padding: "8px 10px",
                                                         textAlign: "right",
                                                         color: edge.types[type] ? "#333" : "#ccc",
-                                                        minWidth: "100px",
-                                                        width: "auto",
+                                                        minWidth: "120px",
+                                                        width: "120px",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
                                                     }}
                                                 >
                                                     {edge.types[type] || 0}

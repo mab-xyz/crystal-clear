@@ -121,7 +121,7 @@ export default function ContractGraph() {
         // Add zoom controls
         const zoomControls = svg
             .append("g")
-            .attr("transform", `translate(${width - 100}, 20)`);
+            .attr("transform", `translate(${width - 50}, 20)`);
 
         // Zoom in button
         zoomControls
