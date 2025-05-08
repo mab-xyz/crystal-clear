@@ -41,6 +41,9 @@ export default function Interactions({
     const [showOriginalAddresses, setShowOriginalAddresses] =
         useState<boolean>(false);
 
+    // Get the actual address from jsonData if available, otherwise use inputAddress
+    const contractAddress = jsonData?.address ? jsonData.address.toLowerCase() : inputAddress.toLowerCase();
+
     // Function to handle sort clicks
     const handleSort = (field: string) => {
         if (sortField === field) {
@@ -122,7 +125,7 @@ export default function Interactions({
             filteredEdges = edges.filter(
                 (edge) =>
                     edge.interactionType === "Direct" ||
-                    edge.source.toLowerCase() === inputAddress.toLowerCase(),
+                    edge.source.toLowerCase() === contractAddress,
             );
         }
 
@@ -161,7 +164,7 @@ export default function Interactions({
             return {
                 ...edge,
                 interactionType:
-                    sourceLower === inputAddress.toLowerCase() ? "Direct" : "Indirect",
+                    sourceLower === contractAddress ? "Direct" : "Indirect",
                 sourceName,
                 targetName,
             };
@@ -220,7 +223,7 @@ export default function Interactions({
                             (() => {
                                 const directEdges = jsonData.edges.filter(
                                     (edge) =>
-                                        edge.source.toLowerCase() === inputAddress.toLowerCase(),
+                                        edge.source.toLowerCase() === contractAddress,
                                 );
 
                                 if (directEdges.length === 0) return "No interactions found";
@@ -235,7 +238,7 @@ export default function Interactions({
 
                                 const directDependencies = jsonData.edges.filter(
                                     (edge) =>
-                                        edge.source.toLowerCase() === inputAddress.toLowerCase(),
+                                        edge.source.toLowerCase() === contractAddress,
                                 );
 
                                 // Get activity level description based on interaction count

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as d3 from "d3";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import { toast } from "sonner"
+
 
 // Define TypeScript interfaces for data structures
 interface Node {
@@ -44,6 +46,29 @@ export default function ContractGraph() {
     const [toBlock, setToBlock] = useState<string>("");
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
     const [highlightAddress, setHighlightAddress] = useState<string | null>(null);
+    const [apiAvailable, setApiAvailable] = useState<boolean>(true);
+    const [showApiError, setShowApiError] = useState<boolean>(false);
+
+    // Add a function to check if the API is available
+    const checkApiAvailability = useCallback(async () => {
+        // setApiAvailable(false);
+        // setShowApiError(true);
+        // return false;
+        try {
+            const response = await fetch('http://localhost:8000/health', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                // Set a short timeout to avoid long waits
+                signal: AbortSignal.timeout(2000)
+            });
+            setApiAvailable(response.ok);
+            return response.ok;
+        } catch (error) {
+            console.error("API availability check failed:", error);
+            setApiAvailable(false);
+            return false;
+        }
+    }, []);
 
     const fetchData = useCallback(
         async (address: string) => {
@@ -52,6 +77,17 @@ export default function ContractGraph() {
 
             try {
                 setLoading(true);
+                setShowApiError(false);
+
+                // Check if API is available before proceeding
+                const isAvailable = await checkApiAvailability();
+                if (!isAvailable) {
+                    console.error("API is not available at port 8000");
+                    setShowApiError(true);
+                    alert("CANNOT CONNECT TO API :< Please check if the API is running at port 8000.");
+                    setLoading(false);
+                    return;
+                }
 
                 // Build the URL with optional query parameters
                 let url = `http://localhost:8000/v1/analysis/${address}/dependencies`;
@@ -72,6 +108,10 @@ export default function ContractGraph() {
                 drawGraph(data);
             } catch (err) {
                 console.error("Failed to fetch data:", err);
+                toast.error("Failed to fetch data", {
+                    description: err instanceof Error ? err.message : "Unknown error",
+                    duration: 5000,
+                });
             } finally {
                 setLoading(false);
             }
@@ -590,6 +630,7 @@ export default function ContractGraph() {
                 setToBlock={setToBlock}
                 handleSubmit={handleSubmit}
             />
+
 
             <div
                 style={{

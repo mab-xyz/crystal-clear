@@ -91,7 +91,13 @@ export default function Sidebar({
               wordBreak: "break-all",
             }}
           >
-            {inputAddress ? (
+            {jsonData && jsonData.address ? (
+              <span title={jsonData.address}>
+                {jsonData.address.length > 24
+                  ? `${jsonData.address.substring(0, 10)}...${jsonData.address.substring(jsonData.address.length - 8)}`
+                  : jsonData.address}
+              </span>
+            ) : inputAddress ? (
               <span title={inputAddress}>
                 {inputAddress.length > 24
                   ? `${inputAddress.substring(0, 10)}...${inputAddress.substring(inputAddress.length - 8)}`
@@ -101,7 +107,7 @@ export default function Sidebar({
               "No address selected"
             )}
           </span>
-          {inputAddress && (
+          {(jsonData?.address || inputAddress) && (
             <div
               style={{
                 display: "flex",
@@ -111,7 +117,7 @@ export default function Sidebar({
             >
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(inputAddress);
+                  navigator.clipboard.writeText(jsonData?.address || inputAddress);
                   setCopyFeedback(true);
                   setTimeout(() => setCopyFeedback(false), 2000);
                 }}
@@ -133,7 +139,7 @@ export default function Sidebar({
               </button>
 
               <a
-                href={`https://etherscan.io/address/${inputAddress}`}
+                href={`https://etherscan.io/address/${jsonData?.address || inputAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
