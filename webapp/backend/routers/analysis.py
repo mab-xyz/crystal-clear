@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, status, Depends
+from sqlalchemy.orm import Session
 from loguru import logger
 from pydantic import ValidationError
 
+from core.database import get_session
 from core.exceptions import ContractAnalysisError, ExternalServiceError, InputValidationError
 from schemas.analysis import (
     ContractDependenciesRequest,
@@ -34,6 +36,7 @@ async def get_contract_dependencies(
     address: str,
     from_block: str = Query(None, description="Start block"),
     to_block: str = Query(None, description="End block"),
+    session: Session = Depends(get_session),
 ):
     """
     Get the dependency network for a contract.
@@ -48,6 +51,7 @@ async def get_contract_dependencies(
         )
 
         network = analyze_contract_dependencies(
+            session=session,
             address=request.address,
             from_block=request.from_block,
             to_block=request.to_block,
