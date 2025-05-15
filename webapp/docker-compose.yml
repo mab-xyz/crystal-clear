@@ -22,6 +22,6 @@ services:
       POSTGRES_DB: cc  # Define the default database
     ports:
       - "5432:5432"  # Expose PostgreSQL port 5432
+    restart: unless-stopped  # Automatically restart the container unless stopped manually
     volumes:
       - /mnt/ssd2/mjin/postgres_data:/var/lib/postgresql/data  # Persist PostgreSQL data on your host's filesystem
-
