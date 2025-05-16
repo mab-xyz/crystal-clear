@@ -1,11 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from core.logging import setup_logging
+from core.database import create_db_and_tables
 from routers import analysis, health
 
 # Setup logging
 setup_logging()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create tables
+    create_db_and_tables()
+    yield
+    # Shutdown: add cleanup here if needed
 
 # Create FastAPI app
 app = FastAPI(
@@ -14,6 +24,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Add middleware
