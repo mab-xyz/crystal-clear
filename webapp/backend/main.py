@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from core.logging import setup_logging
 from core.database import create_db_and_tables
-from routers import analysis, health
+from routers import analysis, health, info
 
 # Setup logging
 setup_logging()
@@ -39,6 +39,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router)
 app.include_router(analysis.router)
+app.include_router(info.router)
 
 
 @app.get("/")

@@ -36,3 +36,32 @@ def get_labels(addresses: List[str], ALLIUM_API_KEY: str) -> Optional[Dict[str, 
     except Exception as e:
         print(f"Error getting labels for addresses {addresses}: {e}")
         return None
+
+def get_deployment(address: str, ALLIUM_API_KEY: str) -> Optional[Dict[str, str]]:
+    """
+    Get deployment information for a given Ethereum address from Etherscan.
+
+    Args:
+        address: Ethereum address to lookup
+
+    Returns:
+        dict: Dictionary containing deployment information
+    """
+    try:
+        parameters = {"param_191":f"'{address}'"}
+
+        response = requests.post(
+            "https://api.allium.so/api/v1/explorer/queries/zz57rFHkFDf69LFLWsX4/run",
+            json=parameters,
+            headers={"X-API-Key": ALLIUM_API_KEY},
+        )
+
+        print(response.json())
+        response = response.json()
+        if 'data' in response and len(response['data']) > 0:
+           return response['data'][0]
+        else:
+            return None
+    except Exception as e:
+        print(f"Error getting deployment for address {address}: {e}")
+        return None
