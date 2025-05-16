@@ -5,12 +5,10 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuCheckboxItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { DropdownMenuCheckboxItemProps } from '@radix-ui/react-dropdown-menu';
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
 
 interface InteractionsProps {
     jsonData: JsonData | null;
@@ -34,12 +32,16 @@ export default function Interactions({
     // Add state for sorting
     const [sortField, setSortField] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+    type Checked = DropdownMenuCheckboxItemProps["checked"]
+
     const [showTransitiveInteractions, setShowTransitiveInteractions] =
-        useState<boolean>(true);
+        useState<Checked>(true);
     const [searchQuery, setSearchQuery] = useState<string>("");
     // Add state for showing original addresses
     const [showOriginalAddresses, setShowOriginalAddresses] =
-        useState<boolean>(false);
+        useState<Checked>(false);
+
+
 
     // Get the actual address from jsonData if available, otherwise use inputAddress
     const contractAddress = jsonData?.address ? jsonData.address.toLowerCase() : inputAddress.toLowerCase();
@@ -194,6 +196,7 @@ export default function Interactions({
             <div
                 style={{
                     backgroundColor: "white",
+                    height: "100%",
                     padding: "12px",
                     borderRadius: "4px",
                     border: "1px solid #eee",
@@ -260,18 +263,19 @@ export default function Interactions({
                                     directDependencies.length === 1
                                         ? "dependency"
                                         : "dependencies";
-                                const timePeriod = jsonData.from_block
-                                    ? `from block ${jsonData.from_block} to ${jsonData.to_block}`
-                                    : "all available blocks";
+                                // const timePeriod = jsonData.from_block
+                                //     ? `from block ${jsonData.from_block} to ${jsonData.to_block}`
+                                //     : "all available blocks";
 
                                 // Build the complete message with React elements
                                 return (
                                     <>
-                                        In the selected time period ({timePeriod}), this contract
+                                        {/* ({timePeriod}) */}
+                                        In the selected time period, this contract
                                         has{" "}
                                         <span
                                             style={{
-                                                color: "#fe962e",
+                                                color: "#7469B6",
                                                 // textShadow: "1px 1px 2px rgba(255,0,255,0.3)",
                                                 // background: "#be99a8",
                                                 padding: "0 4px",
@@ -288,9 +292,29 @@ export default function Interactions({
                                 );
                             })()
                         ) : (
-                            <span style={{ color: "#545c56" }}>
-                                ...Enter an address to analyze...
-                            </span>
+                            <div style={{
+                                textAlign: "center",
+                                padding: "20px",
+                                color: "#666",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "8px"
+                            }}>
+                                <div style={{ fontSize: "24px" }}>
+                                    <span role="img" aria-label="robot">🤖</span>
+                                </div>
+                                <div>
+                                    Ready to explore the interaction universe?
+                                </div>
+                                <div style={{
+                                    fontSize: "14px",
+                                    color: "#888",
+                                    fontStyle: "italic"
+                                }}>
+                                    Type an Ethereum address above and let's dive in!
+                                </div>
+                            </div>
                         )}
                     </span>
                 </div>
@@ -467,19 +491,19 @@ export default function Interactions({
                                 style={{
                                     width: "8px",
                                     height: "8px",
-                                    backgroundColor: "#3399ff",
+                                    backgroundColor: "#bec9e0",
                                     borderRadius: "50%",
                                     marginRight: "8px",
                                 }}
                             ></div>
-                            All Interactions
+                            Interactions
                         </div>
 
                         {/* Search bar and dropdown menu container */}
                         <div
                             style={{
                                 display: "flex",
-                                justifyContent: "flex-start",
+                                justifyContent: "space-between",
                                 alignItems: "center",
                                 marginBottom: "15px",
                                 flexWrap: "wrap",
@@ -494,10 +518,11 @@ export default function Interactions({
                                     position: "relative",
                                     flexGrow: 1,
                                     maxWidth: "500px",
+                                    height: "32px",
                                     display: "flex",
                                     alignItems: "center",
-                                    border: "1px solid #ddd",
-                                    borderRadius: "4px",
+                                    border: "1px solid #2b2b2b",
+                                    borderRadius: "0px",
                                     padding: "0 8px",
                                     backgroundColor: "white",
                                 }}
@@ -509,7 +534,9 @@ export default function Interactions({
                                         marginRight: "8px",
                                     }}
                                 >
-                                    🔍
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M6 2H14V4H6V2ZM4 6V4H6V6H4ZM4 14H2V6H4V14ZM6 16H4V14H6V16ZM14 16V18H6V16H14ZM16 14H14V16H16V18H18V20H20V22H22V20H20V18H18V16H16V14ZM16 6H18V14H16V6ZM16 6V4H14V6H16Z" fill="#2b2b2b" />
+                                    </svg>
                                 </div>
 
                                 {/* Input field - no border since container has border */}
@@ -523,8 +550,9 @@ export default function Interactions({
                                         border: "none",
                                         outline: "none",
                                         padding: "8px 0",
-                                        fontSize: "12px",
+                                        fontSize: "14px",
                                         backgroundColor: "transparent",
+                                        fontFamily: 'ms_sans_serif'
                                     }}
                                 />
 
@@ -565,26 +593,51 @@ export default function Interactions({
                             {/* Dropdown menu for display options */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-8 gap-1">
-                                        <Settings className="h-3.5 w-3.5" />
-                                        <span className="text-xs">Display</span>
+                                    <Button variant="outline" style={{
+                                        borderRadius: "2px",
+                                        border: "1px solid #2b2b2b",
+                                        height: "32px",
+                                        // backgroundColor: "#bec9e0",
+                                        // boxShadow: "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf"
+                                    }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M8 6H16V8H8V6ZM4 10V8H8V10H4ZM2 12V10H4V12H2ZM2 14V12H0V14H2ZM4 16H2V14H4V16ZM8 18H4V16H8V18ZM16 18V20H8V18H16ZM20 16V18H16V16H20ZM22 14V16H20V14H22ZM22 12H24V14H22V12ZM20 10H22V12H20V10ZM20 10V8H16V10H20ZM10 11H14V15H10V11Z" fill="#2b2b2b" />
+                                        </svg>
+
+                                        <span className="text-xs" >Display</span>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>View Settings</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
+                                <DropdownMenuContent align="end" style={{
+                                    borderRadius: "2px",
+                                    backgroundColor: "#e3e1f0",
+                                    border: "1px solid #2b2b2b",
+                                }}>
+                                    {/* <div className="space-y-3"> */}
                                     <DropdownMenuCheckboxItem
-                                        checked={showTransitiveInteractions}
-                                        onCheckedChange={setShowTransitiveInteractions}
+                                        checked={!showTransitiveInteractions}
+                                        onCheckedChange={(checked) => setShowTransitiveInteractions(!checked)}
+                                        style={{
+                                            padding: "0 0.5rem 0 2rem",
+                                            marginTop: "0.5rem",
+                                        }}
                                     >
-                                        Show Indirect Interactions
+                                        <span>Only Direct Dependencies</span>
                                     </DropdownMenuCheckboxItem>
+                                    {/* </div> */}
+                                    {/* <div className="space-y-3"> */}
                                     <DropdownMenuCheckboxItem
                                         checked={showOriginalAddresses}
                                         onCheckedChange={setShowOriginalAddresses}
+                                        style={{
+                                            padding: "0 0.5rem 0 2rem",
+                                            marginTop: "0.5rem",
+                                            marginBottom: "0.5rem",
+
+                                        }}
                                     >
-                                        Show Raw Addresses
+                                        <span>Show Raw Addresses</span>
                                     </DropdownMenuCheckboxItem>
+                                    {/* </div> */}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -593,8 +646,8 @@ export default function Interactions({
                         <div
                             style={{
                                 backgroundColor: "white",
-                                borderRadius: "4px",
-                                border: "1px solid #eee",
+                                borderRadius: "2px",
+                                border: "1px solid #2b2b2b",
                                 overflow: "auto",
                                 flex: "1",
                                 width: "100%",
@@ -607,14 +660,13 @@ export default function Interactions({
                                     minWidth: "600px",
                                     borderCollapse: "collapse",
                                     fontSize: "12px",
-                                    tableLayout: "fixed",
+                                    tableLayout: "auto",
                                 }}
                             >
                                 <thead>
                                     <tr
                                         style={{
-                                            backgroundColor: "#f5f5f5",
-                                            borderBottom: "1px solid #eee",
+                                            borderBottom: "1px solid #2b2b2b",
                                         }}
                                     >
                                         <th
@@ -623,7 +675,8 @@ export default function Interactions({
                                                 textAlign: "left",
                                                 cursor: "pointer",
                                                 position: "relative",
-                                                width: "80px",
+                                                width: "10%",
+                                                minWidth: "70px",
                                             }}
                                             onClick={() => handleSort("type")}
                                         >
@@ -640,10 +693,12 @@ export default function Interactions({
                                                 textAlign: "left",
                                                 cursor: "pointer",
                                                 position: "relative",
-                                                width: "300px",
+                                                width: "40%",
+                                                minWidth: "180px",
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
+                                                borderRight: "1px solid #eee",
                                             }}
                                             onClick={() => handleSort("address")}
                                         >
@@ -659,11 +714,11 @@ export default function Interactions({
                                                 key={type}
                                                 style={{
                                                     padding: "10px",
-                                                    textAlign: "right",
+                                                    textAlign: "center",
                                                     cursor: "pointer",
                                                     position: "relative",
-                                                    minWidth: "140px",
-                                                    width: "140px",
+                                                    width: `${50 / callTypes.length}%`,
+                                                    minWidth: "100px",
                                                     whiteSpace: "nowrap",
                                                     overflow: "hidden",
                                                     textOverflow: "ellipsis",
@@ -727,15 +782,15 @@ export default function Interactions({
                                                     style={{
                                                         display: "inline-block",
                                                         padding: "2px 8px",
-                                                        borderRadius: "10px",
+                                                        borderRadius: "2px",
                                                         fontSize: "11px",
                                                         backgroundColor:
                                                             edge.interactionType === "Direct"
-                                                                ? "#e8f4fd"
+                                                                ? "#e3e1f0"
                                                                 : "#f0f0f0",
                                                         color:
                                                             edge.interactionType === "Direct"
-                                                                ? "#3399ff"
+                                                                ? "#7469B6"
                                                                 : "#666",
                                                     }}
                                                 >
@@ -750,6 +805,9 @@ export default function Interactions({
                                                     overflow: "hidden",
                                                     textOverflow: "ellipsis",
                                                     whiteSpace: "nowrap",
+                                                    width: "40%",
+                                                    minWidth: "180px",
+                                                    borderRight: "1px solid #eee",
                                                 }}
                                             >
                                                 {edge.interactionType === "Direct" ? (
@@ -801,7 +859,7 @@ export default function Interactions({
                                                     key={type}
                                                     style={{
                                                         padding: "8px 10px",
-                                                        textAlign: "right",
+                                                        textAlign: "center",
                                                         color: edge.types[type] ? "#333" : "#ccc",
                                                         minWidth: "120px",
                                                         width: "120px",

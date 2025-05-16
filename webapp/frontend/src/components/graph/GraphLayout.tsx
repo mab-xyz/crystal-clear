@@ -1,148 +1,95 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
-import Header from "./Header";
-import Sidebar from "./Sidebar";
-import { toast } from "sonner"
-
 
 // Define TypeScript interfaces for data structures
-interface Node {
-    id: string;
-    group: string;
+export interface Node {
+    id: string; // address
+    group: string; // main or other， main is the input address, other is the dependency
     x?: number;
     y?: number;
     fx?: number | null;
     fy?: number | null;
 }
 
-interface Edge {
+// Edge: Raw data structure from API 
+export interface Edge {
     source: string;
     target: string;
     types: Record<string, number>;
 }
 
-interface Link {
-    source: string | { id: string; x?: number; y?: number };
-    target: string | { id: string; x?: number; y?: number };
+// Link: Processed data structure for D3 visualization (one link represents one relationship type)
+export interface Link {
+    source: string | Node;
+    target: string | Node;
     type: string;
     count: number;
 }
 
-interface GraphData {
+export interface GraphData {
     address: string;
     edges: Edge[];
     nodes?: Record<string, string>;
-    // Add other properties as needed based on your API response
 }
 
-export default function ContractGraph() {
+interface GraphLayoutProps {
+    jsonData: GraphData | null;
+    highlightAddress: string | null;
+    inputAddress: string;
+    onNodeClick: (node: Node) => void;
+}
+
+export default function GraphLayout({
+    jsonData,
+    highlightAddress,
+    inputAddress,
+    onNodeClick
+}: GraphLayoutProps) {
+    useEffect(() => {
+        console.log("[GraphLayout] jsonData changed", jsonData);
+    }, [jsonData]);
+
+    useEffect(() => {
+        console.log("[GraphLayout] highlightAddress changed", highlightAddress);
+    }, [highlightAddress]);
+
+    useEffect(() => {
+        console.log("[GraphLayout] inputAddress changed", inputAddress);
+    }, [inputAddress]);
+
+    useEffect(() => {
+        console.log("[GraphLayout] onNodeClick changed", onNodeClick);
+    }, [onNodeClick]);
+
+
     const svgRef = useRef<SVGSVGElement | null>(null);
-    const [jsonData, setJsonData] = useState<GraphData | null>(null);
-    const [activeTab, setActiveTab] = useState<string>("Risk Score");
-    const [inputAddress, setInputAddress] = useState<string>("");
-    // const [inputAddress, setInputAddress] = useState<string>("0xE592427A0AEce92De3Edee1F18E0157C05861564")
-    const [loading, setLoading] = useState<boolean>(false);
-    const [fromBlock, setFromBlock] = useState<string>("");
-    const [toBlock, setToBlock] = useState<string>("");
-    const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-    const [highlightAddress, setHighlightAddress] = useState<string | null>(null);
-    const [apiAvailable, setApiAvailable] = useState<boolean>(true);
-    const [showApiError, setShowApiError] = useState<boolean>(false);
+    // Add a ref to track if the graph has been drawn
+    const graphDrawnRef = useRef<boolean>(false);
 
-    // Add a function to check if the API is available
-    const checkApiAvailability = useCallback(async () => {
-        // setApiAvailable(false);
-        // setShowApiError(true);
-        // return false;
-        try {
-            const response = await fetch('http://localhost:8000/health', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                // Set a short timeout to avoid long waits
-                signal: AbortSignal.timeout(2000)
-            });
-            setApiAvailable(response.ok);
-            return response.ok;
-        } catch (error) {
-            console.error("API availability check failed:", error);
-            setApiAvailable(false);
-            return false;
-        }
-    }, []);
+    const drawGraph = useCallback((data: GraphData) => {
+        console.log("[drawGraph] invoked", new Date().toISOString());
+        // Only draw the graph if it hasn't been drawn yet or if we're forcing a redraw
+        if (graphDrawnRef.current) return;
 
-    const fetchData = useCallback(
-        async (address: string) => {
-            // Don't fetch if no address is provided
-            if (!address) return;
-
-            try {
-                setLoading(true);
-                setShowApiError(false);
-
-                // Check if API is available before proceeding
-                const isAvailable = await checkApiAvailability();
-                if (!isAvailable) {
-                    console.error("API is not available at port 8000");
-                    setShowApiError(true);
-                    alert("CANNOT CONNECT TO API :< Please check if the API is running at port 8000.");
-                    setLoading(false);
-                    return;
-                }
-
-                // Build the URL with optional query parameters
-                let url = `http://localhost:8000/v1/analysis/${address}/dependencies`;
-                const params = new URLSearchParams();
-
-                if (fromBlock) params.append("from_block", fromBlock);
-                if (toBlock) params.append("to_block", toBlock);
-
-                // Add the query parameters to the URL if any exist
-                if (params.toString()) {
-                    url += `?${params.toString()}`;
-                }
-
-                console.log("Fetching data from:", url);
-                const response = await fetch(url);
-                const data = await response.json();
-                setJsonData(data);
-                drawGraph(data);
-            } catch (err) {
-                console.error("Failed to fetch data:", err);
-                toast.error("Failed to fetch data", {
-                    description: err instanceof Error ? err.message : "Unknown error",
-                    duration: 5000,
-                });
-            } finally {
-                setLoading(false);
-            }
-        },
-        [fromBlock, toBlock],
-    );
-
-    // const fetchData = useCallback(async (address: string) => {
-    //     const data = require("../test.json");
-    //     setJsonData(data);
-    //     drawGraph(data);
-    // }, []);
-
-    // Handle form submission
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (inputAddress) {
-            fetchData(inputAddress);
-        }
-    };
-
-    const drawGraph = (data: GraphData) => {
         const width = window.innerWidth * 0.618;
         const height = window.innerHeight;
 
+        // if there is no svg element, return
         if (!svgRef.current) return;
 
         d3.select(svgRef.current).selectAll("*").remove();
         const svg = d3
             .select(svgRef.current)
             .attr("viewBox", [0, 0, width, height]);
+
+        // Add a purple background to the SVG
+        svg.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            // .attr("fill", "#f5f0ff")  // Light purple background
+            .attr("fill", "white")
+            .attr("rx", 8)  // Rounded corners
+            .attr("ry", 8);
 
         // Add a group for the graph that will be transformed by zoom
         const g = svg.append("g");
@@ -158,32 +105,61 @@ export default function ContractGraph() {
         // Apply zoom to the SVG
         svg.call(zoom);
 
-        // Add zoom controls
-        const zoomControls = svg
+        // Add zoom controls with a panel-like appearance - positioned in right corner
+        const controlPanel = svg
             .append("g")
-            .attr("transform", `translate(${width - 50}, 20)`);
+            .attr("class", "control-panel")
+            .attr("transform", `translate(${width - width * 0.15}, ${height * 0.05})`);
 
-        // Zoom in button
-        zoomControls
+        // Add panel background with improved styling - removed for now
+        // controlPanel
+        //     .append("rect")
+        //     .attr("x", 0)
+        //     .attr("y", 0)
+        //     .attr("width", width * 0.15)  // Smaller width (was 0.2)
+        //     .attr("height", height * 0.15)  // Smaller height (was 0.2)
+        //     .attr("fill", "rgba(255, 255, 255, 0.95)")
+        //     .attr("stroke", "#ddd")
+        //     .attr("stroke-width", 1)
+        //     .attr("rx", 8)
+        //     .attr("ry", 8)
+        //     .style("filter", "drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.15))");
+
+        // // Panel title with improved styling
+        // controlPanel
+        //     .append("text")
+        //     .attr("x", 55)  // Adjusted for smaller panel (was 75)
+        //     .attr("y", 20)  // Smaller y position (was 25)
+        //     .attr("text-anchor", "middle")
+        //     .attr("font-size", "12px")  // Smaller font (was 14px)
+        //     .attr("font-weight", "bold")
+        //     .attr("fill", "#555")
+        //     .text("Controls")
+        //     .style("user-select", "none");
+
+        // Zoom in button with improved styling
+        controlPanel
             .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", 30)
-            .attr("height", 30)
-            .attr("fill", "#f0f0f0")
-            .attr("stroke", "#ccc")
+            .attr("x", 10)
+            .attr("y", 30)
+            .attr("width", 25)
+            .attr("height", 25)
+            .attr("fill", "#ffffff")
+            .attr("stroke", "#c9e0be")
             .attr("rx", 5)
             .style("cursor", "pointer")
+            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))")
             .on("click", () => {
                 svg.transition().duration(300).call(zoom.scaleBy, 1.3);
             });
 
-        zoomControls
+        controlPanel
             .append("text")
-            .attr("x", 15)
-            .attr("y", 20)
+            .attr("x", 22.5)
+            .attr("y", 47)
             .attr("text-anchor", "middle")
-            .attr("font-size", "20px")
+            .attr("font-size", "18px")
+            .attr("fill", "#555")
             .text("+")
             .style("cursor", "pointer")
             .style("user-select", "none")
@@ -191,33 +167,117 @@ export default function ContractGraph() {
                 svg.transition().duration(300).call(zoom.scaleBy, 1.3);
             });
 
-        // Zoom out button
-        zoomControls
+        // Zoom out button with improved styling
+        controlPanel
             .append("rect")
-            .attr("x", 40)
-            .attr("y", 0)
-            .attr("width", 30)
-            .attr("height", 30)
-            .attr("fill", "#f0f0f0")
-            .attr("stroke", "#ccc")
-            .attr("rx", 5)
+            .attr("x", 42.5)
+            .attr("y", 30)
+            .attr("width", 25)
+            .attr("height", 25)
+            .attr("fill", "#ffffff")
+            .attr("stroke", "#c9e0be")
+            .attr("rx", 4)
             .style("cursor", "pointer")
+            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))")
             .on("click", () => {
                 svg.transition().duration(300).call(zoom.scaleBy, 0.7);
             });
 
-        zoomControls
+        controlPanel
             .append("text")
             .attr("x", 55)
-            .attr("y", 20)
+            .attr("y", 47)
             .attr("text-anchor", "middle")
-            .attr("font-size", "20px")
+            .attr("font-size", "18px")
+            .attr("fill", "#555")
             .text("-")
             .style("cursor", "pointer")
             .style("user-select", "none")
             .on("click", () => {
                 svg.transition().duration(300).call(zoom.scaleBy, 0.7);
             });
+
+        // Reset zoom button  
+        controlPanel
+            .append("rect")
+            .attr("x", 75)
+            .attr("y", 30)
+            .attr("width", 25)
+            .attr("height", 25)
+            .attr("fill", "#ffffff")
+            .attr("stroke", "#c9e0be")
+            .attr("rx", 4)
+            .style("cursor", "pointer")
+            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))")
+            .on("click", () => {
+                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+            });
+
+        controlPanel
+            .append("text")
+            .attr("x", 87.5)
+            .attr("y", 47)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "14px")
+            .attr("fill", "#555")
+            .text("R")
+            .style("cursor", "pointer")
+            .style("user-select", "none")
+            .on("click", () => {
+                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+            });
+
+        // Flow dots toggle button with improved styling
+        const flowDotsButton = controlPanel
+            .append("rect")
+            .attr("x", 10)
+            .attr("y", 65)
+            .attr("width", 90)
+            .attr("height", 25)
+            .attr("fill", "#ffffff")
+            .attr("stroke", "#c9e0be")
+            .attr("rx", 4)
+            .style("cursor", "pointer")
+            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))");
+
+        const flowDotsText = controlPanel
+            .append("text")
+            .attr("x", 55)
+            .attr("y", 80)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "10px")
+            .attr("fill", "#555")
+            .attr("class", "flow-dots-text")
+            .text("Hide Direction")
+            .style("cursor", "pointer")
+            .style("user-select", "none");
+
+        // Add click handlers for both the button and text
+        flowDotsButton.on("click", toggleFlowDots);
+        flowDotsText.on("click", toggleFlowDots);
+
+        function toggleFlowDots() {
+            // Toggle flow dots visibility
+            const dotsVisible = g.selectAll(".flow-dot").style("display") !== "none";
+            g.selectAll(".flow-dot").style("display", dotsVisible ? "none" : "block");
+
+            // Update button appearance
+            flowDotsButton.attr("fill", dotsVisible ? "#ffffff" : "#f0f7ff");
+
+            // Update the button text
+            flowDotsText.text(dotsVisible ? "Show Direction" : "Hide Direction");
+        }
+
+        // Make the control panel responsive to window resize
+        const updateControlPanelPosition = () => {
+            const currentWidth = Number(svg.attr("width")) || width;
+            controlPanel.attr("transform", `translate(${currentWidth - 160}, 20)`);
+        };
+
+        // Add resize listener
+        window.addEventListener("resize", updateControlPanelPosition);
+
+        // graph layout
 
         const links: Link[] = data.edges.flatMap((edge) => {
             return Object.entries(edge.types).map(([type, count]) => ({
@@ -251,10 +311,11 @@ export default function ContractGraph() {
                 d3
                     .forceLink<Node, Link>(links)
                     .id((d) => d.id)
-                    .distance(120),
+                    .distance(200),
             )
-            .force("charge", d3.forceManyBody().strength(-400))
+            .force("charge", d3.forceManyBody().strength(-350))
             .force("center", d3.forceCenter(width / 2, height / 2));
+
 
         // Create links
         const link = g
@@ -287,6 +348,7 @@ export default function ContractGraph() {
         // Add animated dots along the links
         const flowDots = g
             .append("g")
+            .attr("class", "flow-dots-layer")
             .selectAll(".flow-dot")
             .data(links)
             .join("circle")
@@ -326,20 +388,20 @@ export default function ContractGraph() {
                         };
                     })
                     .on("end", function () {
-                        // Fade out at the end of the path
                         dot
                             .transition()
                             .duration(200)
                             .attr("opacity", 0)
                             .on("end", function () {
-                                // Restart the animation after a delay
-                                setTimeout(() => {
-                                    if (d3.select(this.parentNode).node()) {
+                                const parent = (this as Element).parentNode as Element | null;
+                                if (parent && d3.select(parent).node()) {
+                                    setTimeout(() => {
                                         animateDot(dot, d);
-                                    }
-                                }, Math.random() * 1000); // Random delay for natural effect
+                                    }, Math.random() * 1000);
+                                }
                             });
                     });
+
             });
         }
 
@@ -371,23 +433,25 @@ export default function ContractGraph() {
                         .duration(200)
                         .attr("opacity", 0)
                         .on("end", function () {
-                            setTimeout(() => {
-                                if (d3.select(this.parentNode).node()) {
+                            const parent = (this as Element).parentNode as Element | null;
+                            if (parent && d3.select(parent).node()) {
+                                setTimeout(() => {
                                     animateDot(dot, d);
-                                }
-                            }, Math.random() * 1000);
+                                }, Math.random() * 1000);
+                            }
                         });
                 });
+
         }
 
         // Start the animation
         animateFlowDots();
 
-        // Create nodes
+        // Create nodes (highest layer)
         const node = g
             .append("g")
             .attr("stroke", "#fff")
-            .attr("stroke-width", 1.5)
+            .attr("stroke-width", 0.2)
             .selectAll<SVGCircleElement, Node>("circle")
             .data(nodes)
             .join("circle")
@@ -395,9 +459,9 @@ export default function ContractGraph() {
             .attr("fill", (d) => color(d.group))
             .attr("class", (d) => `node-${d.id.toLowerCase()}`)
             .style("cursor", "pointer")
-            .on("click", (event: MouseEvent, d: Node) => {
-                setSelectedNode(d);
-                setActiveTab("Dependency");
+            .on("click", (_event: MouseEvent, d: Node) => {
+
+                onNodeClick(d);
             })
             .call(drag(simulation) as any);
 
@@ -415,7 +479,6 @@ export default function ContractGraph() {
 
                 // Use name if available, otherwise use shortened address
                 if (name) {
-                    console.log(`  - Found name: ${name}`);
                     return name;
                 }
 
@@ -439,6 +502,14 @@ export default function ContractGraph() {
                 .attr("y2", (d) =>
                     typeof d.target === "object" && d.target.y ? d.target.y : 0,
                 );
+
+            console.log("Simulation tick");
+            // console.log(simulation.alpha());
+
+            if (simulation.alpha() < 0.01) {
+                simulation.stop();
+                console.log("Simulation stopped");
+            }
 
             // Update flow dots positions during simulation
             flowDots.each(function () {
@@ -476,78 +547,24 @@ export default function ContractGraph() {
                         d.fx = null;
                         d.fy = null;
                     },
+
                 );
         }
 
-        // Add a reset zoom button and flow dots toggle button
-        zoomControls
-            .append("rect")
-            .attr("x", 0)
-            .attr("y", 40)
-            .attr("width", 70)
-            .attr("height", 30)
-            .attr("fill", "#f0f0f0")
-            .attr("stroke", "#ccc")
-            .attr("rx", 5)
-            .style("cursor", "pointer")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
-            });
+        // Mark the graph as drawn
+        graphDrawnRef.current = true;
+    }, [onNodeClick]);
 
-        zoomControls
-            .append("text")
-            .attr("x", 35)
-            .attr("y", 60)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "12px")
-            .text("Reset")
-            .style("cursor", "pointer")
-            .style("user-select", "none")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
-            });
-
-        // Add flow dots toggle button
-        const flowDotsButton = zoomControls
-            .append("rect")
-            .attr("x", 0)
-            .attr("y", 80) // Position below the reset button
-            .attr("width", 70)
-            .attr("height", 30)
-            .attr("fill", "#f0f0f0")
-            .attr("stroke", "#ccc")
-            .attr("rx", 5)
-            .style("cursor", "pointer");
-
-        const flowDotsText = zoomControls
-            .append("text")
-            .attr("x", 35)
-            .attr("y", 100) // Position to match the button
-            .attr("text-anchor", "middle")
-            .attr("font-size", "12px")
-            .attr("class", "flow-dots-text")
-            .text("Hide Dots") // Initial state shows dots
-            .style("cursor", "pointer")
-            .style("user-select", "none");
-
-        // Add click handlers for both the button and text
-        flowDotsButton.on("click", toggleFlowDots);
-        flowDotsText.on("click", toggleFlowDots);
-
-        function toggleFlowDots() {
-            // Toggle flow dots visibility
-            const dotsVisible = g.selectAll(".flow-dot").style("display") !== "none";
-            g.selectAll(".flow-dot").style("display", dotsVisible ? "none" : "block");
-
-            // Update button appearance
-            flowDotsButton.attr("fill", dotsVisible ? "#f0f0f0" : "#e6f2ff");
-
-            // Update the button text
-            flowDotsText.text(dotsVisible ? "Show Dots" : "Hide Dots");
+    // Draw the graph only when data changes or component mounts
+    useEffect(() => {
+        if (jsonData) {
+            // Reset the drawn flag when jsonData changes
+            graphDrawnRef.current = false;
+            drawGraph(jsonData);
         }
-    };
+    }, [jsonData, drawGraph]);
 
-    // Move the highlighting effect outside of drawGraph
+    // Handle highlighting effect without redrawing the graph
     useEffect(() => {
         if (!svgRef.current || !jsonData) return;
 
@@ -574,8 +591,6 @@ export default function ContractGraph() {
                 .attr("opacity", 1)
                 .attr("stroke-width", 3);
 
-            // Find if the highlighted address is the input address
-            const isInputAddress = highlightAddress === inputAddress.toLowerCase();
 
             // Highlight connected links with different colors based on whether they're direct or transitive
             d3.select(svgRef.current)
@@ -600,8 +615,8 @@ export default function ContractGraph() {
                     // If either end is the input address, it's a direct edge (red)
                     // Otherwise it's a transitive edge (orange)
                     if (
-                        sourceId === inputAddress.toLowerCase() ||
-                        targetId === inputAddress.toLowerCase()
+                        sourceId === jsonData.address.toLowerCase() ||
+                        targetId === jsonData.address.toLowerCase()
                     ) {
                         return "#ff6666"; // Red for direct edges
                     } else {
@@ -612,55 +627,6 @@ export default function ContractGraph() {
     }, [highlightAddress, jsonData, inputAddress]);
 
     return (
-        <div
-            style={{
-                height: "100vh",
-                width: "100vw",
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-            }}
-        >
-            <Header
-                inputAddress={inputAddress}
-                setInputAddress={setInputAddress}
-                fromBlock={fromBlock}
-                setFromBlock={setFromBlock}
-                toBlock={toBlock}
-                setToBlock={setToBlock}
-                handleSubmit={handleSubmit}
-            />
-
-
-            <div
-                style={{
-                    display: "flex",
-                    height: "calc(100vh - 60px)",
-                    width: "100%",
-                    overflow: "hidden",
-                }}
-            >
-                {/* Set explicit width to 61.8% for the graph container */}
-                <div style={{ width: "61.8%", height: "100%", overflow: "hidden" }}>
-                    <svg ref={svgRef} style={{ width: "100%", height: "100%" }}></svg>
-                </div>
-                {/* Set explicit width to 38.2% for the sidebar */}
-                <div style={{ width: "38.2%", height: "100%", overflow: "auto" }}>
-                    <Sidebar
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
-                        loading={loading}
-                        jsonData={jsonData}
-                        inputAddress={inputAddress}
-                        setHighlightAddress={setHighlightAddress}
-                        highlightAddress={highlightAddress}
-                        fromBlock={fromBlock ? parseInt(fromBlock) : null}
-                        toBlock={toBlock ? parseInt(toBlock) : null}
-                        selectedNode={selectedNode}
-                        setSelectedNode={setSelectedNode}
-                    />
-                </div>
-            </div>
-        </div>
+        <svg ref={svgRef} style={{ width: "100%", height: "100%" }}></svg>
     );
 }

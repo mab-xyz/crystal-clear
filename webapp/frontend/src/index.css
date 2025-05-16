@@ -107,7 +107,7 @@ h1 {
 } */
 
 button:hover {
-  border-color: #c4a7d9;
+  border-color: #ffb4c9;
 }
 
 button:focus,
@@ -202,7 +202,7 @@ button:focus-visible {
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
-@layer base {
+/* @layer base {
   * {
     @apply border-border outline-ring/50;
   }
@@ -210,7 +210,7 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
-}
+} */
 
 code {
   font-family: 'Inconsolata', source-code-pro, Menlo, Monaco, Consolas, 'Courier New',

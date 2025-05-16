@@ -4,7 +4,7 @@ import "ldrs/react/NewtonsCradle.css";
 import catSpinningGif from "../../assets/cat-spinning.gif";
 
 // Default values shown
-<NewtonsCradle size="78" speed="1.4" color="black" />;
+<NewtonsCradle size="78" speed="1.4" color="#2b2b2b" />;
 
 interface LoadingSpinnerProps {
   inputAddress: string;
@@ -45,7 +45,7 @@ export default function LoadingSpinner({
         }}
       >
         {loaderType === "newtonsCradle" ? (
-          <NewtonsCradle size={78} speed={1.4} color="black" />
+          <NewtonsCradle size={78} speed={1.4} color="#2b2b2b" />
         ) : (
           <img
             src={catSpinningGif}
