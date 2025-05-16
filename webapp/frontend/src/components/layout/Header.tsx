@@ -612,7 +612,7 @@ export default function Header({
                                                         <Label htmlFor="custom" className="cursor-pointer">Custom Block Range</Label>
                                                     </div>
                                                     <div className="absolute left-0 -top-8 hidden group-hover:block bg-black text-white rounded px-6 py-3 z-50 w-auto whitespace-nowrap shadow-lg backdrop-blur-sm border border-white/10" style={{ fontSize: '12px', paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.2rem', paddingBottom: '0.2rem' }}>
-                                                        (WIP)Put your own block numbers
+                                                        Put your own block numbers
                                                     </div>
                                                 </div>
                                             </div>
