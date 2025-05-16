@@ -14,11 +14,12 @@ Crystal-Clear is a tool designed to help developers, auditors, and researchers a
 - Ethereum node integration
 - Comprehensive logging and monitoring
 
-### Frontend (Coming Soon)
-- Modern web interface
-- Real-time analysis visualization
-- Interactive contract exploration
-- User-friendly dashboard
+### Frontend (`/frontend`)
+- React-based modern web interface
+- Interactive contract visualization with D3.js
+- Real-time analysis of contract interactions
+- Risk assessment dashboard
+- Contract dependency exploration
 
 ## Getting Started
 
@@ -59,7 +60,7 @@ See [backend/README.md](backend/README.md) for detailed instructions on setting 
 
 ### Frontend Development
 
-Frontend development instructions will be added when the frontend component is implemented.
+See [frontend/README.md](frontend/README.md) for detailed instructions on setting up and developing the frontend service.
 
 ## Contributing
 
