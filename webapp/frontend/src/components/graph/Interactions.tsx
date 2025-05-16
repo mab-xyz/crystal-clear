@@ -781,6 +781,7 @@ export default function Interactions({
                                                 <div
                                                     style={{
                                                         display: "inline-block",
+                                                        verticalAlign: "middle",
                                                         padding: "2px 8px",
                                                         borderRadius: "2px",
                                                         fontSize: "11px",
@@ -810,49 +811,20 @@ export default function Interactions({
                                                     borderRight: "1px solid #eee",
                                                 }}
                                             >
-                                                {edge.interactionType === "Direct" ? (
-                                                    <>
-                                                        {!showOriginalAddresses && edge.targetName ? (
-                                                            <div
-                                                                style={{ fontWeight: "500", textAlign: "left" }}
-                                                            >
-                                                                {edge.targetName}
-                                                            </div>
-                                                        ) : (
-                                                            <div style={{ textAlign: "left" }}>
-                                                                {edge.target}
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        {!showOriginalAddresses && edge.sourceName ? (
-                                                            <div
-                                                                style={{ fontWeight: "500", textAlign: "left" }}
-                                                            >
-                                                                {edge.sourceName}
-                                                            </div>
-                                                        ) : (
-                                                            <div style={{ textAlign: "left" }}>
-                                                                {edge.source}
-                                                            </div>
-                                                        )}
-                                                        <div style={{ color: "#999", textAlign: "left" }}>
-                                                            ↓
-                                                        </div>
-                                                        {!showOriginalAddresses && edge.targetName ? (
-                                                            <div
-                                                                style={{ fontWeight: "500", textAlign: "left" }}
-                                                            >
-                                                                {edge.targetName}
-                                                            </div>
-                                                        ) : (
-                                                            <div style={{ textAlign: "left" }}>
-                                                                {edge.target}
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                )}
+                                                <>
+                                                    <div style={{ textAlign: "left", fontWeight: !showOriginalAddresses && edge.sourceName ? "500" : "normal" }}>
+                                                        {!showOriginalAddresses && edge.sourceName ? edge.sourceName : edge.source}
+                                                    </div>
+
+                                                    <div style={{ color: "#999", textAlign: "left" }}>
+                                                        ↓
+                                                    </div>
+
+                                                    <div style={{ textAlign: "left", fontWeight: !showOriginalAddresses && edge.targetName ? "500" : "normal" }}>
+                                                        {!showOriginalAddresses && edge.targetName ? edge.targetName : edge.target}
+                                                    </div>
+                                                </>
+
                                             </td>
                                             {callTypes.map((type) => (
                                                 <td
@@ -860,6 +832,7 @@ export default function Interactions({
                                                     style={{
                                                         padding: "8px 10px",
                                                         textAlign: "center",
+                                                        verticalAlign: "middle",
                                                         color: edge.types[type] ? "#333" : "#ccc",
                                                         minWidth: "120px",
                                                         width: "120px",
