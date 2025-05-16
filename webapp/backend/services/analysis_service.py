@@ -5,6 +5,8 @@ from scsc.supply_chain import SupplyChain
 
 from sqlmodel import Session
 
+from sqlmodel import Session
+
 from core.config import settings
 from core.exceptions import ContractAnalysisError, ExternalServiceError
 from core.metadata import get_labels
