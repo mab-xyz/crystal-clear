@@ -45,6 +45,7 @@ class SupplyChain:
             "from_block": from_block,
             "to_block": to_block,
             "n_nodes": len(self.cg.get_all_contracts()),
+            "nodes": self.cg.get_all_contracts(),
             "edges": edges,
         }
 

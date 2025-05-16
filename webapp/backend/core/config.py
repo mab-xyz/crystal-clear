@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings
 
-
 class Settings(BaseSettings):
     # Ethereum Node Configuration
     eth_node_url: str
@@ -18,6 +17,9 @@ class Settings(BaseSettings):
     # Logging Configuration
     log_level: str = "INFO"
 
+    # Allium API Key
+    allium_api_key: str
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
@@ -28,6 +30,7 @@ class Settings(BaseSettings):
             "api_host": "API_HOST",
             "api_port": "API_PORT",
             "log_level": "LOG_LEVEL",
+            "allium_api_key": "ALLIUM_API_KEY",
         }
 
 

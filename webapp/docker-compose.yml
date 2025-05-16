@@ -2,10 +2,26 @@
 services:
   backend:
     build:
-      context: ./backend
-    container_name: cc-api-backend
-    image: cc-api-backend
-    network_mode: "host"
+      context: ./backend  # Build the backend container from the ./backend directory
+    container_name: cc-api-backend  # Name for the backend container
+    image: cc-api-backend  # Backend image name
+    network_mode: "host"  # Uses the host's network settings (ensure this is appropriate for your environment)
     env_file:
-      - ./backend/.env
-    restart: unless-stopped
+      - ./backend/.env  # Load environment variables from the backend/.env file
+    restart: unless-stopped  # Automatically restart the container unless stopped manually
+    depends_on:
+      - db  # Ensure the database is started before the backend service
+  
+  # PostgreSQL Database Service
+  db:
+    image: postgres:latest  # Use the latest official PostgreSQL image
+    container_name: cc-db  # Name for the PostgreSQL container
+    environment:
+      POSTGRES_USER: cc-user  # Define PostgreSQL user
+      POSTGRES_PASSWORD: cc-password  # Define the PostgreSQL user's password
+      POSTGRES_DB: cc  # Define the default database
+    ports:
+      - "5432:5432"  # Expose PostgreSQL port 5432
+    restart: unless-stopped  # Automatically restart the container unless stopped manually
+    volumes:
+      - /mnt/ssd2/mjin/postgres_data:/var/lib/postgresql/data  # Persist PostgreSQL data on your host's filesystem
