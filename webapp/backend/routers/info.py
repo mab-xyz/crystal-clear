@@ -54,17 +54,11 @@ async def get_deployment_info(
     Get deployment information for a contract address.
     """
     try:
-        deployment_info = get_deployment_data(address)
+        deployment_info = get_deployment_data(session, address)
         if not deployment_info:
             raise ValueError("No deployment information found.")
         print(deployment_info)
-        return DeploymentInfoResponse(
-            address=deployment_info['address'],
-            deployer=deployment_info['deployer'],
-            deployer_eoa=deployment_info['deployer_eoa'],
-            block_number=deployment_info['block_number'],
-            tx_hash=deployment_info['transaction_hash'],
-        )
+        return deployment_info
     except ValidationError as e:
         logger.error(f"Validation error: {e}")
         raise ExternalServiceError(f"Invalid input: {str(e)}") from e
