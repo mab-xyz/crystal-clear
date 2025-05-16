@@ -9,8 +9,8 @@ services:
     env_file:
       - ./backend/.env  # Load environment variables from the backend/.env file
     restart: unless-stopped  # Automatically restart the container unless stopped manually
-    depends_on:
-      - db  # Ensure the database is started before the backend service
+    # depends_on:
+      # - db  # Ensure the database is started before the backend service
   
   # PostgreSQL Database Service
   db:

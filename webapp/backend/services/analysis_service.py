@@ -3,10 +3,6 @@ from typing import Any, Dict, Optional, List
 from loguru import logger
 from scsc.supply_chain import SupplyChain
 
-from web3 import Web3
-
-from typing import Tuple
-
 from sqlmodel import Session
 
 from core.config import settings
@@ -127,30 +123,3 @@ def calculate_contract_risk(address: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Risk analysis error: {e}")
         raise ExternalServiceError(f"Failed to analyse risk: {str(e)}") from e
-
-def calculate_block_range(days: int) -> Tuple[int, int]:
-    """
-    Get block range for the last n days.
-
-    Args:
-        days: Number of days to look back
-
-    Returns:
-        Tuple containing start and end block numbers
-    """
-    try:
-        logger.info(f"Getting block range for the last {days} days.")
-        
-        w3 = Web3(Web3.HTTPProvider(settings.eth_node_url))
-        latest_block = w3.eth.get_block_number()
-        average_block_time = 12
-        # 86400 = 24*60*60 seconds in a day
-        blocks_in_n_days = (days * 86400) // average_block_time 
-        from_block = latest_block - blocks_in_n_days
-        to_block = latest_block
-
-        return from_block, to_block
-
-    except Exception as e:
-        logger.error(f"Error getting block range: {e}")
-        raise ExternalServiceError(f"Failed to get block range: {str(e)}") from e
