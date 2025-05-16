@@ -57,7 +57,6 @@ async def get_deployment_info(
         deployment_info = get_deployment_data(session, address)
         if not deployment_info:
             raise ValueError("No deployment information found.")
-        print(deployment_info)
         return deployment_info
     except ValidationError as e:
         logger.error(f"Validation error: {e}")
