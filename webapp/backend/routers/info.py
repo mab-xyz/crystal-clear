@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Query, status, Depends
 from sqlalchemy.orm import Session
 from loguru import logger
-from pydantic import ValidationError
 
 from core.database import get_session
-from core.exceptions import ExternalServiceError
 from schemas.info import (
     LatestBlockResponse,
     DeploymentInfoResponse,
 )
+from schemas.response import ErrorResponse
 from services.info_service import (
     get_latest_block_number,
     get_deployment_data,
@@ -23,6 +22,12 @@ router = APIRouter(
     "/block-latest",
     status_code=status.HTTP_200_OK,
     response_model=LatestBlockResponse,
+    responses={
+        500: {
+            "description": "Internal server error",
+            "model": ErrorResponse,
+        }
+    },
     summary="Get latest block number",
     description="Fetch the latest block number from the Ethereum network.",
 )
@@ -30,19 +35,29 @@ async def get_latest_block():
     """
     Get the latest block number from the Ethereum network.
     """
-    try:
-        latest_block = get_latest_block_number()
-        return LatestBlockResponse(
-            block_number=latest_block
-        )
-    except Exception as e:
-        logger.error(f"Error fetching latest block: {e}")
-        raise ExternalServiceError(f"An unexpected error occurred: {str(e)}") from e
+    latest_block = get_latest_block_number()
+    return LatestBlockResponse(
+        block_number=latest_block
+    )
 
 @router.get(
     "/deployment/{address}",
     status_code=status.HTTP_200_OK,
     response_model=DeploymentInfoResponse,
+    responses={
+        500: {
+            "description": "Internal server error",
+            "model": ErrorResponse,
+        },
+        422: {
+            "description": "Input validation error",
+            "model": ErrorResponse,
+        },
+        404: {
+            "description": "Deployment information not found",
+            "model": ErrorResponse,
+        },
+    },
     summary="Get deployment information",
     description="Fetch deployment information for a given contract address.",
 )
@@ -53,14 +68,4 @@ async def get_deployment_info(
     """
     Get deployment information for a contract address.
     """
-    try:
-        deployment_info = get_deployment_data(session, address)
-        if not deployment_info:
-            raise ValueError("No deployment information found.")
-        return deployment_info
-    except ValidationError as e:
-        logger.error(f"Validation error: {e}")
-        raise ExternalServiceError(f"Invalid input: {str(e)}") from e
-    except Exception as e:
-        logger.error(f"Error fetching deployment info: {e}")
-        raise ExternalServiceError(f"An unexpected error occurred: {str(e)}") from e
+    return get_deployment_data(session, address)
