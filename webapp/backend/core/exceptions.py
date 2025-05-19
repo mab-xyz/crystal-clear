@@ -1,12 +1,12 @@
 from fastapi import HTTPException, status
 
 
-class ContractAnalysisError(HTTPException):
+class InternalServerError(HTTPException):
     """Exception raised when contract analysis fails."""
 
     def __init__(self, detail: str):
         super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=detail
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail
         )
 
 
@@ -26,3 +26,12 @@ class InputValidationError(HTTPException):
         super().__init__(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail
         )
+
+class NotFoundError(HTTPException):
+    """Exception raised when a resource is not found."""
+
+    def __init__(self, detail: str):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND, detail=detail
+        )
+

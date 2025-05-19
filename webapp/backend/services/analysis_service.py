@@ -8,7 +8,7 @@ from sqlmodel import Session
 from sqlmodel import Session
 
 from core.config import settings
-from core.exceptions import ContractAnalysisError, ExternalServiceError
+from core.exceptions import InputValidationError, InternalServerError
 from core.metadata import get_labels
 from core.database import get_session
 import crud.label
@@ -32,8 +32,8 @@ def analyze_contract_dependencies(
         Dict containing the analysis results
 
     Raises:
-        ContractAnalysisError: If the analysis fails
-        ExternalServiceError: If the external service is unavailable
+        InputValidationError: If the input is invalid
+        InternalServerError: If the analysis fails
     """
     try:
         # Perform analysis
@@ -47,11 +47,11 @@ def analyze_contract_dependencies(
         return network
 
     except ValueError as e:
-        logger.error(f"Contract analysis error: {e}")
-        raise ContractAnalysisError(str(e)) from e
+        logger.error(f"Analyze contract dependencies: {e}")
+        raise InputValidationError(str(e)) from e
     except Exception as e:
-        logger.error(f"External service error: {e}")
-        raise ExternalServiceError(f"Failed to analyze contract: {str(e)}") from e
+        logger.error(f"Internal server error: {e}")
+        raise InternalServerError(f"Failed to analyze contract: {str(e)}") from e
 
 def _validate_block_range(from_block: Optional[str], to_block: Optional[str]) -> None:
     """Validate the block range if provided."""
@@ -66,11 +66,11 @@ def _validate_block_range(from_block: Optional[str], to_block: Optional[str]) ->
 
 def _process_node_labels(session: Session, network: Optional[Dict[str, Any]]) -> List[str]:
     if not network:
-            raise ContractAnalysisError("No network data found")
+            raise Exception("No network data found")
     if "nodes" not in network:
-        raise ContractAnalysisError("No nodes found in network data")
+        raise Exception("No nodes found in network data")
     if not isinstance(network["nodes"], list):
-        raise ContractAnalysisError("Nodes data is not a list")
+        raise Exception("Nodes data is not a list")
     nodes = network["nodes"]
     logger.info("Processing node labels.")
     logger.info("Fetching labels from database.")
@@ -124,4 +124,4 @@ def calculate_contract_risk(address: str) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Risk analysis error: {e}")
-        raise ExternalServiceError(f"Failed to analyse risk: {str(e)}") from e
+        raise InternalServerError(f"Failed to analyse risk: {str(e)}") from e
