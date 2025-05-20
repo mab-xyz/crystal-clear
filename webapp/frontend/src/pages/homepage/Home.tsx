@@ -168,7 +168,7 @@ export default function HomePage() {
                             <form onSubmit={handleSubmit} style={{
                                 height: "100%",
                                 marginTop: "1.5rem",
-                                width: "80%",
+                                width: "100%",
                                 display: "flex",
                                 flexDirection: "column",
                                 justifyContent: "left"
@@ -216,7 +216,9 @@ export default function HomePage() {
                                 <div
                                     style={{
                                         display: "flex",
-                                        alignItems: "center",
+                                        flexDirection: "column",
+                                        // alignItems: "left",
+                                        // justifyContent: "left",
                                         paddingTop: "8px",
                                         paddingBottom: "8px",
                                         backgroundColor: "white",
@@ -228,11 +230,22 @@ export default function HomePage() {
                                             fontSize: "14px",
                                             color: "#666",
                                             whiteSpace: "nowrap",
+                                            justifyContent: "left",
+
                                         }}
                                     >
                                         Try protocols:
                                     </span>
-                                    <div style={{ display: "flex", gap: "8px", overflow: "auto", paddingBottom: "4px" }}>
+                                    <div style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", // Adjusts columns based on available space
+                                        gap: "8px",
+                                        overflow: "hidden",
+                                        paddingBottom: "4px",
+                                        justifyContent: "center",
+                                        // border: "1px solid red"
+                                    }}>
+
                                         {popularContracts.map((contract, index) => (
                                             <Button
                                                 key={index}
@@ -242,13 +255,17 @@ export default function HomePage() {
                                                     handleAddressSelect(contract.address, contract.name)
                                                 }
                                                 style={{
-                                                    padding: "4px 8px",
-                                                    // height: "28px",
+                                                    padding: "6px 6px",
+                                                    height: "1.75rem",
                                                     fontSize: "12px",
                                                     whiteSpace: "nowrap",
                                                     borderRadius: "2px",
-
+                                                    backgroundColor: "#f0f0f0",
+                                                    // border: "1px solid #ccc",
+                                                    // transition: "background-color 0.3s",
                                                 }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#e0e0e0"}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#f0f0f0"}
                                             >
                                                 {contract.name}
                                             </Button>
