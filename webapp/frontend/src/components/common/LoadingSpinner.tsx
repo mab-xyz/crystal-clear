@@ -80,24 +80,7 @@ export default function LoadingSpinner({
           {inputAddress.substring(0, 8)}...
           {inputAddress.substring(inputAddress.length - 6)}
         </span>
-        {fromBlock && toBlock && (
-          <>
-            <br />
-            Blocks: {fromBlock} to {toBlock}
-          </>
-        )}
-        {fromBlock && !toBlock && (
-          <>
-            <br />
-            From block: {fromBlock}
-          </>
-        )}
-        {!fromBlock && toBlock && (
-          <>
-            <br />
-            To block: {toBlock}
-          </>
-        )}
+
         <br />
         <span style={{ fontSize: "13px", opacity: "0.8" }}>
           This may take a moment depending on contract complexity

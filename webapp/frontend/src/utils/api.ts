@@ -1,3 +1,5 @@
+import { useLocalAlert } from "@/components/ui/local-alert";
+
 /**
  * Utility functions for API interactions
  */
@@ -12,11 +14,15 @@ export const checkApiAvailability = async (): Promise<boolean> => {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             // Set a short timeout to avoid long waits
-            signal: AbortSignal.timeout(5000)
+            signal: AbortSignal.timeout(12000),
+            mode: 'cors'
         });
+        console.log("API availability check response:", response);
         return response.ok;
     } catch (error) {
         console.error("API availability check failed:", error);
+        const { showLocalAlert } = useLocalAlert();
+        showLocalAlert("API is not available at port 8000. Please check if the API is running.");
         return false;
     }
 };
