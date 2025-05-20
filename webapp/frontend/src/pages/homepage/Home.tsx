@@ -244,9 +244,9 @@ export default function HomePage() {
                                                 style={{
                                                     padding: "4px 8px",
                                                     // height: "28px",
-                                                    fontSize: "14px",
+                                                    fontSize: "12px",
                                                     whiteSpace: "nowrap",
-                                                    borderRadius: "4px",
+                                                    borderRadius: "2px",
 
                                                 }}
                                             >
