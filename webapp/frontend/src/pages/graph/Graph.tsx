@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router";
 import Header from "../../components/layout/Header";
 import Sidebar from "../../components/layout/Sidebar";
 import GraphLayout from "../../components/graph/GraphLayout";
 import type { GraphData, Node } from "../../components/graph/GraphLayout";
 import { useLocalAlert } from "@/components/ui/local-alert";
-import { checkApiAvailability } from "@/utils/api";
+import { fetchGraphData } from "@/utils/graphFetcher";
+import '../../App.css';
 
 export default function ContractGraph() {
     const [jsonData, setJsonData] = useState<GraphData | null>(null);
@@ -16,65 +18,58 @@ export default function ContractGraph() {
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
     const [highlightAddress, setHighlightAddress] = useState<string | null>(null);
     const { showLocalAlert } = useLocalAlert();
+    const [searchParams] = useSearchParams();
 
     const fetchData = useCallback(
-        async (address: string) => {
+        async (address: string, fromBlock: string, toBlock: string) => {
             if (!address) return;
 
-            try {
-                setLoading(true);
+            setLoading(true);
 
-                // Check if API is available before proceeding
-                const isAvailable = await checkApiAvailability();
+            console.log("address in graph", address);
+            console.log("fromBlock in graph", fromBlock);
+            console.log("toBlock in graph", toBlock);
 
-                if (!isAvailable) {
-                    console.error("API is not available at port 8000");
-                    showLocalAlert("API unavailable. Check port 8000.");
-                    setLoading(false);
-                    return;
-                }
+            const data = await fetchGraphData(
+                address,
+                fromBlock,
+                toBlock,
+                (message) => showLocalAlert(message, 5000)
+            );
 
-                // Build the URL with optional query parameters
-                let url = `http://localhost:8000/v1/analysis/${address}/dependencies`;
-                const params = new URLSearchParams();
-
-                console.log(fromBlock, toBlock);
-                console.log(typeof fromBlock, typeof toBlock);
-
-                if (fromBlock) params.append("from_block", fromBlock);
-                if (toBlock) params.append("to_block", toBlock);
-
-                console.log(params);
-
-                // Add the query parameters to the URL if any exist
-                if (params.toString()) {
-                    url += `?${params.toString()}`;
-                }
-
-
-                console.log("Fetching data from:", url);
-                const response = await fetch(url);
-                const data = await response.json();
+            if (data) {
                 setJsonData(data);
-
                 // Automatically switch to Risk tab after data is loaded
                 setActiveTab("Risk Details");
-            } catch (err) {
-                console.error("Failed to fetch data:", err);
-                showLocalAlert("Failed to fetch data", 5000,
-                );
-            } finally {
-                setLoading(false);
             }
+
+            setLoading(false);
         },
         [fromBlock, toBlock, showLocalAlert]
     );
+
+    // Read address from URL parameters when component mounts
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const addressParam = searchParams.get('address');
+        const fromBlockParam = searchParams.get('from_block');
+        const toBlockParam = searchParams.get('to_block');
+
+        if (addressParam) {
+            setInputAddress(addressParam);
+            fetchData(
+                addressParam,
+                fromBlockParam || "",
+                toBlockParam || ""
+            );
+        }
+    }, [searchParams, fetchData]);
 
     // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (inputAddress) {
-            fetchData(inputAddress);
+            fetchData(inputAddress, fromBlock, toBlock);
         }
     };
 
@@ -82,6 +77,15 @@ export default function ContractGraph() {
     const handleNodeClick = useCallback((node: Node) => {
         setSelectedNode(node);
         setActiveTab("Dependency");
+    }, []);
+
+    useEffect(() => {
+        // Check if the page is being reloaded
+        const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+        if (navigationEntries[0]?.type === "reload") {
+            // Redirect to the graph page
+            window.location.href = `${window.location.origin}/graph`; // Adjust the path as needed
+        }
     }, []);
 
     return (
