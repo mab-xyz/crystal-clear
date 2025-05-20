@@ -5,11 +5,15 @@ export const popularContracts = [
     //     address: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
     // },
     { name: "Ether.fi Liquidity Pool", address: "0x308861A430be4cce5502d0A12724771Fc6DaF216" },
-    { name: "Aave", address: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" },
+    { name: "Aave Pool", address: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" },
     {
         name: "Seaport 1.6",
         address: "0x0000000000000068F116a894984e2DB1123eB395",
     },
+    { name: "Uniswap V3 Router", address: "0xE592427A0AEce92De3Edee1F18E0157C05861564" },
+    { name: "Ethereal Vault", address: "0x90D2af7d622ca3141efA4d8f1F24d86E5974Cc8F" },
+    { name: "test", address: "test" },
+
 ];
 
 // Define the FilterOption interface

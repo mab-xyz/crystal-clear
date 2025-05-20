@@ -36,6 +36,6 @@ export const fetchGraphData = async (
     } catch (err) {
         console.error("Failed to fetch data:", err);
         onError("Failed to fetch data");
-        return null;
+        throw err;
     }
 };
