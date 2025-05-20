@@ -1,3 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Jersey+20&display=swap');
+
+.jersey-20-regular {
+  font-family: 'Jersey 20', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -11,9 +19,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -22,6 +32,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -39,4 +50,10 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.coral-pixels-regular {
+  font-family: "Coral Pixels", serif;
+  font-weight: 400;
+  font-style: normal;
 }

@@ -38,6 +38,31 @@ export default function Sidebar({
   const [copyFeedback, setCopyFeedback] = useState(false);
   const addressContainerRef = useRef<HTMLSpanElement>(null);
 
+  // Reusable placeholder component
+  const PlaceholderMessage = ({ message }: { message: string }) => (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      padding: "2px 4px",
+      backgroundColor: "#f8f9fa",
+      borderRadius: "4px",
+    }}>
+      <span style={{
+        fontStyle: "italic",
+        color: "#666",
+        fontSize: "12px",
+        display: "flex",
+        alignItems: "center",
+        gap: "4px"
+      }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#888" />
+        </svg>
+        {message}
+      </span>
+    </div>
+  );
 
   return (
     <div
@@ -93,30 +118,7 @@ export default function Sidebar({
           </span>
 
           {!selectedNode && !inputAddress ? (
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              padding: "2px 4px",
-              // margin: "2px 0",
-              backgroundColor: "#f8f9fa",
-              borderRadius: "4px",
-              // border: "1px dashed #ccc"
-            }}>
-              <span style={{
-                fontStyle: "italic",
-                color: "#666",
-                fontSize: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px"
-              }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#888" />
-                </svg>
-                Waiting for an address...
-              </span>
-            </div>
+            <PlaceholderMessage message="Waiting for an address..." />
           ) : (
             <span
               style={{
@@ -209,7 +211,7 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Display block range - modified to always show */}
+        {/* Display block range */}
         <div
           style={{
             marginBottom: "5px",
@@ -231,41 +233,22 @@ export default function Sidebar({
           <span style={{
             fontSize: "14px"
           }}>
-            {jsonData && (jsonData.from_block || jsonData.to_block) ? (
-              <>
-                {jsonData.from_block
-                  ? jsonData.from_block.toLocaleString()
-                  : "earliest"}{" "}
-                -{" "}
-                {jsonData.to_block
-                  ? jsonData.to_block.toLocaleString()
-                  : "latest"}
-              </>
+            {loading ? (
+              <PlaceholderMessage message="Block range will be displayed here..." />
             ) : (
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "2px 4px",
-                // margin: "2px 0",
-                backgroundColor: "#f8f9fa",
-                borderRadius: "4px",
-                // border: "1px dashed #ccc"
-              }}>
-                <span style={{
-                  fontStyle: "italic",
-                  color: "#666",
-                  fontSize: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px"
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#888" />
-                  </svg>
-                  Block range will be displayed here...
-                </span>
-              </div>
+              jsonData && (jsonData.from_block || jsonData.to_block) ? (
+                <>
+                  {jsonData.from_block
+                    ? jsonData.from_block.toLocaleString()
+                    : "earliest"}{" "}
+                  -{" "}
+                  {jsonData.to_block
+                    ? jsonData.to_block.toLocaleString()
+                    : "latest"}
+                </>
+              ) : (
+                <PlaceholderMessage message="Block range will be displayed here..." />
+              )
             )}
           </span>
         </div>
@@ -278,7 +261,7 @@ export default function Sidebar({
             backgroundColor: "#f9f9f9",
             borderRadius: "6px",
             border: "1px solid #eee",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            // boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
           }}
         >
           <div

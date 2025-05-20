@@ -1,5 +1,6 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import * as d3 from "d3";
+import GraphControlPanel from "./GraphLayoutPanel";
 
 // Define TypeScript interfaces for data structures
 export interface Node {
@@ -37,13 +38,15 @@ interface GraphLayoutProps {
     highlightAddress: string | null;
     inputAddress: string;
     onNodeClick: (node: Node) => void;
+    isHomepage?: boolean;
 }
 
 export default function GraphLayout({
     jsonData,
     highlightAddress,
     inputAddress,
-    onNodeClick
+    onNodeClick,
+    isHomepage = false
 }: GraphLayoutProps) {
     useEffect(() => {
         console.log("[GraphLayout] jsonData changed", jsonData);
@@ -63,8 +66,12 @@ export default function GraphLayout({
 
 
     const svgRef = useRef<SVGSVGElement | null>(null);
-    // Add a ref to track if the graph has been drawn
     const graphDrawnRef = useRef<boolean>(false);
+    // Add refs to store D3 selections for use in the control panel
+    const svgSelection = useRef<d3.Selection<SVGSVGElement, unknown, null, undefined> | null>(null);
+    const gSelection = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+    const zoomBehavior = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+    const [dimensions, setDimensions] = useState<{ width: number, height: number } | null>(null);
 
     const drawGraph = useCallback((data: GraphData) => {
         console.log("[drawGraph] invoked", new Date().toISOString());
@@ -74,6 +81,9 @@ export default function GraphLayout({
         const width = window.innerWidth * 0.618;
         const height = window.innerHeight;
 
+        // Store dimensions for the control panel
+        setDimensions({ width, height });
+
         // if there is no svg element, return
         if (!svgRef.current) return;
 
@@ -81,6 +91,9 @@ export default function GraphLayout({
         const svg = d3
             .select(svgRef.current)
             .attr("viewBox", [0, 0, width, height]);
+
+        // Store the svg selection for use in the control panel
+        svgSelection.current = svg;
 
         // Add a purple background to the SVG
         svg.append("rect")
@@ -94,6 +107,9 @@ export default function GraphLayout({
         // Add a group for the graph that will be transformed by zoom
         const g = svg.append("g");
 
+        // Store the g selection for use in the control panel
+        gSelection.current = g;
+
         // Add zoom behavior
         const zoom = d3
             .zoom<SVGSVGElement, unknown>()
@@ -102,180 +118,11 @@ export default function GraphLayout({
                 g.attr("transform", event.transform);
             });
 
+        // Store the zoom behavior for use in the control panel
+        zoomBehavior.current = zoom;
+
         // Apply zoom to the SVG
         svg.call(zoom);
-
-        // Add zoom controls with a panel-like appearance - positioned in right corner
-        const controlPanel = svg
-            .append("g")
-            .attr("class", "control-panel")
-            .attr("transform", `translate(${width - width * 0.15}, ${height * 0.05})`);
-
-        // Add panel background with improved styling - removed for now
-        // controlPanel
-        //     .append("rect")
-        //     .attr("x", 0)
-        //     .attr("y", 0)
-        //     .attr("width", width * 0.15)  // Smaller width (was 0.2)
-        //     .attr("height", height * 0.15)  // Smaller height (was 0.2)
-        //     .attr("fill", "rgba(255, 255, 255, 0.95)")
-        //     .attr("stroke", "#ddd")
-        //     .attr("stroke-width", 1)
-        //     .attr("rx", 8)
-        //     .attr("ry", 8)
-        //     .style("filter", "drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.15))");
-
-        // // Panel title with improved styling
-        // controlPanel
-        //     .append("text")
-        //     .attr("x", 55)  // Adjusted for smaller panel (was 75)
-        //     .attr("y", 20)  // Smaller y position (was 25)
-        //     .attr("text-anchor", "middle")
-        //     .attr("font-size", "12px")  // Smaller font (was 14px)
-        //     .attr("font-weight", "bold")
-        //     .attr("fill", "#555")
-        //     .text("Controls")
-        //     .style("user-select", "none");
-
-        // Zoom in button with improved styling
-        controlPanel
-            .append("rect")
-            .attr("x", 10)
-            .attr("y", 30)
-            .attr("width", 25)
-            .attr("height", 25)
-            .attr("fill", "#ffffff")
-            .attr("stroke", "#c9e0be")
-            .attr("rx", 5)
-            .style("cursor", "pointer")
-            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.scaleBy, 1.3);
-            });
-
-        controlPanel
-            .append("text")
-            .attr("x", 22.5)
-            .attr("y", 47)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "18px")
-            .attr("fill", "#555")
-            .text("+")
-            .style("cursor", "pointer")
-            .style("user-select", "none")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.scaleBy, 1.3);
-            });
-
-        // Zoom out button with improved styling
-        controlPanel
-            .append("rect")
-            .attr("x", 42.5)
-            .attr("y", 30)
-            .attr("width", 25)
-            .attr("height", 25)
-            .attr("fill", "#ffffff")
-            .attr("stroke", "#c9e0be")
-            .attr("rx", 4)
-            .style("cursor", "pointer")
-            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.scaleBy, 0.7);
-            });
-
-        controlPanel
-            .append("text")
-            .attr("x", 55)
-            .attr("y", 47)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "18px")
-            .attr("fill", "#555")
-            .text("-")
-            .style("cursor", "pointer")
-            .style("user-select", "none")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.scaleBy, 0.7);
-            });
-
-        // Reset zoom button  
-        controlPanel
-            .append("rect")
-            .attr("x", 75)
-            .attr("y", 30)
-            .attr("width", 25)
-            .attr("height", 25)
-            .attr("fill", "#ffffff")
-            .attr("stroke", "#c9e0be")
-            .attr("rx", 4)
-            .style("cursor", "pointer")
-            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
-            });
-
-        controlPanel
-            .append("text")
-            .attr("x", 87.5)
-            .attr("y", 47)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "14px")
-            .attr("fill", "#555")
-            .text("R")
-            .style("cursor", "pointer")
-            .style("user-select", "none")
-            .on("click", () => {
-                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
-            });
-
-        // Flow dots toggle button with improved styling
-        const flowDotsButton = controlPanel
-            .append("rect")
-            .attr("x", 10)
-            .attr("y", 65)
-            .attr("width", 90)
-            .attr("height", 25)
-            .attr("fill", "#ffffff")
-            .attr("stroke", "#c9e0be")
-            .attr("rx", 4)
-            .style("cursor", "pointer")
-            .style("filter", "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))");
-
-        const flowDotsText = controlPanel
-            .append("text")
-            .attr("x", 55)
-            .attr("y", 80)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "10px")
-            .attr("fill", "#555")
-            .attr("class", "flow-dots-text")
-            .text("Hide Direction")
-            .style("cursor", "pointer")
-            .style("user-select", "none");
-
-        // Add click handlers for both the button and text
-        flowDotsButton.on("click", toggleFlowDots);
-        flowDotsText.on("click", toggleFlowDots);
-
-        function toggleFlowDots() {
-            // Toggle flow dots visibility
-            const dotsVisible = g.selectAll(".flow-dot").style("display") !== "none";
-            g.selectAll(".flow-dot").style("display", dotsVisible ? "none" : "block");
-
-            // Update button appearance
-            flowDotsButton.attr("fill", dotsVisible ? "#ffffff" : "#f0f7ff");
-
-            // Update the button text
-            flowDotsText.text(dotsVisible ? "Show Direction" : "Hide Direction");
-        }
-
-        // Make the control panel responsive to window resize
-        const updateControlPanelPosition = () => {
-            const currentWidth = Number(svg.attr("width")) || width;
-            controlPanel.attr("transform", `translate(${currentWidth - 160}, 20)`);
-        };
-
-        // Add resize listener
-        window.addEventListener("resize", updateControlPanelPosition);
 
         // graph layout
 
@@ -627,6 +474,19 @@ export default function GraphLayout({
     }, [highlightAddress, jsonData, inputAddress]);
 
     return (
-        <svg ref={svgRef} style={{ width: "100%", height: "100%" }}></svg>
+        <div style={{ position: "relative", width: "100%", height: "100%" }}>
+            <svg ref={svgRef} style={{ width: "100%", height: "100%" }}></svg>
+
+            {/* Only render GraphControlPanel when not on homepage and all dependencies are available */}
+            {!isHomepage && svgSelection.current && gSelection.current && zoomBehavior.current && dimensions && (
+                <GraphControlPanel
+                    svg={svgSelection.current}
+                    g={gSelection.current}
+                    zoom={zoomBehavior.current}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                />
+            )}
+        </div>
     );
 }
