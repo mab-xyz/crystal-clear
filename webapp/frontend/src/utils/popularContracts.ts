@@ -1,9 +1,9 @@
 // Popular Ethereum contracts for quick access
 export const popularContracts = [
-    {
-        name: "Uniswap V3 Router",
-        address: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
-    },
+    // {
+    //     name: "Uniswap V3 Router",
+    //     address: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+    // },
     { name: "Ether.fi Liquidity Pool", address: "0x308861A430be4cce5502d0A12724771Fc6DaF216" },
     { name: "Aave", address: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" },
     {
