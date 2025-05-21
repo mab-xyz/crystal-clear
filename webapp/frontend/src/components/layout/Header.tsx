@@ -21,6 +21,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import { AddressInput } from "@/components/common/AddressInput";
 
 // Define TypeScript interfaces for props and other data structures
 interface HeaderProps {
@@ -181,11 +182,11 @@ export default function Header({
 
     // Function to update URL with address and block parameters
     const updateUrlWithParams = (address: string, from?: string, to?: string): void => {
-        let url = `/graph/${address}`;
+        let url = `/graph/?address=${address}`;
 
         // Add query parameters if block range is specified
         if (from && to) {
-            url += `?from_block=${from}&to_block=${to}`;
+            url += `&from_block=${from}&to_block=${to}`;
         }
 
         // Update URL without reloading the page
@@ -355,7 +356,7 @@ export default function Header({
                             style={{
                                 height: "32px",
                                 width: "8rem",
-                                backgroundColor: "#e3e1f0",
+                                backgroundColor: "white",
                             }}
                         >
                             <SelectValue placeholder="Select" style={{ color: selectedFilter ? '#2b2b2b' : 'inherit' }} />
@@ -363,16 +364,17 @@ export default function Header({
                         <SelectContent
                             className="border border-black rounded-none p-0 overflow-hidden"
                             style={{
-                                backgroundColor: "#e3e1f0",
+                                backgroundColor: "white",
                                 zIndex: 1000,
-                                boxShadow: "inset -1px -1px #0a0a0a, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey"
+                                border: "1.5px solid #0a0a0a",
+                                // boxShadow: "inset -1px -1px #0a0a0a, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey"
                             }}
                         >
                             {filterOptions.map((option) => (
                                 <SelectItem
                                     key={option.value}
                                     value={option.value}
-                                    className="text-sm hover:bg-[#7469B6] hover:text-white focus:bg-[#7469B6] focus:text-white "
+                                    className="text-sm hover:bg-[#7469B6] hover:text-white focus:bg-[#7469B6] focus:text-white rounded-none "
                                     style={{ padding: "4px 8px" }}
                                 >
                                     {option.label}
@@ -381,79 +383,18 @@ export default function Header({
                         </SelectContent>
                     </Select>
 
-                    {/* Address Input */}
-                    <div
-                        style={{
-                            position: "relative",
-                            display: "flex",
-                            alignItems: "center",
-                            width: "28rem",
+                    {/* Address Input - Now using the abstracted component */}
+                    <AddressInput
+                        value={inputAddress}
+                        onChange={(value) => {
+                            setInputAddress(value);
+                            // Reset dropdown selection if user is typing manually
+                            if (selectedFilter && value !== filterOptions.find(opt => opt.value === selectedFilter)?.value) {
+                                setSelectedFilter("");
+                            }
                         }}
-                    >
-                        <Input
-                            type="text"
-                            value={inputAddress}
-                            onChange={(e) => {
-                                setInputAddress(e.target.value);
-                                // Reset dropdown selection if user is typing manually
-                                if (selectedFilter && e.target.value !== filterOptions.find(opt => opt.value === selectedFilter)?.value) {
-                                    setSelectedFilter("");
-                                }
-                            }}
-                            placeholder="Enter contract address"
-                            style={{
-                                display: "flex",
-                                color: "#2b2b2b",
-                                height: "32px",
-                                border: "1px solid #2b2b2b",
-                                borderRightColor: "grey",
-                                borderBottomColor: "grey",
-                                borderRadius: "0px",
-                                fontSize: "13px",
-                                width: "100%",
-                                paddingRight: "30px",
-                                textAlign: "left",
-                                boxShadow: "inset -1px -1px #fff, inset 1px 1px grey, inset 2px 2px #fff, inset 2px 2px #fff"
-                            }}
-                        />
-
-                        {/* Clear button */}
-                        {inputAddress && (
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    right: "10px",
-                                    top: "50%",
-                                    transform: "translateY(-50%)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    color: "#999",
-                                    zIndex: 10,
-                                    backgroundColor: "inherit",
-                                    borderRadius: "50%",
-                                    width: "16px",
-                                    height: "16px",
-                                }}
-                                onClick={() => setInputAddress("")}
-                            >
-                                <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </div>
-                        )}
-                    </div>
+                        style={{ width: "28rem" }}
+                    />
 
                     {/* Analyze Button + Dropdown */}
                     <div
