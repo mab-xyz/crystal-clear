@@ -5,6 +5,7 @@ import { useLocalAlert } from "@/components/ui/local-alert";
 import { Button } from "@/components/ui/button";
 import { getDefaultBlockRange } from "@/utils/defaultAnalyze";
 import { popularContracts } from "@/utils/popularContracts";
+import { AddressInput } from "@/components/common/AddressInput";
 
 // load sample graph data from json file
 import SAMPLE_GRAPH_DATA from "./home_graph_eg.json";
@@ -41,15 +42,13 @@ export default function HomePage() {
             console.log("fromBlock", fromBlock);
             console.log("toBlock", toBlock);
 
-
-
             // Navigate to the graph page with all necessary parameters
             navigate(`/graph?address=${inputAddress}&from_block=${fromBlock}&to_block=${toBlock}`);
 
-            // The graph page should read these parameters from its own URL
         } catch (error) {
             console.error("Error during submission:", error);
             showLocalAlert("An error occurred. Please try again.");
+            throw error;
         }
     };
 
@@ -179,22 +178,13 @@ export default function HomePage() {
                                         width: "100%",
                                         gap: "0.5rem",
                                     }}>
-                                        <input
-                                            type="text"
+                                        <AddressInput
                                             value={inputAddress}
-                                            onChange={(e) => setInputAddress(e.target.value)}
+                                            onChange={setInputAddress}
                                             placeholder="Enter contract address (0x...)"
                                             style={{
                                                 flex: 1,
-                                                padding: "0.8rem",
-                                                border: "1px solid #ddd",
-                                                borderRadius: "4px",
-                                                fontSize: "0.9rem",
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    handleSubmit(e);
-                                                }
+
                                             }}
                                         />
                                         <Button variant="outline"
