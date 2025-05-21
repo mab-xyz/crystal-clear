@@ -30,20 +30,25 @@ export default function ContractGraph() {
             console.log("fromBlock in graph", fromBlock);
             console.log("toBlock in graph", toBlock);
 
-            const data = await fetchGraphData(
-                address,
-                fromBlock,
-                toBlock,
-                (message) => showLocalAlert(message, 5000)
-            );
+            try {
+                const data = await fetchGraphData(
+                    address,
+                    fromBlock,
+                    toBlock,
+                    (message) => showLocalAlert(message, 5000)
+                );
 
-            if (data) {
-                setJsonData(data);
-                // Automatically switch to Risk tab after data is loaded
-                setActiveTab("Risk Details");
+                if (data) {
+                    setJsonData(data);
+                    // Automatically switch to Risk tab after data is loaded
+                    setActiveTab("Risk Details");
+                }
+            } catch (error) {
+                console.error("Error fetching graph data:", error);
+                showLocalAlert("Failed to fetch graph data. Please try again later.", 5000);
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
         },
         [fromBlock, toBlock, showLocalAlert]
     );
@@ -57,13 +62,14 @@ export default function ContractGraph() {
 
         if (addressParam) {
             setInputAddress(addressParam);
+            // Only fetch data once when component mounts
             fetchData(
                 addressParam,
                 fromBlockParam || "",
                 toBlockParam || ""
             );
         }
-    }, [searchParams, fetchData]);
+    }, []);  // Remove searchParams and fetchData from dependencies to prevent re-fetching
 
     // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {

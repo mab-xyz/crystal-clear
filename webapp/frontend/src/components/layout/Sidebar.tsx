@@ -4,6 +4,8 @@ import RiskDetails from "../../components/layout/RiskDetails";
 import type { JsonData, Node } from "../../types";
 import { useState, useRef } from "react";
 import { useLocalAlert } from "../ui/local-alert";
+import { useSearchParams } from "react-router";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 interface SidebarProps {
@@ -37,6 +39,8 @@ export default function Sidebar({
   const [showRiskExplanation, setShowRiskExplanation] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const addressContainerRef = useRef<HTMLSpanElement>(null);
+  const [searchParams] = useSearchParams();
+  const addressFromParams = searchParams.get("address") || "";
 
   // Reusable placeholder component
   const PlaceholderMessage = ({ message }: { message: string }) => (
@@ -117,28 +121,50 @@ export default function Sidebar({
             Contract Address:{" "}
           </span>
 
-          {!selectedNode && !inputAddress ? (
+          {!selectedNode && !addressFromParams ? (
             <PlaceholderMessage message="Waiting for an address..." />
           ) : (
-            <span
-              style={{
-                fontSize: "14px",
-                marginRight: "8px",
-                cursor: "help",
-              }}
-              title={jsonData?.address || inputAddress || ""}
-              ref={addressContainerRef}
-            >
-              {jsonData && jsonData.address ? (
-                `${jsonData.address.substring(0, 10)}...${jsonData.address.substring(jsonData.address.length - 8)}`
-              ) : inputAddress ? (
-                `${inputAddress.substring(0, 10)}...${inputAddress.substring(inputAddress.length - 8)}`
-              ) : (
-                <span style={{ fontStyle: "italic", color: "#666", marginLeft: "4px" }}>No address selected</span>
-              )}
-            </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      marginRight: "8px",
+                      padding: "2px 4px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                    ref={addressContainerRef}
+                  >
+                    {jsonData && jsonData.address ? (
+                      `${jsonData.address.substring(0, 10)}...${jsonData.address.substring(jsonData.address.length - 8)}`
+                    ) : addressFromParams ? (
+                      `${addressFromParams.substring(0, 10)}...${addressFromParams.substring(addressFromParams.length - 8)}`
+                    ) : (
+                      <span style={{ fontStyle: "italic", color: "#666", marginLeft: "4px" }}>No address selected</span>
+                    )}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent
+                  style={{
+                    backgroundColor: "#333",
+                    color: "white",
+                    padding: "6px 10px",
+                    borderRadius: "2px",
+                    fontSize: "12px",
+                    fontFamily: "monospace",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+                    maxWidth: "100%",
+                    wordBreak: "break-all"
+                  }}
+                >
+                  <p>{jsonData?.address || addressFromParams || ""}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
-          {(jsonData?.address || inputAddress) && (
+          {(jsonData?.address || addressFromParams) && (
             <div
               style={{
                 display: "flex",
@@ -148,7 +174,7 @@ export default function Sidebar({
             >
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(jsonData?.address || inputAddress);
+                  navigator.clipboard.writeText(jsonData?.address || addressFromParams);
                   setCopyFeedback(true);
                   setTimeout(() => setCopyFeedback(false), 2000);
                 }}
@@ -191,7 +217,7 @@ export default function Sidebar({
 
               {/* Etherscan link */}
               <a
-                href={`https://etherscan.io/address/${jsonData?.address || inputAddress}`}
+                href={`https://etherscan.io/address/${jsonData?.address || addressFromParams}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -453,9 +479,7 @@ export default function Sidebar({
       >
         {loading ? (
           <LoadingSpinner
-            inputAddress={inputAddress}
-            fromBlock={fromBlock}
-            toBlock={toBlock}
+
           />
         ) : (
           <>
