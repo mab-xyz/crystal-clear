@@ -1,6 +1,7 @@
 from loguru import logger
 from web3 import Web3
 from typing import Dict, Optional
+import requests
 
 from sqlmodel import Session
 
@@ -64,3 +65,40 @@ def get_deployment_data(session: Session, address: str) -> Optional[Dict[str, st
     except Exception as e:
         logger.error(f"Error fetching deployment data: {e}")
         raise InternalServerError(f"Failed to get deployment data: {str(e)}") from e
+
+
+def get_verification_data(address: str) -> Optional[Dict[str, str]]:
+    """
+    Get the verification information for a given contract address.
+
+    Args:
+        address: Ethereum contract address
+
+    Returns:
+        Verification information
+    """
+    try:
+        # check if address is valid for ethereum
+        if not Web3.is_address(address):
+            raise InputValidationError(f"Invalid Ethereum address: {address}")
+        
+        request_url = f"https://sourcify.dev/server/v2/contract/1/{address}"
+
+        response = requests.get(request_url)
+        if response.status_code != 200:
+            raise NotFoundError(f"No verification information found for {address}")
+
+        verification_info = response.json()
+        # print(verification_info)
+        if not verification_info or verification_info.get("match") == "null":
+            raise NotFoundError(f"No verification information found for {address}")
+        return verification_info
+    except (InputValidationError, NotFoundError) as e:
+        logger.error(f"Error: {e}")
+        raise e
+    except requests.RequestException as e:
+        logger.error(f"Request error: {e}")
+        raise InternalServerError(f"Failed to get verification data: {str(e)}") from e
+    except Exception as e:
+        logger.error(f"Error fetching verification data: {e}")
+        raise InternalServerError(f"Failed to get verification data: {str(e)}") from e
