@@ -1,192 +1,182 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
-// import { useSearchParams } from "react-router";
-import Header from "../../components/layout/Header";
-import Sidebar from "../../components/layout/Sidebar";
-import GraphLayout from "../../components/graph/GraphLayout";
-import type { GraphData, Node } from "../../components/graph/GraphLayout";
-import { useLocalAlert } from "@/components/ui/local-alert";
-import { fetchGraphData } from "@/utils/graphFetcher";
-import '../../App.css';
-import { getApiAvailability, getDeploymentInfo } from "@/utils/queries";
-import type { DeploymentInfo as DeploymentInfoJSON } from "@/utils/queries";
+import React, { useState, useCallback, useEffect, useRef, memo } from "react";
+import { useLocation } from "react-router";
+import { Header, Sidebar } from "@/app/index";
+import { GraphLayout } from "@/domains/graph";
+import { useLocalAlert } from "@/shared/components/ui";
+import { useGraphAnalysis } from "@/shared/hooks/useGraphAnalysis";
+import { useAppContext } from "@/app/contexts/AppContext";
+import { getDeploymentInfo } from "@/domains/contracts";
+import { DEV, LAYOUT } from "@/constants";
+import styles from "./Graph.module.css";
 
-export default function ContractGraph() {
-    const [jsonData, setJsonData] = useState<GraphData | null>(null);
-    const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfoJSON | null>(null);
-    const [activeTab, setActiveTab] = useState<string>("Risk Score");
-    const [inputAddress, setInputAddress] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(false);
-    const [fromBlock, setFromBlock] = useState<string>("");
-    const [toBlock, setToBlock] = useState<string>("");
-    const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-    const [highlightAddress, setHighlightAddress] = useState<string | null>(null);
-    const { showLocalAlert } = useLocalAlert();
-    // const [searchParams] = useSearchParams();
-    const [apiAvailability, setApiAvailability] = useState<boolean | undefined>(undefined);
+import type { Node, DeploymentInfo } from "@/types";
 
-    const fetchData = useCallback(
-        async (address: string, fromBlock: string, toBlock: string) => {
-            if (!address) return;
+const ContractGraph = memo(function ContractGraph() {
+  const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(
+    null,
+  );
+  const [inputAddress, setInputAddress] = useState<string>("");
+  const [fromBlock, setFromBlock] = useState<string>("");
+  const [toBlock, setToBlock] = useState<string>("");
+  const { showLocalAlert } = useLocalAlert();
+  const { state, setCurrentTab, setGlobalError } = useAppContext();
+  const location = useLocation();
 
-            const isAvailable = await getApiAvailability();
-            setApiAvailability(isAvailable);
+  // Use custom hook for graph analysis state management
+  const {
+    jsonData,
+    apiAvailability,
+    loading,
+    error,
+    selectedNode,
+    setSelectedNode,
+    highlightAddress,
+    setHighlightAddress,
+    refetchData,
+    hasError,
+  } = useGraphAnalysis({
+    inputAddress,
+    fromBlock,
+    toBlock,
+    autoExecute: false,
+  });
 
-            setLoading(true);
+  // Auto-switch to Risk tab when data loads and handle errors
+  useEffect(() => {
+    if (jsonData) {
+      setCurrentTabRef.current("Risk Details");
+    }
+    if (hasError && error) {
+      console.error("Error fetching graph data:", error);
+      setGlobalErrorRef.current(error.message);
+      alertRef.current(
+        "Failed to fetch graph data. Please try again later.",
+        DEV.ALERT_TIMEOUT_MS,
+      );
+    }
+  }, [jsonData, hasError, error]);
 
-            console.log("address in graph", address);
-            console.log("fromBlock in graph", fromBlock);
-            console.log("toBlock in graph", toBlock);
+  // Read address from URL parameters when component mounts
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const addressParam = searchParams.get("address");
+    const fromBlockParam = searchParams.get("from_block");
+    const toBlockParam = searchParams.get("to_block");
 
-            try {
-                const data = await fetchGraphData(
-                    address,
-                    fromBlock,
-                    toBlock,
-                    (message) => showLocalAlert(message, 5000)
-                );
+    console.log("addressParam in graph", addressParam);
+    console.log("fromBlockParam in graph", fromBlockParam);
+    console.log("toBlockParam in graph", toBlockParam);
+    console.log("apiAvailability in graph", apiAvailability);
 
-                if (data) {
-                    setJsonData(data);
-                    // Automatically switch to Risk tab after data is loaded
-                    setActiveTab("Risk Details");
-                }
-            } catch (error) {
-                console.error("Error fetching graph data:", error);
-                showLocalAlert("Failed to fetch graph data. Please try again later.", 5000);
-                // Reset or clear state if needed
-                setJsonData(null);
-            } finally {
-                setLoading(false);
-            }
-        },
-        [fromBlock, toBlock, showLocalAlert]
-    );
+    if (addressParam) {
+      setInputAddress(addressParam);
+      setFromBlock(fromBlockParam || "");
+      setToBlock(toBlockParam || "");
 
-    // Read address from URL parameters when component mounts
-    useEffect(() => {
-        const searchParams = new URLSearchParams(location.search);
-        const addressParam = searchParams.get('address');
-        const fromBlockParam = searchParams.get('from_block');
-        const toBlockParam = searchParams.get('to_block');
+      // Auto-trigger analysis when URL has parameters (user navigated directly to analysis URL)
+      setTimeout(() => {
+        refetchData();
+      }, 100); // Small delay to ensure state is set
+    }
+  }, [location.search]); // Only run when URL search params change
 
-        console.log("addressParam in graph", addressParam);
-        console.log("fromBlockParam in graph", fromBlockParam);
-        console.log("toBlockParam in graph", toBlockParam);
-        console.log("apiAvailability in graph", apiAvailability);
+  const alertRef = useRef(showLocalAlert);
+  alertRef.current = showLocalAlert;
 
-        if (addressParam) {
-            setInputAddress(addressParam);
-            // Only fetch data once when component mounts
-            fetchData(
-                addressParam,
-                fromBlockParam || "",
-                toBlockParam || ""
-            );
-        }
-    }, []);
+  const setCurrentTabRef = useRef(setCurrentTab);
+  setCurrentTabRef.current = setCurrentTab;
 
-    const alertRef = useRef(showLocalAlert);
-    alertRef.current = showLocalAlert;
+  const setGlobalErrorRef = useRef(setGlobalError);
+  setGlobalErrorRef.current = setGlobalError;
 
-    useEffect(() => {
-        if (!inputAddress || apiAvailability === undefined) return;
+  useEffect(() => {
+    if (!inputAddress) return;
 
-        const fetch = async () => {
-            try {
-                const info = await getDeploymentInfo(inputAddress, apiAvailability, alertRef.current);
-                setDeploymentInfo(prev => {
-                    if (JSON.stringify(prev) === JSON.stringify(info)) return prev;
-                    return info;
-                });
-            } catch (e) {
-                alertRef.current("Failed to fetch deployment info", 5000);
-            }
-        };
-        fetch();
-    }, [inputAddress, apiAvailability]);
-
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (inputAddress) {
-            fetchData(inputAddress, fromBlock, toBlock);
-        }
+    const fetch = async () => {
+      try {
+        const info = await getDeploymentInfo(
+          inputAddress,
+          apiAvailability,
+          // Don't pass alert function to avoid showing alerts
+        );
+        setDeploymentInfo((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(info)) return prev;
+          return info;
+        });
+      } catch (error) {
+        console.error("Failed to fetch deployment info:", error);
+        // Don't show alert, just log the error
+      }
     };
+    fetch();
+  }, [inputAddress, apiAvailability]);
 
-    // Handle node click from the graph
-    const handleNodeClick = useCallback((node: Node) => {
-        setSelectedNode(node);
-        setActiveTab("Dependency");
-    }, []);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Trigger refetch using the hook's method
+    if (inputAddress) {
+      refetchData();
+    }
+  };
 
-    // useEffect(() => {
-    //     // Check if the page is being reloaded
-    //     const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
-    //     if (navigationEntries[0]?.type === "reload") {
-    //         // Redirect to the graph page
-    //         window.location.href = `${window.location.origin}/graph`; // Adjust the path as needed
-    //     }
-    // }, []);
+  // Handle node click from the graph
+  const handleNodeClick = useCallback(
+    (node: Node) => {
+      setSelectedNode(node);
+      setCurrentTab("Dependency");
+    },
+    [setSelectedNode, setCurrentTab],
+  );
 
-    // deploymentInfo
+  return (
+    <div className={styles["graphPageContainer"]}>
+      <Header
+        inputAddress={inputAddress}
+        setInputAddress={setInputAddress}
+        fromBlock={fromBlock}
+        setFromBlock={setFromBlock}
+        toBlock={toBlock}
+        setToBlock={setToBlock}
+        handleSubmit={handleSubmit}
+      />
 
-
-    return (
+      <div className={styles["graphContentContainer"]}>
+        {/* Graph container with golden ratio width */}
         <div
-            style={{
-                height: "100vh",
-                width: "100vw",
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-            }}
+          className={styles["graphContainer"]}
+          style={{ width: `${LAYOUT.GRAPH_WIDTH_RATIO * 100}%` }}
         >
-            <Header
-                inputAddress={inputAddress}
-                setInputAddress={setInputAddress}
-                fromBlock={fromBlock}
-                setFromBlock={setFromBlock}
-                toBlock={toBlock}
-                setToBlock={setToBlock}
-                handleSubmit={handleSubmit}
-            />
-
-            <div
-                style={{
-                    display: "flex",
-                    height: "calc(100vh - 60px)",
-                    width: "100%",
-                    overflow: "hidden",
-                }}
-            >
-                {/* Set explicit width to 61.8% for the graph container */}
-                <div style={{ width: "61.8%", height: "100%", overflow: "hidden" }}>
-                    <GraphLayout
-                        jsonData={jsonData}
-                        highlightAddress={highlightAddress}
-                        inputAddress={inputAddress}
-                        onNodeClick={handleNodeClick}
-                    />
-                </div>
-
-                {/* Set explicit width to 38.2% for the sidebar */}
-                <div style={{ width: "38.2%", height: "100%", overflow: "auto" }}>
-                    <Sidebar
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
-                        loading={loading}
-                        jsonData={jsonData}
-                        deploymentInfo={deploymentInfo}
-                        inputAddress={inputAddress}
-                        setHighlightAddress={setHighlightAddress}
-                        highlightAddress={highlightAddress}
-                        fromBlock={fromBlock ? parseInt(fromBlock) : null}
-                        toBlock={toBlock ? parseInt(toBlock) : null}
-                        selectedNode={selectedNode}
-                        setSelectedNode={setSelectedNode}
-                    />
-                </div>
-            </div>
+          <GraphLayout
+            jsonData={jsonData || null}
+            highlightAddress={highlightAddress}
+            inputAddress={inputAddress}
+            onNodeClick={handleNodeClick}
+          />
         </div>
-    );
-}
+
+        {/* Sidebar container with golden ratio width */}
+        <div
+          className={styles["sidebarContainer"]}
+          style={{ width: `${LAYOUT.SIDEBAR_WIDTH_RATIO * 100}%` }}
+        >
+          <Sidebar
+            activeTab={state.currentTab}
+            setActiveTab={setCurrentTab}
+            loading={loading}
+            jsonData={jsonData || null}
+            deploymentInfo={deploymentInfo}
+            inputAddress={inputAddress}
+            setHighlightAddress={setHighlightAddress}
+            highlightAddress={highlightAddress}
+            fromBlock={fromBlock ? parseInt(fromBlock) : null}
+            toBlock={toBlock ? parseInt(toBlock) : null}
+            selectedNode={selectedNode}
+            setSelectedNode={setSelectedNode}
+          />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+export default ContractGraph;

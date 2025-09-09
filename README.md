@@ -2,7 +2,7 @@
 
 # 🔍 Crystal Clear
 
-A powerful research platform for analyzing smart contract supply chains on Ethereum
+A platform for analyzing smart contract supply chains on Ethereum, funded by the [Ethereum Foundation](https://ethereum.foundation/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/Tests-passing-brightgreen.svg)](https://github.com/chains-project/crystal-clear/actions)

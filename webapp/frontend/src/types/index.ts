@@ -1,23 +1,44 @@
-export interface Node {
-  id: string;
-  group: string;
-  x?: number;
-  y?: number;
-  fx?: number | null;
-  fy?: number | null;
-}
+// Central re-export of all types for easy importing
 
-export interface Edge {
-  source: string;
-  target: string;
-  types: Record<string, number>;
-}
+// Common types
+export type {
+  ApiError,
+  ApiResponse,
+  BlockRange,
+  ErrorState,
+  ErrorManager,
+} from "./common";
 
-export interface JsonData {
-  address: string;
-  from_block?: number;
-  to_block?: number;
-  n_nodes?: number;
-  nodes?: Record<string, string>; // Map of address to name
-  edges: Edge[];
-}
+// Graph types
+export type {
+  Node,
+  Edge,
+  Link,
+  GraphData,
+  GraphDimensions,
+  NodeHoverInfo,
+} from "./graph";
+
+// Analysis types
+export type {
+  DeploymentInfo,
+  RiskAnalysis,
+  ContractInfo,
+  VerificationInfo,
+  ProxyInfo,
+  PermissionInfo,
+  AuditInfo,
+} from "./analysis";
+
+// API types
+export type {
+  PopularContract,
+  HealthResponse,
+  BlockResponse,
+  RiskResponse,
+} from "./api/index";
+
+// Legacy aliases for backward compatibility (will be removed gradually)
+export type { Node as GraphNode } from "./graph";
+export type { Edge as GraphEdge } from "./graph";
+export type { GraphData as JsonData } from "./graph";

@@ -1,52 +1,97 @@
-import "./App.css";
-import "./index.css";
-import Graph from "./pages/graph/Graph";
-import { styleReset } from 'react95';
-import { createGlobalStyle } from 'styled-components';
-import { LocalAlertProvider } from "@/components/ui/local-alert";
-import Home from "./pages/homepage/Home";
-import { Routes, Route } from "react-router";
-import ContractGraph from "./pages/graph/Graph";
-import ms_sans_serif from 'react95/dist/fonts/ms_sans_serif.woff2';
-import ms_sans_serif_bold from 'react95/dist/fonts/ms_sans_serif_bold.woff2';
+// Main App component - handles routing and global styling with lazy loading
+import { lazy, Suspense } from "react";
+import { createGlobalStyle } from "styled-components";
+import { LocalAlertProvider } from "@/shared/components/ui";
+import { AppProvider } from "@/app/contexts/AppContext";
+import { Routes, Route, Link } from "react-router";
+import { SimpleLoader } from "@/shared/components/common";
 
+import "./index.css";
+
+// Lazy load route components to reduce initial bundle size
+const Home = lazy(() => import("./pages/homepage/Home"));
+const Graph = lazy(() => import("./pages/graph/Graph"));
+
+// Global styles with optimized font loading
 const GlobalStyles = createGlobalStyle`
-  ${styleReset}
-  @font-face {
-    font-family: 'ms_sans_serif';
-    src: url('${ms_sans_serif}') format('woff2');
-    font-weight: 400;
-    font-style: normal
+  /* CSS Reset for consistent cross-browser styling */
+  *, *::before, *::after {
+    box-sizing: border-box;
   }
-  @font-face {
-    font-family: 'ms_sans_serif';
-    src: url('${ms_sans_serif_bold}') format('woff2');
-    font-weight: bold;
-    font-style: normal
+  
+  * {
+    margin: 0;
+    padding: 0;
   }
+  
+  body {
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+  }
+  
+  input, button, textarea, select {
+    font: inherit;
+  }
+  
+  p, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+  }
+  
+  /* Consolidated font declarations */
   body, input, select, textarea {
-    font-family: 'Funnel Sans';
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
   }
-  @font-face {
-    font-family: 'Jersey 20';
-    font-style: normal;
+  
+  .font-jersey {
+    font-family: 'Jersey 20', sans-serif;
     font-weight: 400;
-    font-display: swap;
-    src: url('./assets/Jersey20.woff2') format('woff2');
-    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    font-style: normal;
+  }
+  
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
   }
 `;
 
+// Main app component with lazy-loaded routing configuration:
+// "/" - Landing page with demo graph and contract input
+// "/graph" - Analysis page with URL parameters
+// "/graph/:address" - Direct contract analysis route
 const App = () => (
   <div>
     <GlobalStyles />
-    <LocalAlertProvider>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/graph" element={<Graph />} />
-        <Route path="/graph/:address" element={<ContractGraph />} />
-      </Routes>
-    </LocalAlertProvider>
+    <AppProvider>
+      <LocalAlertProvider>
+        <Suspense fallback={<SimpleLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/graph" element={<Graph />} />
+            <Route path="/graph/:address" element={<Graph />} />
+            <Route
+              path="*"
+              element={
+                <div className="p-8 text-center">
+                  <h2 className="mb-4 text-xl">Oops..Page Not Found...</h2>
+                  <Link
+                    to="/"
+                    className="rounded px-3 py-2 underline hover:!text-[#3A7D44]"
+                  >
+                    Go home
+                  </Link>
+                </div>
+              }
+            />
+          </Routes>
+        </Suspense>
+      </LocalAlertProvider>
+    </AppProvider>
   </div>
 );
 
