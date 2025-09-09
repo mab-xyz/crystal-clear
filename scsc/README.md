@@ -47,6 +47,7 @@ SCSC provides two main commands:
 
 **Dependency Graph**
 ```bash
+# note the RPC node must have method trace_filter 
 scsc analyze --url <node_url> \
             --address <contract_address> \
             --from-block <block> \
