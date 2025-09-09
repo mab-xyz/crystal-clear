@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
-
+    defaults:
+      run:
+        working-directory: webapp/backend
     steps:
       - uses: actions/checkout@v4
 
@@ -58,4 +60,5 @@ jobs:
         with:
           app-name: 'cc-api'
           slot-name: 'Production'
+
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E2EE509066C443CA93AC9F77931EF3F7 }}
