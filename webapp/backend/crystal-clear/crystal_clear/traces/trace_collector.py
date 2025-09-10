@@ -93,7 +93,7 @@ class TraceCollector:
         return res
 
     def _extract_all_subcalls(
-        self, call: Dict[str, Any], calls: List[Dict[str, str]], caller: str, depth: int = 0
+        self, call: Dict[str, Any], calls: Dict[str, Any], caller: str, depth: int = 0
     ) -> None:
         """
         Recursively extracts all subcalls from a call.
@@ -114,7 +114,7 @@ class TraceCollector:
         self,
         call: Dict[str, Any],
         contract_address: str,
-        calls: List[Dict[str, str]],
+        calls: Dict[str, Any],
     ) -> None:
         """
         Extracts calls from a call and its subcalls.
@@ -128,7 +128,7 @@ class TraceCollector:
 
     def get_calls(
         self, tx_hashes: Set[str], contract_address: str
-    ) -> List[Dict[str, str]]:
+    ) -> List[Dict[str, Any]]:
         """
         Gets calls for a given set of transaction hashes and contract address.
         """
