@@ -70,6 +70,9 @@ class AlliumClient(BaseClient):
         if not all([address, from_block, to_block]):
             self.logger.warning("Missing parameters for contract dependency lookup.")
             return None
+        
+        from_block = self.validate_convert_block(from_block)
+        to_block = self.validate_convert_block(to_block)
 
         params = {
             'param_87': from_block,
@@ -104,7 +107,7 @@ class AlliumClient(BaseClient):
         self.logger.warning("No data received for contract dependency lookup.")
         return None
     
-    def get_contract_dependencies_latest(self, address: str, block_range: int = 10) -> Optional[Dict[str, Any]]:
+    def get_contract_dependencies_latest(self, address: str, blocks: int = 5) -> Optional[Dict[str, Any]]:
         """
         Get contract dependencies for analysis using the latest blocks.
 
@@ -115,7 +118,7 @@ class AlliumClient(BaseClient):
         Returns:
             dict: Network data with nodes and edges
         """
-        params = {"param_69": str(block_range),"param_97":address.lower()}
+        params = {"param_69": str(blocks),"param_97":address.lower()}
 
         response = self.post("N8wWhdIF1OWEALVQVQlA/run", params)
 
@@ -149,3 +152,14 @@ class AlliumClient(BaseClient):
             }
         self.logger.warning("No data received for contract dependency lookup.")
         return None
+    
+    def validate_convert_block(self, block: str) -> str:
+        if isinstance(block, str):
+            if block.startswith("0x"):
+                return str(int(block, 16))
+            if int(block) >= 0:
+                return block
+        elif isinstance(block, int):
+            return str(block)
+        else:
+            raise ValueError("Block must be an integer or a hex string starting with '0x'")

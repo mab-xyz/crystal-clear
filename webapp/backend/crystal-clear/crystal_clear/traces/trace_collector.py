@@ -196,10 +196,10 @@ class TraceCollector:
         contract_address: str,
         from_block: str | int | None,
         to_block: str | int | None,
-        blocks: int = 10,
+        blocks: int = 5,
     ) -> dict:
         """
-        Collects calls from the last 10 blocks and returns the call graph in JSON format.
+        Collects calls from the last 5 blocks and returns the call graph in JSON format.
         """
         if from_block is None and to_block is None:
             self.logger.info("Collecting calls from the last n blocks.")
@@ -207,7 +207,7 @@ class TraceCollector:
             from_block = latest_block - blocks
             to_block = latest_block
 
-        res =self.get_calls_from(from_block, to_block, contract_address)
+        res = self.get_calls_from(from_block, to_block, contract_address)
         return res
     
     def validate_and_convert_block(self, block: str) -> str:
