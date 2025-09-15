@@ -306,7 +306,7 @@ class TestAlliumClient:
         mock_request.assert_called_once()
         call_args = mock_request.call_args
         assert call_args[1]["json"] == {
-            "param_69": "10",
+            "param_69": "5",
             "param_97": "0xabc"
         }
 

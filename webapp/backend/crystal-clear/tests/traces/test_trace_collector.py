@@ -55,7 +55,7 @@ def test_get_calls_from(MockWeb3, mock_validate_contract, mock_filter_txs_from, 
     result = trace_collector.get_calls_from(from_block, to_block, contract_address)
 
     assert len(result) == 7
-    assert result["contract_address"] == contract_address
+    assert result["address"] == contract_address
     assert result["from_block"] == from_block
     assert result["to_block"] == to_block
     assert result["n_matching_transactions"] == 2
