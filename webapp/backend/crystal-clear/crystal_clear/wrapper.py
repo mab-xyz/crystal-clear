@@ -54,7 +54,7 @@ class CrystalClear:
         labels = self.allium_client.get_labels(addresses)
         for addr in addresses:
             if addr not in labels:
-                labels[addr] = addr
+                labels[addr] = ""
         network["nodes"] = labels
         return network
 
@@ -64,3 +64,10 @@ class CrystalClear:
         
         return self.trace_collector.get_network(address, from_block, to_block, blocks=blocks)
 
+    def get_dependencies(self, address: str, from_block: str = None, to_block: str = None) -> dict:
+        if self.allium_client:
+            return self.get_dependencies_allium(address, from_block, to_block)
+        elif self.trace_collector:
+            return self.get_dependencies_node(address, from_block, to_block)
+        else:
+            raise ValueError("Neither TraceCollector nor AlliumClient is initialized. Please provide at least a url or an api_key.")

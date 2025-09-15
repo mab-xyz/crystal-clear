@@ -181,12 +181,13 @@ class TraceCollector:
             nodes.add(edge["source"])
             nodes.add(edge["target"])
         
+        nodes_dict = {node: '' for node in nodes}
         return {
-            "contract_address": contract_address,
+            "address": contract_address,
             "from_block": int(from_block_hex, 16),
             "to_block": int(to_block_hex, 16),
             "n_nodes": len(nodes),
-            "nodes": list(nodes),
+            "nodes": nodes_dict,
             "edges": edges,
             "n_matching_transactions": len(tx_hashes),
         }
