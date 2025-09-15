@@ -6,7 +6,7 @@ from rich.panel import Panel
 
 import click
 
-from crystal_clear.traces import TraceCollector
+from crystal_clear import CrystalClear
 
 
 @click.group()
@@ -17,10 +17,10 @@ def main():
 
 @main.command(name="dependency")
 @click.option(
-    "--url",
-    default="http://localhost:8545",
-    type=str,
-    help="Ethereum node URL",
+    "--node-url", type=str, help="Ethereum (archive) node URL",
+)
+@click.option(
+    "--allium-key", type=str, help="Allium API key",
 )
 @click.option("--address", required=True, type=str, help="Contract address")
 @click.option(
@@ -33,20 +33,24 @@ def main():
 @click.option("--export-json", type=str, help="Export call graph to JSON file")
 @click.option("--log-level", default="ERROR", type=str, help="Logging level")
 def dependency(
-    url, address, from_block, to_block, export_dot, export_json, log_level
+    node_url, allium_key, address, from_block, to_block, export_dot, export_json, log_level
 ):
     """Analyze contract calls and generate dependency graph"""
     logging.basicConfig(level=log_level.upper())
     logger = logging.getLogger(__name__)
 
+    if not node_url and not allium_key:
+        raise ValueError("You must provide at least a node-url or an allium-api-key.")
+    
     try:
-        collector = TraceCollector(url)
-        dep = collector.get_network(address, from_block, to_block)
+        cc = CrystalClear(url=node_url, api_key=allium_key)
+        
+        dep = cc.get_dependencies(address, from_block, to_block)
         console = Console()
 
         # --- Metadata Panel ---
         metadata = (
-            f"[bold]Contract:[/bold] {dep['contract_address']}\n"
+            f"[bold]Contract:[/bold] {dep['address']}\n"
             f"[bold]Blocks:[/bold] {dep['from_block']} → {dep['to_block']}\n"
             f"[bold]Nodes:[/bold] {dep['n_nodes']}\n"
             f"[bold]Matching Txs:[/bold] {dep['n_matching_transactions']}"
@@ -58,11 +62,13 @@ def dependency(
         node_table = Table(title="🔗 Nodes", header_style="bold blue")
         node_table.add_column("Index", justify="right", style="yellow")
         node_table.add_column("Address", style="white")
+        node_table.add_column("Label", style="white")
 
-        for i, node in enumerate(dep["nodes"][:10], start=1):
-            node_table.add_row(str(i), node)
+        # present the first 10 nodes only for readability
+        for i, (node, label) in enumerate(list(dep["nodes"].items())[:10], start=1):
+            node_table.add_row(str(i), node, label)
         if len(dep["nodes"]) > 10:
-            node_table.add_row("...", f"... {len(dep['nodes']) - 10} more ...")
+            node_table.add_row("...", f"... {len(dep['nodes']) - 10} more ...", "...")
 
         console.print(node_table)
 
@@ -71,15 +77,14 @@ def dependency(
         edge_table.add_column("Source", style="cyan")
         edge_table.add_column("Target", style="cyan")
         edge_table.add_column("Type(s)", style="magenta")
-        edge_table.add_column("Depth", justify="right", style="yellow")
+        # edge_table.add_column("Depth", justify="right", style="yellow")
 
         for edge in dep["edges"][:10]:
             types = ", ".join(f"{k} ({v})" for k, v in edge["types"].items())
-            edge_table.add_row(edge["source"], edge["target"], types, str(edge["depth"]))
+            edge_table.add_row(edge["source"], edge["target"], types)
 
         if len(dep["edges"]) > 10:
-            edge_table.add_row("...", "...", f"... {len(dep['edges']) - 10} more ...", "...")
-
+            edge_table.add_row("...", "...", f"... {len(dep['edges']) - 10} more ...")
         console.print(edge_table)
         console.print("[grey]Export the report to a JSON file for complete analysis.[/grey]")
 
