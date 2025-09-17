@@ -41,6 +41,8 @@ LOG_LEVEL=INFO
 
 1. Build and run the container:
 ```bash
+mkdir redis_data
+mkdir postgres_data
 docker-compose up --build
 ```
 
