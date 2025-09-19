@@ -5,7 +5,7 @@ import logging
 class BaseClient:
     """Base client for handling HTTP requests."""
 
-    def __init__(self, base_url: str, api_key: str):
+    def __init__(self, base_url: str, api_key: str = None):
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -13,7 +13,7 @@ class BaseClient:
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Optional[Dict[str, Any]]:
         """Make an HTTP request with error handling."""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
-        headers = {"X-API-Key": self.api_key}
+        headers = {"X-API-Key": self.api_key} if self.api_key else {}
 
         try:
             self.logger.debug(f"Making {method} request to {url} with {kwargs}")
