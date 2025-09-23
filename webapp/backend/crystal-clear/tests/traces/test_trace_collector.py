@@ -4,7 +4,7 @@ from unittest.mock import patch
 from web3 import Web3
 from web3.providers.eth_tester import EthereumTesterProvider
 
-from crystal_clear.traces import TraceCollector
+from crystal_clear.traces import TraceCollector, CallGraph
 
 
 @pytest.fixture
@@ -52,21 +52,23 @@ def test_get_calls_from(MockWeb3, mock_validate_contract, mock_filter_txs_from, 
     contract_address = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
     from_block, to_block = 1000, 1005
 
-    result = trace_collector.get_calls_from(from_block, to_block, contract_address)
-
-    assert len(result) == 7
-    assert result["address"] == contract_address
-    assert result["from_block"] == from_block
-    assert result["to_block"] == to_block
-    assert result["n_matching_transactions"] == 2
-    assert result["n_nodes"] == 2
-    assert set(result["nodes"]) == {
+    result: CallGraph = trace_collector.get_calls_from(from_block, to_block, contract_address)
+    assert result.address == contract_address
+    assert result.from_block == from_block
+    assert result.to_block == to_block
+    assert result.n_matching_transactions == 2
+    assert result.n_nodes == 2
+    assert set(result.nodes) == {
         "0xE592427A0AEce92De3Edee1F18E0157C05861564",
         "0x5D27FDD96c8e4028edbAbF3D667be24769425199",
     }
-    assert result["edges"][0]["source"] == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
-    assert result["edges"][0]["target"] == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
-    assert result["edges"][0]["types"] == {"CALL": 2}
+
+    assert result.edges[0].source == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+    assert result.edges[0].target == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    assert result.edges[0].types == {"CALL": 2}
+    assert len(result.dependency_depths) == 1
+    assert result.dependency_depths[0].address == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    assert result.dependency_depths[0].depth == 1
 
     mock_validate_contract.assert_called_with(
         "0x5D27FDD96c8e4028edbAbF3D667be24769425199", hex(to_block)
@@ -101,41 +103,38 @@ def test_get_calls_from_tx(MockWeb3, trace_collector):
 def test_extract_all_subcalls(trace_collector):
     calls = {}
     call = {
-        "from": "0x1",
-        "to": "0x2",
+        "from": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+        "to": "0x5D27FDD96c8e4028edbAbF3D667be24769425199",
         "type": "DELEGATECALL",
-        "calls": [{"from": "0x1", "to": "0x3", "type": "CALL"}],
+        "calls": [{"from": "0xE592427A0AEce92De3Edee1F18E0157C05861564", "to": "0xf89d7b9c864f589bbF53a82105107622B35EaA40", "type": "CALL"}],
     }
-    caller = "0x1"
+    caller = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
     trace_collector._extract_all_subcalls(call, calls, caller)
 
     assert len(calls) == 2
-    assert calls[("0x1", "0x2")]["source"] == "0x1"
-    assert calls[("0x1", "0x2")]["target"] == "0x2"
-    assert calls[("0x1", "0x2")]["types"] == {"DELEGATECALL": 1}
-    assert calls[("0x1", "0x2")]["depth"] == 1
+    assert calls[("0xE592427A0AEce92De3Edee1F18E0157C05861564", "0x5D27FDD96c8e4028edbAbF3D667be24769425199")].source == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+    assert calls[("0xE592427A0AEce92De3Edee1F18E0157C05861564", "0x5D27FDD96c8e4028edbAbF3D667be24769425199")].target == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    assert calls[("0xE592427A0AEce92De3Edee1F18E0157C05861564", "0x5D27FDD96c8e4028edbAbF3D667be24769425199")].types == {"DELEGATECALL": 1}
 
-    assert calls[("0x2", "0x3")]["source"] == "0x2"
-    assert calls[("0x2", "0x3")]["target"] == "0x3"
-    assert calls[("0x2", "0x3")]["types"] == {"CALL": 1}
-    assert calls[("0x2", "0x3")]["depth"] == 2
+    assert calls[("0x5D27FDD96c8e4028edbAbF3D667be24769425199", "0xf89d7b9c864f589bbF53a82105107622B35EaA40")].source == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    assert calls[("0x5D27FDD96c8e4028edbAbF3D667be24769425199", "0xf89d7b9c864f589bbF53a82105107622B35EaA40")].target == "0xf89d7b9c864f589bbF53a82105107622B35EaA40"
+    assert calls[("0x5D27FDD96c8e4028edbAbF3D667be24769425199", "0xf89d7b9c864f589bbF53a82105107622B35EaA40")].types == {"CALL": 1}
 
 
 def test_extract_calls(trace_collector):
     calls = {}
     call = {
-        "from": "0xeoa",
-        "to": "0x1",
+        "from": "0xDFd5293D8e347dFe59E90eFd55b2956a1343963d",
+        "to": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
         "type": "call",
-        "calls": [{"from": "0x1", "to": "0x2", "type": "call"}],
+        "calls": [{"from": "0xE592427A0AEce92De3Edee1F18E0157C05861564", "to": "0x5D27FDD96c8e4028edbAbF3D667be24769425199", "type": "call"}],
     }
-    trace_collector._extract_calls(call, "0x1", calls)
+    trace_collector._extract_calls(call, "0xE592427A0AEce92De3Edee1F18E0157C05861564", calls)
 
     assert len(calls) == 1
-    assert calls[("0x1", "0x2")]["source"] == "0x1"
-    assert calls[("0x1", "0x2")]["target"] == "0x2"
-    assert calls[("0x1", "0x2")]["types"] == {"call": 1}
-    assert calls[("0x1", "0x2")]["depth"] == 1
+    assert calls[("0xE592427A0AEce92De3Edee1F18E0157C05861564", "0x5D27FDD96c8e4028edbAbF3D667be24769425199")].source == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+    assert calls[("0xE592427A0AEce92De3Edee1F18E0157C05861564", "0x5D27FDD96c8e4028edbAbF3D667be24769425199")].target == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    assert calls[("0xE592427A0AEce92De3Edee1F18E0157C05861564", "0x5D27FDD96c8e4028edbAbF3D667be24769425199")].types == {"call": 1}
 
 
 @patch("web3.Web3")
@@ -143,18 +142,17 @@ def test_get_calls(MockWeb3, trace_collector):
     mock_w3_instance = MockWeb3.return_value
     mock_w3_instance.geth.debug.trace_transaction.return_value = {
         "from": "0xeoa",
-        "to": "0x1",
+        "to": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
         "type": "call",
-        "calls": [{"from": "0x1", "to": "0x2", "type": "call"}],
+        "calls": [{"from": "0xE592427A0AEce92De3Edee1F18E0157C05861564", "to": "0x5D27FDD96c8e4028edbAbF3D667be24769425199", "type": "call"}],
     }
 
     trace_collector.w3 = mock_w3_instance
 
     tx_hashes = {"0xtx1"}
-    calls = list(trace_collector.get_calls(tx_hashes, "0x1"))
+    calls = list(trace_collector.get_calls(tx_hashes, "0xE592427A0AEce92De3Edee1F18E0157C05861564"))
 
     assert len(calls) == 1
-    assert calls[0]["source"] == "0x1"
-    assert calls[0]["target"] == "0x2"
-    assert calls[0]["types"] == {"call": 1}
-    assert calls[0]["depth"] == 1
+    assert calls[0].source == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+    assert calls[0].target == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    assert calls[0].types == {"call": 1}

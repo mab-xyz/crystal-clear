@@ -1,8 +1,12 @@
 import logging
-from typing import Any, Dict, List, Set
+from typing import Dict, List, Set
+from collections import deque
 
 from hexbytes import HexBytes
 from web3 import Web3
+from web3.types import CallTrace
+
+from .models import CallEdge, CallGraph, DependencyDepth
 
 
 class TraceCollector:
@@ -78,7 +82,7 @@ class TraceCollector:
         self.logger.info(f"Found {len(tx_hashes)} transactions.")
         return tx_hashes
 
-    def _get_calls_from_tx(self, tx_hash: str) -> Dict[str, Any]:
+    def _get_calls_from_tx(self, tx_hash: str) -> CallTrace:
         """
         Gets calls from a transaction hash.
         """
@@ -89,46 +93,46 @@ class TraceCollector:
             )
         except Exception as e:
             self.logger.error(f"Error tracing transaction {tx_hash}: {e}")
-            return {}
+            return None
         return res
 
     def _extract_all_subcalls(
-        self, call: Dict[str, Any], calls: Dict[str, Any], caller: str, depth: int = 0
-    ) -> None:
+        self, call: CallTrace, calls: Dict[tuple[str, str], CallEdge], caller: str) -> None:
         """
         Recursively extracts all subcalls from a call.
         """
-        depth += 1
-        key = (caller, call["to"])
+        key: tuple[str, str] = (caller, call["to"])
         if key not in calls:
-            calls[key] = {"source": caller, "target": call["to"], "types": {}, "depth": depth }
-        if call["type"] not in calls[key]["types"]:
-            calls[key]["types"][call["type"]] = 0
-        calls[key]["types"][call["type"]] += 1
-        calls[key]["depth"] = min(calls[key]["depth"], depth)
-
+            calls[key] = CallEdge(
+                source=caller,
+                target=call["to"],
+                types={}
+            )
+        if call["type"] not in calls[key].types:
+            calls[key].types[call["type"]] = 0
+        calls[key].types[call["type"]] += 1
         for subcall in call.get("calls", []):
-            self._extract_all_subcalls(subcall, calls, call["to"], depth)
+            self._extract_all_subcalls(subcall, calls, call["to"])
 
     def _extract_calls(
         self,
-        call: Dict[str, Any],
+        call: CallTrace,
         contract_address: str,
-        calls: Dict[str, Any],
+        calls: Dict[tuple[str, str], CallEdge],
     ) -> None:
         """
         Extracts calls from a call and its subcalls.
         """
         if call["to"].lower() == contract_address.lower():
             for subcall in call.get("calls", []):
-                self._extract_all_subcalls(subcall, calls, call["to"], 0)
+                self._extract_all_subcalls(subcall, calls, call["to"])
         else:
             for subcall in call.get("calls", []):
                 self._extract_calls(subcall, contract_address, calls)
 
     def get_calls(
         self, tx_hashes: Set[str], contract_address: str
-    ) -> List[Dict[str, Any]]:
+    ) -> List[CallEdge]:
         """
         Gets calls for a given set of transaction hashes and contract address.
         """
@@ -139,23 +143,23 @@ class TraceCollector:
             if res:
                 self._extract_calls(res, contract_address, calls)
         self.logger.info(f"Extracted {len(calls)} calls.")
-        return calls.values()
+        return list(calls.values())
 
     def _filter_contract_calls(
-        self, calls: List[Dict[str, str]], to_block
-    ) -> List[Dict[str, str]]:
+        self, calls: List[CallEdge], to_block
+    ) -> List[CallEdge]:
         """
         Filters calls to contract addresses.
         """
         return [
             c
             for c in calls
-            if self._validate_contract(c["target"], to_block)
+            if self._validate_contract(c.target, to_block)
         ]
 
     def get_calls_from(
         self, from_block: str | int, to_block: str | int, contract_address: str
-    ) -> List[Dict[str, str]]:
+    ) -> CallGraph:
         """
         Gets calls from a given block range and contract address.
         """
@@ -163,42 +167,48 @@ class TraceCollector:
             f"Getting calls from block {from_block} \
             to {to_block} for contract {contract_address}."
         )
-        from_block_hex = self.validate_and_convert_block(from_block)
-        to_block_hex = self.validate_and_convert_block(to_block)
+        from_block_hex: str = self.validate_and_convert_block(from_block)
+        to_block_hex: str = self.validate_and_convert_block(to_block)
 
         if not self._validate_contract(contract_address, to_block_hex):
             raise ValueError("Invalid contract address or bytecode.")
-        contract_address = Web3.to_checksum_address(contract_address)
-        tx_hashes = self._filter_txs_from(
+
+        contract_address: str = Web3.to_checksum_address(contract_address)
+        tx_hashes: Set[str] = self._filter_txs_from(
             from_block_hex, to_block_hex, contract_address
         )
-        calls = self.get_calls(tx_hashes, contract_address)
-        filtered_calls = self._filter_contract_calls(calls, to_block_hex)
+        calls: List[CallEdge] = self.get_calls(tx_hashes, contract_address)
+        filtered_calls: List[CallEdge] = self._filter_contract_calls(calls, to_block_hex)
         
-        edges = filtered_calls
+        edges: List[CallEdge] = filtered_calls
         nodes: Set[str] = set()
         for edge in edges:
-            nodes.add(edge["source"])
-            nodes.add(edge["target"])
+            nodes.add(edge.source)
+            nodes.add(edge.target)
         
         nodes_dict = {node: '' for node in nodes}
-        return {
-            "address": contract_address,
-            "from_block": int(from_block_hex, 16),
-            "to_block": int(to_block_hex, 16),
-            "n_nodes": len(nodes),
-            "nodes": nodes_dict,
-            "edges": edges,
-            "n_matching_transactions": len(tx_hashes),
-        }
 
-    def get_network(
+        depths: List[DependencyDepth] = self.get_depths(nodes, edges, contract_address.lower())
+        graph = CallGraph(
+            address=contract_address,
+            from_block=int(from_block_hex, 16),
+            to_block=int(to_block_hex, 16),
+            n_nodes=len(nodes),
+            nodes=nodes_dict,
+            edges=edges,
+            dependency_depths=depths,
+            n_matching_transactions=len(tx_hashes),
+        )
+        self.logger.info(f"Constructed call graph with {len(nodes)} nodes and {len(edges)} edges.")
+        return graph
+
+    def get_call_graph(
         self,
         contract_address: str,
         from_block: str | int | None,
         to_block: str | int | None,
         blocks: int = 5,
-    ) -> dict:
+    ) -> CallGraph:
         """
         Collects calls from the last 5 blocks and returns the call graph in JSON format.
         """
@@ -232,3 +242,52 @@ class TraceCollector:
         raise ValueError(
             f"Block number must be decimal or hexadecimal: {block}"
         ) from None
+
+    def get_depths(self, nodes: Set[str], edges: List[CallEdge], root_address: str) -> List[DependencyDepth]:
+        """
+        Add depth information to edges based on distance from the root address.
+        
+        Args:
+            data: The data structure containing address, nodes, and edges
+        
+        Returns:
+            The modified data structure with depth added to each edge
+        """
+        
+        # Create adjacency list for graph traversal
+        graph = {}
+        for edge in edges:
+            source = edge.source.lower()
+            target = edge.target.lower()
+
+            if source not in graph:
+                graph[source] = []
+            graph[source].append(target)
+        
+        # BFS to calculate depths from root address
+        depths = {}
+        visited = set()
+        queue = deque()
+        
+        # Start with root address at depth 0
+        queue.append((root_address, 0))
+        visited.add(root_address)
+        depths[root_address] = 0
+        
+        while queue:
+            current_node, current_depth = queue.popleft()
+            
+            if current_node in graph:
+                for neighbor in graph[current_node]:
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        depths[neighbor] = current_depth + 1
+                        queue.append((neighbor, current_depth + 1))
+
+        dependency_depths = []
+        # Add depth to each edge
+        for node in nodes:
+            if node.lower() != root_address.lower():
+                depth = depths.get(node.lower(), -1)  # -1 if target not reachable from root
+                dependency_depths.append(DependencyDepth(address=node, depth=depth))
+        return dependency_depths

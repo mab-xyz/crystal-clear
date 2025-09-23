@@ -1,5 +1,6 @@
 import logging
 import json
+import os
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -39,14 +40,18 @@ def dependency(
     logging.basicConfig(level=log_level.upper())
     logger = logging.getLogger(__name__)
 
-    if not node_url and not allium_key:
-        raise ValueError("You must provide at least a node-url or an allium-api-key.")
-    
+    node_url = node_url or os.getenv("NODE_URL")
+    allium_key = allium_key or os.getenv("ALLIUM_API_KEY")
+    console = Console()
+    if not node_url:
+        console.print("[red]Error: You must provide a node URL via --node-url or NODE_URL env variable.[/red]")
+        return
+
     try:
         cc = CrystalClear(url=node_url, api_key=allium_key)
         
         dep = cc.get_dependencies(address, from_block, to_block)
-        console = Console()
+        dep = dep.to_dict()
 
         # --- Metadata Panel ---
         metadata = (
@@ -63,14 +68,18 @@ def dependency(
         node_table.add_column("Index", justify="right", style="yellow")
         node_table.add_column("Address", style="white")
         node_table.add_column("Label", style="white")
+        node_table.add_column("Depth", style="white")
 
         # present the first 10 nodes only for readability
         for i, (node, label) in enumerate(list(dep["nodes"].items())[:10], start=1):
-            node_table.add_row(str(i), node, label)
+            depth = dep["dependency_depths"].get(node.lower(), 0)
+            node_table.add_row(str(i), node, label, str(depth))
         if len(dep["nodes"]) > 10:
-            node_table.add_row("...", f"... {len(dep['nodes']) - 10} more ...", "...")
+            node_table.add_row("...", f"... {len(dep['nodes']) - 10} more ...", "...", "...")
 
         console.print(node_table)
+        if not allium_key:
+            console.print("[yellow]Warning: Allium API key not provided. Labels are not available.[/yellow]")
 
         # --- Edges Table (first 10 only for readability) ---
         edge_table = Table(title="➡️ Edges", header_style="bold green")
@@ -110,7 +119,6 @@ def dependency(
                     f.write(f'    "{source}" -> "{target}" [label="{label}"];\n')
 
                 f.write("}\n")
-
 
     except Exception as e:
         logger.error(f"analyze: {e}")

@@ -93,7 +93,7 @@ class AlliumClient(BaseClient):
                     row.get("call_type", "").upper(): row.get("call_count", 0)
                 })
 
-            return {
+            data = {
                 "address": address.lower(),
                 "from_block": int(from_block),
                 "to_block": int(to_block),
@@ -104,6 +104,8 @@ class AlliumClient(BaseClient):
                     {"source": k[0], "target": k[1], "types": v} for k, v in edges.items()
                 ]
             }
+
+            return data
         self.logger.warning("No data received for contract dependency lookup.")
         return None
     
@@ -121,7 +123,6 @@ class AlliumClient(BaseClient):
         params = {"param_69": str(blocks),"param_97":address.lower()}
 
         response = self.post("N8wWhdIF1OWEALVQVQlA/run", params)
-
         if response and 'data' in response:
             nodes = {address.lower()}
             edges = {}
@@ -138,8 +139,8 @@ class AlliumClient(BaseClient):
                 edges.setdefault(edge_key, {}).update({
                     row.get("call_type", "").upper(): row.get("call_count", 0)
                 })
-
-            return {
+    
+            data = {
                 "address": address.lower(),
                 "from_block": int(from_block),
                 "to_block": int(to_block),
@@ -150,6 +151,7 @@ class AlliumClient(BaseClient):
                     {"source": k[0], "target": k[1], "types": v} for k, v in edges.items()
                 ]
             }
+            return data
         self.logger.warning("No data received for contract dependency lookup.")
         return None
     
