@@ -1,4 +1,4 @@
-from base_client import BaseClient
+from .base_client import BaseClient
 from typing import Optional, Dict, Any
 
 class EtherscanClient(BaseClient):
