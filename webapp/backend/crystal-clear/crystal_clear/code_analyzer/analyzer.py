@@ -1,13 +1,13 @@
 from slither.slither import Slither
 from slither.detectors.proxy.proxy_patterns import ProxyPatterns
-from permissions import detect_permissions
+from .permissions import detect_permissions
 from typing import List
 
 class Analyzer:
     def __init__(self, etherscan_api_key: str, address: str):
         self.etherscan_api_key = etherscan_api_key
         self.address = address
-        self.slither = Slither(self.address, etherscan_api_key=self.etherscan_api_key, disallow_partial=True)
+        self.slither = Slither(self.address, etherscan_api_key=self.etherscan_api_key, disallow_partial=True, disable_solc_warnings=True)
     def get_main_contract_name(self) -> str:
         return next(iter(self.slither._crytic_compile.compilation_units.keys()))
     
@@ -19,10 +19,11 @@ class Analyzer:
         mainContract = self.get_main_contract_name()
 
         proxy_info = {}
-        proxy_info["description"] = ""
         for result in results[0]:
             if result["contract"].startswith(mainContract):
-                proxy_info["description"] = result["description"]
+                proxy_info["description"] = result.get("description", "")
+                proxy_info["implementation_slot"] = result["features"].get("impl_address_slot", "")
+                proxy_info["implementation_variable"] = result["features"].get("impl_address_variable", "")
        
 
         contract = self.slither.get_contract_from_name(mainContract)[0]

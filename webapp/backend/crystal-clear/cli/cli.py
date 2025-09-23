@@ -51,7 +51,6 @@ def dependency(
         cc = CrystalClear(url=node_url, api_key=allium_key)
         
         dep = cc.get_dependencies(address, from_block, to_block)
-        dep = dep.to_dict()
 
         # --- Metadata Panel ---
         metadata = (
@@ -122,7 +121,59 @@ def dependency(
 
     except Exception as e:
         logger.error(f"analyze: {e}")
+    
+
+@main.command(name="code")
+@click.option(
+    "--etherscan-api-key", type=str, help="Etherscan API key",
+)
+@click.option("--address", required=True, type=str, help="Contract address")
+@click.option("--log-level", default="ERROR", type=str, help="Logging level")
+def code(etherscan_api_key, address, log_level):
+    """Analyze contract code for potential vulnerabilities"""
+    logging.basicConfig(level=log_level.upper())
+    logger = logging.getLogger(__name__)
+
+    etherscan_key = etherscan_api_key or os.getenv("ETHERSCAN_API_KEY")
+    console = Console()
+    if not etherscan_key:
+        console.print("[red]Error: You must provide an Etherscan API key via --etherscan-api-key or ETHERSCAN_API_KEY env variable.[/red]")
+        return
+
+    try:
+        cc = CrystalClear(url=None, etherscan_api_key=etherscan_api_key)
+        
+        analysis = cc.get_code_analysis(address)
+        analysis = analysis
+
+        # --- Metadata Panel ---
+        metadata = (
+            f"[bold]Contract:[/bold] {address}\n"
+            f"[bold]Proxy Information:[/bold] {analysis['proxy_info'].get('description', 'Not a Proxy')}\n"
+            f"[bold]Functions with Potential Permission Issues:[/bold] {len(analysis['permissions_info'])}"
+        )
+        console.print(Panel(metadata, title="📄 Crystal-Clear CLI: Code Analysis", expand=False, border_style="cyan"))
+
+        if not analysis:
+            console.print("[green]No functions with potential permission issues detected.[/green]")
+            return
+
+        # --- Functions Table ---
+        func_table = Table(title="⚠️ Functions with Potential Permission Issues", header_style="bold red")
+        func_table.add_column("Function", style="white")
+        func_table.add_column("State Variables Written", style="white")
+        func_table.add_column("Conditions on msg.sender", style="white")
+
+        for item in analysis["permissions_info"]:
+            conditions = "\n".join([f"- {cond}" for cond in item["conditions"]])
+            state_vars = ", ".join(item["state_variables"])
+            func_table.add_row(item["function"], state_vars, conditions)
+
+        console.print(func_table)
+
+    except Exception as e:
+        logger.error(f"code: {e}")
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main()

@@ -285,7 +285,6 @@ class TraceCollector:
                         queue.append((neighbor, current_depth + 1))
 
         dependency_depths = []
-        # Add depth to each edge
         for node in nodes:
             if node.lower() != root_address.lower():
                 depth = depths.get(node.lower(), -1)  # -1 if target not reachable from root
