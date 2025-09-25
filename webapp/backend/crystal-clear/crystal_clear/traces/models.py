@@ -2,11 +2,6 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 from web3 import Web3
 from typing import Any, Dict, List
 
-class DependencyDepth(BaseModel):
-    """Model representing the dependency depth of a contract."""
-    address: str = Field(..., description="Contract address")
-    depth: int = Field(..., description="Depth from the root contract")
-
 class CallEdge(BaseModel):
     """Model representing a call edge between contracts."""
     source: str = Field(..., description="Caller contract address")
@@ -40,7 +35,7 @@ class CallGraph(BaseModel):
     n_nodes: int = Field(..., description="Number of unique nodes")
     nodes: Dict[str, str] = Field(..., description="Node addresses with metadata")
     edges: List[CallEdge] = Field(..., description="Call edges between nodes")
-    dependency_depths: List[DependencyDepth] = Field(..., description="Depth of each dependency from the root contract")
+    dependency_depths: Dict[str, int] = Field(..., description="Depth of each dependency from the root contract")
     n_matching_transactions: int = Field(..., description="Number of matching transactions")
 
     @field_validator('address', mode='before')
@@ -58,5 +53,4 @@ class CallGraph(BaseModel):
         """Convert to dictionary for serialization."""
         data = self.model_dump()
         data['edges'] = [edge.to_dict() for edge in self.edges]
-        data['dependency_depths'] = {d.address.lower(): d.depth for d in self.dependency_depths}
         return data

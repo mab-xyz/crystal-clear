@@ -6,7 +6,7 @@ from hexbytes import HexBytes
 from web3 import Web3
 from web3.types import CallTrace
 
-from .models import CallEdge, CallGraph, DependencyDepth
+from .models import CallEdge, CallGraph
 
 
 class TraceCollector:
@@ -27,15 +27,15 @@ class TraceCollector:
         """
         try:
             if address.startswith("0x000000000000000000000000000000000000000"):
-                self.logger.error(f"Address is a precompile address: {address}")
+                self.logger.info(f"Address is a precompile address: {address}")
                 return False
             address = Web3.to_checksum_address(address)
             if not Web3.is_address(address):
-                self.logger.error(f"Invalid contract address format: {address}")
+                self.logger.info(f"Invalid contract address format: {address}")
                 return False
             code = self.w3.eth.get_code(address, block_identifier=block)
             if len(code) == 0:
-                self.logger.error(f"No code at address: {address}")
+                self.logger.info(f"No code at address: {address}")
                 return False
 
             if code.hex() == "x0":
@@ -188,7 +188,7 @@ class TraceCollector:
         
         nodes_dict = {node: '' for node in nodes}
 
-        depths: List[DependencyDepth] = self.get_depths(nodes, edges, contract_address.lower())
+        depths: Dict[str, int] = self.get_depths(nodes, edges, contract_address.lower())
         graph = CallGraph(
             address=contract_address,
             from_block=int(from_block_hex, 16),
@@ -243,7 +243,7 @@ class TraceCollector:
             f"Block number must be decimal or hexadecimal: {block}"
         ) from None
 
-    def get_depths(self, nodes: Set[str], edges: List[CallEdge], root_address: str) -> List[DependencyDepth]:
+    def get_depths(self, nodes: Set[str], edges: List[CallEdge], root_address: str) -> Dict[str, int]:
         """
         Add depth information to edges based on distance from the root address.
         
@@ -284,9 +284,9 @@ class TraceCollector:
                         depths[neighbor] = current_depth + 1
                         queue.append((neighbor, current_depth + 1))
 
-        dependency_depths = []
+        dependency_depths = {}
         for node in nodes:
             if node.lower() != root_address.lower():
                 depth = depths.get(node.lower(), -1)  # -1 if target not reachable from root
-                dependency_depths.append(DependencyDepth(address=node, depth=depth))
+                dependency_depths[node.lower()] = depth
         return dependency_depths

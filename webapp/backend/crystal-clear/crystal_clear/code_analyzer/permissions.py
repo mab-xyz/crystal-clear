@@ -1,9 +1,30 @@
 from slither.slither import Slither
 from slither.core.declarations.function import Function
+from slither.core.variables.state_variable import StateVariable
+from slither.core.cfg.node import Node
 from typing import List
+from pydantic import BaseModel, Field
+
+class PermissionedFunction(BaseModel):
+    """Model representing a permissioned function in a contract."""
+    function: str = Field(..., description="Function signature")
+    state_variables: List[str] = Field(..., description="State variables involved in permission checks")
+    conditions: List[str] = Field(..., description="Conditions involving msg.sender or state variables")
+
+    def _to_dict(self):
+        return self.model_dump()
+
+class PermissionsInfo(BaseModel):
+    """Model representing permission information of a contract."""
+    permissions: List[PermissionedFunction] = Field(..., description="Permissioned functions")
+
+    def to_dict(self):
+        return {
+            "permissions": [perm._to_dict() for perm in self.permissions]
+        }
 
 
-def get_msg_sender_checks(function: Function) -> List[str]:
+def get_msg_sender_checks(function: Function) -> List[Node]:
         all_functions = (
             [
                 ir.function
@@ -27,7 +48,7 @@ def get_msg_sender_checks(function: Function) -> List[str]:
         ]
         return all_conditional_nodes_on_msg_sender
 
-def check_owner_condition(checks, state_variables_written):
+def check_owner_condition(checks: List[Node], state_variables_written: List[StateVariable]) -> bool:
     for var in state_variables_written:
         if str(var.type) == "address":
             for check in checks:
@@ -35,7 +56,7 @@ def check_owner_condition(checks, state_variables_written):
                     return True
     return False
 
-def detect_permissions(slither: Slither) -> List[dict]:
+def detect_permissions(slither: Slither) -> PermissionsInfo:
     """
     Detect if the given address is an admin of any contract.
     
@@ -69,12 +90,13 @@ def detect_permissions(slither: Slither) -> List[dict]:
             res.append((function.name, state_variables_written, msg_sender_condition))
     cleaned_res = []
     for function, state_vars, conds in res:
-        func = {}
-        func["function"] = function
-        func["state_variables"] = state_vars
-        func["conditions"] = [ str(c.expression) for c in conds]
+        func = PermissionedFunction(
+            function=function,
+            state_variables=state_vars,
+            conditions=[str(c.expression) for c in conds]
+        )
         cleaned_res.append(func)
-    return cleaned_res
+    return PermissionsInfo(permissions=cleaned_res)
 
 def get_main_contract_name(slither: Slither) -> str:
     """

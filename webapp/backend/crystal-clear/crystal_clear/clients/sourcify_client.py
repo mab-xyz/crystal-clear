@@ -1,5 +1,6 @@
 from .base_client import BaseClient
 from typing import Dict
+from .models import VerificationDetails
 
 class SourcifyClient(BaseClient):
     def __init__(self):
@@ -7,7 +8,7 @@ class SourcifyClient(BaseClient):
             base_url="https://sourcify.dev/server/v2"
         )
 
-    def check_contract_verified(self, address: str) -> Dict[str, str]:
+    def check_contract_verified(self, address: str) -> VerificationDetails:
         """
         Check if a contract is verified on Sourcify.
 
@@ -18,6 +19,15 @@ class SourcifyClient(BaseClient):
         """
 
         response = self.get(f"contract/1/{address}")
+        match_mapping = {"exact_match": "fully-verified", "match": "verified", "not_match": "not-verified"}
         if response:
-            return {"address": response["address"], "match": response["match"], "verifiedAt": response["verifiedAt"]}
-        return {"address": address, "match": "not_match", "verifiedAt": "na"}
+            return VerificationDetails(
+                address=response["address"],
+                verification=match_mapping.get(response["match"], "not-verified"),
+                verifiedAt=response["verifiedAt"]
+            )
+        return VerificationDetails(
+            address=address,
+            verification= "not-verified",
+            verifiedAt="N/A"
+        )

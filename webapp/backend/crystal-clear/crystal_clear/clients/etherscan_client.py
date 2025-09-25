@@ -1,5 +1,6 @@
 from .base_client import BaseClient
 from typing import Optional, Dict, Any
+from .models import VerificationDetails
 
 class EtherscanClient(BaseClient):
     def __init__(self, api_key: str):
@@ -43,5 +44,13 @@ class EtherscanClient(BaseClient):
         contract_source = self.get_contract_source(address)
 
         if contract_source and len(contract_source.get('SourceCode')) > 0:
-            return {"address": address, "match": "match", "verifiedAt": "na"}
-        return {"address": address, "match": "not_match", "verifiedAt": "na"}
+            return VerificationDetails(
+                address=address,
+                verification="verified",
+                verifiedAt="N/A"
+            )
+        return VerificationDetails(
+            address=address,
+            verification="not-verified",
+            verifiedAt="N/A"
+        )

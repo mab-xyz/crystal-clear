@@ -1,6 +1,6 @@
 [project]
 name = "crystal-clear"
-version = "0.0.1"
+version = "1.0.0"
 description = "Crystal-Clear CLI: Smart Contract Supply Chain Tool"
 authors = [
     {name = "Monica Jin",email = "monicachenjin@gmail.com"}
