@@ -42,11 +42,11 @@ class CrystalClear:
         callgraph = self.trace_collector.get_call_graph(address, from_block, to_block, blocks=blocks)
 
         if self.allium_client:
-            addresses = callgraph.nodes
+            addresses = callgraph.nodes.keys()
             labels = self.allium_client.get_labels(addresses)
             if labels:
                 for addr in addresses:
-                    if addr not in labels:
+                    if addr.lower() not in labels:
                         labels[addr] = addr
                 callgraph.nodes = labels
         return callgraph
