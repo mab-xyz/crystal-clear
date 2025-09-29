@@ -8,10 +8,12 @@ from sqlmodel import Session
 from api.core.config import settings, cc
 from api.core.exceptions import InputValidationError, InternalServerError
 from api.core.database import get_session
-from api.services.info_service import get_verification_data, get_proxy_data, get_permissions_data, get_scorecard_data
+from api.services.info_service import get_scorecard_data
 from api.services.contract_service import ContractService
 from api.crud import label as label_crud
+from api.schemas.analysis import AdditionalRiskFactors, AdditionalRisk, AdditionalDependencyRisk, RiskAnalysisResponse
 from crystal_clear.traces import CallGraph
+from crystal_clear import RiskAnalysis
 
 def analyze_contract_dependencies(
     session: Session,
@@ -98,69 +100,161 @@ def _process_node_labels(session: Session, callgraph: CallGraph) -> List[str]:
     return {**stored_labels, **new_labels}
 
 
-async def assess_contract_risk(address: str, session: Session) -> Dict[str, Any]:
+async def assess_contract_risk(
+    session: Session,
+    address: str,
+    from_block: Optional[str] = None,
+    to_block: Optional[str] = None,
+) -> RiskAnalysisResponse:
     """
     Assess risk factors for a contract.
 
     Args:
-        address: Contract address to analyze
-        session: Database session for ContractService
+        address: Contract address to analyze.
+        session: Database session for ContractService.
+        from_block: Start block (optional).
+        to_block: End block (optional).
 
     Returns:
-        Dict containing risk factors
+        RiskAnalysisResponse containing risk factors.
 
     Raises:
-        ContractAnalysisError: If the analysis fails
-        ExternalServiceError: If the external service is unavailable
+        ContractAnalysisError: If the analysis fails.
+        ExternalServiceError: If the external service is unavailable.
     """
-    logger.info(f"Analysing risk of contract {address}.")
+    logger.info(f"Analyzing supply chain risk for contract {address}.")
     contract_service = ContractService(session)
-    risk_factors = {}
+    _validate_block_range(from_block, to_block)
 
-    try:
-        logger.info("Fetching verification data.")
-        verification_data = get_verification_data(address)
-        if verification_data.verification == "not-verified":
-            risk_factors["verification"] = "Contract not verified"
-    except Exception as e:
-        logger.error(f"Verification data fetch error: {e}")
-        risk_factors["verification"] = "Contract not verified"
+    # Perform initial risk analysis
+    analysis: RiskAnalysis = cc.get_risk_factors(
+        address, scope="supply-chain", from_block=from_block, to_block=to_block
+    )
 
-    try:
-        logger.info("Fetching proxy data.")
-        data = get_proxy_data(address)
-        if data.is_upgradeable:
-            risk_factors["mutability"] = "Contract is an Upgradeable Proxy"
-    except Exception as e:
-        logger.error(f"Proxy data fetch error: {e}")
-    try:
-        logger.info("Fetching permissions data.")
-        permissions_data = get_permissions_data(address)
-        if len(permissions_data.permissions) > 0:
-            risk_factors["permissions"] = "Contract has special permissions"
-    except Exception as e:
-        logger.error(f"Permissions data fetch error: {e}")
+    # Initialize the response object
+    aggregated_risks = AdditionalRisk(
+        verified=analysis.aggregated_risks.verified,
+        risk_factors=AdditionalRiskFactors(
+            audits=True,
+            repository=True,
+            scorecard=0,
+            **analysis.aggregated_risks.risk_factors.to_dict(),
+        ),
+        details=None,
+    )
+    additional_risk_analysis = RiskAnalysisResponse(
+        root_address=address,
+        from_block=from_block,
+        to_block=to_block,
+        dependencies=[],
+        aggregated_risks=aggregated_risks,
+    )
 
-    try:
-        logger.info("Fetching scorecard data.")
-        scorecard_data = await get_scorecard_data(session, address)
-        print(scorecard_data)
-        scorecard_score = scorecard_data["raw"]["score"]
-        if scorecard_score < 5:
-            risk_factors["scorecard"] = f"Low scorecard score: {scorecard_score}/10"
-    except Exception as e:
-        logger.error(f"Scorecard data fetch error: {e}")
-        risk_factors["repository"] = "Not available"
+    # Process dependencies
+    for dep in analysis.dependencies:
+        dep_risk = await _process_dependency_risk(session, contract_service, dep)
+        additional_risk_analysis.dependencies.append(dep_risk)
 
-    try:
-        logger.info("Fetching contract audits.")
-        audits_data = await contract_service.get_contract_audits(address)
-        if not audits_data["audits"]:
-            risk_factors["audits"] = "No audits found"
-    except Exception as e:
-        logger.error(f"Contract audits fetch error: {e}")
-        risk_factors["audits"] = "No audits found"
+        # Update aggregated risks based on dependency risks
+        _update_aggregated_risks(aggregated_risks, dep_risk)
 
-    return {
-        "risk_factors": risk_factors,
-    }
+    # Finalize the scorecard average
+    _finalize_scorecard_average(additional_risk_analysis)
+
+    return additional_risk_analysis
+
+
+async def _process_dependency_risk(
+    session: Session,
+    contract_service: ContractService,
+    dependency: Any,
+) -> AdditionalDependencyRisk:
+    """
+    Process the risk factors for a single dependency.
+
+    Args:
+        session: Database session.
+        contract_service: Instance of ContractService.
+        dependency: Dependency object from the analysis.
+
+    Returns:
+        AdditionalDependencyRisk object with calculated risk factors.
+    """
+    dep_risk = AdditionalDependencyRisk(
+        address=dependency.address,
+        dependency_depth=dependency.dependency_depth,
+        verified=dependency.verified,
+        risk_factors=AdditionalRiskFactors(
+            audits=False,
+            repository=False,
+            scorecard=None,
+            **dependency.risk_factors.to_dict(),
+        ),
+        details=dependency.details,
+    )
+
+    # Fetch scorecard data
+    try:
+        logger.info(f"Fetching scorecard data for {dependency.address}.")
+        scorecard_data = await get_scorecard_data(session, dependency.address)
+        dep_risk.risk_factors.scorecard = scorecard_data["raw"]["score"]
+        dep_risk.risk_factors.repository = True
+        dep_risk.details["scorecard"] = scorecard_data
+        dep_risk.details["repository_url"] = scorecard_data["repo"]
+    except Exception as e:
+        logger.error(f"Error fetching scorecard data for {dependency.address}: {e}")
+
+    # Fetch contract audits
+    try:
+        logger.info(f"Fetching contract audits for {dependency.address}.")
+        audits_data = await contract_service.get_contract_audits(dependency.address)
+        if audits_data["audits"]:
+            dep_risk.risk_factors.audits = True
+            dep_risk.details["audits"] = [
+                audit.model_dump() for audit in audits_data["audits"]
+            ]
+    except Exception as e:
+        logger.error(f"Error fetching contract audits for {dependency.address}: {e}")
+
+    return dep_risk
+
+
+def _update_aggregated_risks(
+    aggregated_risks: AdditionalRisk, dep_risk: AdditionalDependencyRisk
+) -> None:
+    """
+    Update the aggregated risks based on a dependency's risk factors.
+
+    Args:
+        aggregated_risks: Aggregated risks object to update.
+        dep_risk: Dependency risk object to use for updates.
+    """
+    if not dep_risk.risk_factors.repository:
+        aggregated_risks.risk_factors.repository = False
+    if not dep_risk.risk_factors.audits:
+        aggregated_risks.risk_factors.audits = False
+
+    if dep_risk.risk_factors.scorecard is not None:
+        if aggregated_risks.risk_factors.scorecard is not None:
+            aggregated_risks.risk_factors.scorecard += dep_risk.risk_factors.scorecard
+    else:
+        aggregated_risks.risk_factors.scorecard = None
+
+
+def _finalize_scorecard_average(risk_analysis: RiskAnalysisResponse) -> None:
+    """
+    Finalize the scorecard average for the aggregated risks.
+
+    Args:
+        risk_analysis: The risk analysis response object.
+    """
+    aggregated_risks = risk_analysis.aggregated_risks
+    dependencies = risk_analysis.dependencies
+
+    if (
+        aggregated_risks.risk_factors.scorecard is not None
+        and len(dependencies) > 0
+    ):
+        aggregated_risks.risk_factors.scorecard = round(
+            aggregated_risks.risk_factors.scorecard / len(dependencies)
+        , 2)

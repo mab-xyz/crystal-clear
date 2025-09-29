@@ -51,4 +51,5 @@ cc = CrystalClear(
     url=settings.eth_node_url,
     allium_api_key=settings.allium_api_key,
     etherscan_api_key=settings.etherscan_api_key,
+    log_level=settings.log_level
 )

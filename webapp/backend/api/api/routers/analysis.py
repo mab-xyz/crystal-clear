@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Query, status, Depends
 from sqlalchemy.orm import Session
-from loguru import logger
 from fastapi_cache.decorator import cache
 
 from api.core.config import settings
@@ -9,7 +8,7 @@ from api.schemas.analysis import (
     ContractDependenciesRequest,
     ContractDependenciesResponse,
     ContractRiskRequest,
-    ContractRiskResponse,
+    RiskAnalysisResponse,
 )
 from api.schemas.response import ErrorResponse
 from api.services.analysis_service import (
@@ -72,7 +71,7 @@ async def get_contract_dependencies(
 
 @router.get(
     "/{address}/risk",
-    response_model=ContractRiskResponse,
+    response_model=RiskAnalysisResponse,
         responses={
         500: {
             "description": "Internal server error",
@@ -88,17 +87,19 @@ async def get_contract_dependencies(
     description="Calculate and return the risk assessment for a given contract address.",
 )
 @cache(expire=settings.cache_ttl)
-async def get_contract_risk(address: str, session: Session = Depends(get_session)):
+async def get_contract_risk(
+    address: str,
+    from_block: str = Query(None, description="Start block"),
+    to_block: str = Query(None, description="End block"),
+    session: Session = Depends(get_session)
+):
     """
     Get the risk assessment for a contract.
 
     - **address**: Ethereum contract address
     """
-    request = ContractRiskRequest(address=address)
+    request = ContractRiskRequest(address=address, from_block=from_block, to_block=to_block)
 
-    risk_data = await assess_contract_risk(request.address, session)
+    risk_data = await assess_contract_risk(session, request.address, request.from_block, request.to_block)
 
-    return ContractRiskResponse(
-        address=request.address,
-        risk_factors=risk_data["risk_factors"],
-    )
+    return risk_data
