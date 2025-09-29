@@ -1,2 +1,2 @@
-from crystal_clear.wrapper import CrystalClear
-__all__ = ["CrystalClear"]
+from crystal_clear.wrapper import CrystalClear, RiskAnalysis
+__all__ = ["CrystalClear", "RiskAnalysis"]

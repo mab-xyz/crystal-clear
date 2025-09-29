@@ -77,8 +77,7 @@ def detect_permissions(slither: Slither) -> PermissionsInfo:
     written_variables.extend(contract.all_state_variables_written)
     written_variables = list(set(written_variables))
     if not written_variables:
-        print("No state variables written in the contract.")
-        return []
+        return PermissionsInfo(permissions=[])
     res = []
     for function in contract.functions:
 
