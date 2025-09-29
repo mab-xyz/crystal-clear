@@ -1,33 +1,33 @@
-from fastapi import APIRouter, status, Depends
-from sqlalchemy.orm import Session
+from crystal_clear.code_analyzer.analyzer import PermissionsInfo, ProxyInfo
+from fastapi import APIRouter, Depends, status
 from fastapi_cache.decorator import cache
+from sqlalchemy.orm import Session
 
 from api.core.config import settings
 from api.core.database import get_session
 from api.schemas.info import (
-    LatestBlockResponse,
     DeploymentInfoResponse,
-    VerificationInfoResponse,
-    ScorecardResponse,
-    ProxyInfoResponse,
+    LatestBlockResponse,
     PermissionsInfoResponse,
+    ProxyInfoResponse,
+    ScorecardResponse,
+    VerificationInfoResponse,
 )
 from api.schemas.response import ErrorResponse
 from api.services.info_service import (
-    get_latest_block_number,
     get_deployment_data,
-    get_verification_data,
-    get_scorecard_data,
-    get_proxy_data,
+    get_latest_block_number,
     get_permissions_data,
+    get_proxy_data,
+    get_scorecard_data,
+    get_verification_data,
 )
-
-from crystal_clear.code_analyzer.analyzer import PermissionsInfo, ProxyInfo
 
 router = APIRouter(
     prefix="/info",
     tags=["info"],
 )
+
 
 @router.get(
     "/block-latest",
@@ -47,9 +47,8 @@ async def get_latest_block():
     Get the latest block number from the Ethereum network.
     """
     latest_block = get_latest_block_number()
-    return LatestBlockResponse(
-        block_number=latest_block
-    )
+    return LatestBlockResponse(block_number=latest_block)
+
 
 @router.get(
     "/deployment/{address}",
@@ -82,6 +81,7 @@ async def get_deployment_info(
     """
     return get_deployment_data(session, address)
 
+
 @router.get(
     "/verification/{address}",
     status_code=status.HTTP_200_OK,
@@ -94,7 +94,7 @@ async def get_deployment_info(
         422: {
             "description": "Input validation error",
             "model": ErrorResponse,
-        }
+        },
     },
     summary="Get contract information",
     description="Fetch contract information for a given address.",
@@ -109,9 +109,8 @@ async def get_contract_info(
 
     data = get_verification_data(address)
 
-    return VerificationInfoResponse(
-        **data.model_dump()
-    )
+    return VerificationInfoResponse(**data.model_dump())
+
 
 @router.get(
     "/reposcore/{address}",
@@ -138,7 +137,7 @@ async def get_contract_info(
 async def get_scorecard_info(
     address: str,
     session: Session = Depends(get_session),
-    ):
+):
     """
     Get scorecard data for a given smart contract address.
     """
@@ -192,8 +191,9 @@ async def get_proxy_info(
         implementation_slot=data.implementation_slot,
         implementation_variable=data.implementation_variable,
         is_upgradeable=data.is_upgradeable,
-        is_proxy=data.is_proxy
+        is_proxy=data.is_proxy,
     )
+
 
 @router.get(
     "/permissions/{address}",
@@ -228,8 +228,4 @@ async def get_permissions_info(address: str):
 
     data: PermissionsInfo = get_permissions_data(address)
 
-    return PermissionsInfoResponse(
-        address=address,
-        permissions=data.permissions
-    )
-
+    return PermissionsInfoResponse(address=address, permissions=data.permissions)

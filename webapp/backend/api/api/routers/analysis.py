@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Query, status, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, Query, status
 from fastapi_cache.decorator import cache
+from sqlalchemy.orm import Session
 
 from api.core.config import settings
 from api.core.database import get_session
@@ -64,15 +64,13 @@ async def get_contract_dependencies(
         to_block=request.to_block,
     )
 
-    return ContractDependenciesResponse(
-        **callGraph.model_dump()
-    )
+    return ContractDependenciesResponse(**callGraph.model_dump())
 
 
 @router.get(
     "/{address}/risk",
     response_model=RiskAnalysisResponse,
-        responses={
+    responses={
         500: {
             "description": "Internal server error",
             "model": ErrorResponse,
@@ -91,12 +89,14 @@ async def get_contract_risk(
     address: str,
     from_block: str = Query(None, description="Start block"),
     to_block: str = Query(None, description="End block"),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
+    request = ContractRiskRequest(
+        address=address, from_block=from_block, to_block=to_block
+    )
 
-    request = ContractRiskRequest(address=address, from_block=from_block, to_block=to_block)
-
-    risk_data = await assess_contract_risk(session, request.address, request.from_block, request.to_block)
+    risk_data = await assess_contract_risk(
+        session, request.address, request.from_block, request.to_block
+    )
 
     return risk_data
-

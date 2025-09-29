@@ -1,27 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
+import api.crud.audit as crud
 from api.core.database import get_session
 from api.models.audit import (
     AuditCreate,
+    AuditListResponse,
     AuditResponse,
     AuditUpdate,
-    AuditListResponse
 )
 from api.schemas.response import ErrorResponse
-import api.crud.audit as crud
 
 router = APIRouter(
     prefix="/audit",
     tags=["audit"],
 )
 
+
 @router.post(
     "/",
     response_model=AuditResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
-        400: {"model": ErrorResponse, "description": "Invalid input or duplicate audit"},
+        400: {
+            "model": ErrorResponse,
+            "description": "Invalid input or duplicate audit",
+        },
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Create a new audit entry",
@@ -34,9 +38,12 @@ async def create_audit(
     try:
         return crud.create_audit(session, audit_data)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create audit: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create audit: {str(e)}"
+        ) from e
+
 
 @router.get(
     "/{protocol}/{company}",
@@ -59,6 +66,7 @@ async def get_audit(
         raise HTTPException(status_code=404, detail="Audit not found")
     return audit
 
+
 @router.get(
     "/",
     response_model=AuditListResponse,
@@ -75,12 +83,10 @@ async def list_audits(
 ) -> AuditListResponse:
     """List audit entries with optional filters"""
     audits = crud.get_audits(
-        session,
-        protocol=protocol,
-        version=version,
-        company=company
+        session, protocol=protocol, version=version, company=company
     )
     return AuditListResponse(total=len(audits), items=audits)
+
 
 @router.put(
     "/{protocol}/{company}",
@@ -103,10 +109,11 @@ async def update_audit(
     try:
         audit = crud.update_audit(session, audit_data, protocol, company, version)
         if not audit:
-            raise HTTPException(status_code=404, detail="Audit not found")
+            raise HTTPException(status_code=404, detail="Audit not found") from None
         return audit
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 
 @router.delete(
     "/{protocol}/{company}",

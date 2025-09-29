@@ -1,15 +1,16 @@
 import logging
 import random
 import time
-from typing import Dict, List, Set
 from collections import deque
+from typing import Dict, List, Set
 
 from hexbytes import HexBytes
 from web3 import Web3
-from web3.types import CallTrace, RPCResponse
 from web3.middleware import Web3Middleware
+from web3.types import CallTrace, RPCResponse
 
 from .models import CallEdge, CallGraph
+
 
 class RateLimitRetryMiddleware(Web3Middleware):
     def __init__(self, w3: Web3, max_retries: int = 5):
@@ -21,11 +22,13 @@ class RateLimitRetryMiddleware(Web3Middleware):
         def middleware(method, params):
             for attempt in range(self.max_retries):
                 try:
-                    response: RPCResponse = make_request(method, params)                    
+                    response: RPCResponse = make_request(method, params)
                     return response  # success or non-429 error
                 except Exception as e:
-                    self.logger.warning(f"Request failed attempt {attempt + 1}: {e}. Retrying in {2 ** attempt} seconds...")
-                    wait_time = (2 ** attempt) + random.random()
+                    self.logger.warning(
+                        f"Request failed attempt {attempt + 1}: {e}. Retrying in {2 ** attempt} seconds..."
+                    )
+                    wait_time = (2**attempt) + random.random()
                     time.sleep(wait_time)
                     continue
             self.logger.warning("Max retries(5) reached. Giving up.")
@@ -123,17 +126,14 @@ class TraceCollector:
         return res
 
     def _extract_all_subcalls(
-        self, call: CallTrace, calls: Dict[tuple[str, str], CallEdge], caller: str) -> None:
+        self, call: CallTrace, calls: Dict[tuple[str, str], CallEdge], caller: str
+    ) -> None:
         """
         Recursively extracts all subcalls from a call.
         """
         key: tuple[str, str] = (caller, call["to"])
         if key not in calls:
-            calls[key] = CallEdge(
-                source=caller,
-                target=call["to"],
-                types={}
-            )
+            calls[key] = CallEdge(source=caller, target=call["to"], types={})
         if call["type"] not in calls[key].types:
             calls[key].types[call["type"]] = 0
         calls[key].types[call["type"]] += 1
@@ -156,9 +156,7 @@ class TraceCollector:
             for subcall in call.get("calls", []):
                 self._extract_calls(subcall, contract_address, calls)
 
-    def get_calls(
-        self, tx_hashes: Set[str], contract_address: str
-    ) -> List[CallEdge]:
+    def get_calls(self, tx_hashes: Set[str], contract_address: str) -> List[CallEdge]:
         """
         Gets calls for a given set of transaction hashes and contract address.
         """
@@ -171,17 +169,11 @@ class TraceCollector:
         self.logger.info(f"Extracted {len(calls)} calls.")
         return list(calls.values())
 
-    def _filter_contract_calls(
-        self, calls: List[CallEdge], to_block
-    ) -> List[CallEdge]:
+    def _filter_contract_calls(self, calls: List[CallEdge], to_block) -> List[CallEdge]:
         """
         Filters calls to contract addresses.
         """
-        return [
-            c
-            for c in calls
-            if self._validate_contract(c.target, to_block)
-        ]
+        return [c for c in calls if self._validate_contract(c.target, to_block)]
 
     def get_calls_from(
         self, from_block: str | int, to_block: str | int, contract_address: str
@@ -204,15 +196,17 @@ class TraceCollector:
             from_block_hex, to_block_hex, contract_address
         )
         calls: List[CallEdge] = self.get_calls(tx_hashes, contract_address)
-        filtered_calls: List[CallEdge] = self._filter_contract_calls(calls, to_block_hex)
-        
+        filtered_calls: List[CallEdge] = self._filter_contract_calls(
+            calls, to_block_hex
+        )
+
         edges: List[CallEdge] = filtered_calls
         nodes: Set[str] = set()
         for edge in edges:
             nodes.add(edge.source)
             nodes.add(edge.target)
-        
-        nodes_dict = {node: '' for node in nodes}
+
+        nodes_dict = {node: "" for node in nodes}
 
         depths: Dict[str, int] = self.get_depths(nodes, edges, contract_address.lower())
         graph = CallGraph(
@@ -225,7 +219,9 @@ class TraceCollector:
             dependency_depths=depths,
             n_matching_transactions=len(tx_hashes),
         )
-        self.logger.info(f"Constructed call graph with {len(nodes)} nodes and {len(edges)} edges.")
+        self.logger.info(
+            f"Constructed call graph with {len(nodes)} nodes and {len(edges)} edges."
+        )
         return graph
 
     def get_call_graph(
@@ -246,7 +242,7 @@ class TraceCollector:
 
         res = self.get_calls_from(from_block, to_block, contract_address)
         return res
-    
+
     def validate_and_convert_block(self, block: str) -> str:
         """
         Validates if block number is decimal or hex and returns hex format.
@@ -269,17 +265,19 @@ class TraceCollector:
             f"Block number must be decimal or hexadecimal: {block}"
         ) from None
 
-    def get_depths(self, nodes: Set[str], edges: List[CallEdge], root_address: str) -> Dict[str, int]:
+    def get_depths(
+        self, nodes: Set[str], edges: List[CallEdge], root_address: str
+    ) -> Dict[str, int]:
         """
         Add depth information to edges based on distance from the root address.
-        
+
         Args:
             data: The data structure containing address, nodes, and edges
-        
+
         Returns:
             The modified data structure with depth added to each edge
         """
-        
+
         # Create adjacency list for graph traversal
         graph = {}
         for edge in edges:
@@ -289,20 +287,20 @@ class TraceCollector:
             if source not in graph:
                 graph[source] = []
             graph[source].append(target)
-        
+
         # BFS to calculate depths from root address
         depths = {}
         visited = set()
         queue = deque()
-        
+
         # Start with root address at depth 0
         queue.append((root_address, 0))
         visited.add(root_address)
         depths[root_address] = 0
-        
+
         while queue:
             current_node, current_depth = queue.popleft()
-            
+
             if current_node in graph:
                 for neighbor in graph[current_node]:
                     if neighbor not in visited:
@@ -313,6 +311,8 @@ class TraceCollector:
         dependency_depths = {}
         for node in nodes:
             if node.lower() != root_address.lower():
-                depth = depths.get(node.lower(), -1)  # -1 if target not reachable from root
+                depth = depths.get(
+                    node.lower(), -1
+                )  # -1 if target not reachable from root
                 dependency_depths[node.lower()] = depth
         return dependency_depths

@@ -1,5 +1,7 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from crystal_clear.clients import AlliumClient
 
 
@@ -15,7 +17,7 @@ class TestAlliumClient:
         mock_response.json.return_value = {
             "data": [
                 {"address": "0x123", "name": "Contract A"},
-                {"address": "0xabc", "name": "Contract B"}
+                {"address": "0xabc", "name": "Contract B"},
             ]
         }
         mock_response.raise_for_status.return_value = None
@@ -62,11 +64,7 @@ class TestAlliumClient:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "data": [
-                {
-                    "address": "0x123",
-                    "deployer": "0xdeployer",
-                    "block_number": 12345
-                }
+                {"address": "0x123", "deployer": "0xdeployer", "block_number": 12345}
             ]
         }
         mock_response.raise_for_status.return_value = None
@@ -83,11 +81,7 @@ class TestAlliumClient:
         assert call_args[1]["json"] == {"param_191": "0x123"}
 
         # Assert the result is correct
-        expected = {
-            "address": "0x123",
-            "deployer": "0xdeployer",
-            "block_number": 12345
-        }
+        expected = {"address": "0x123", "deployer": "0xdeployer", "block_number": 12345}
         assert result == expected
 
     @patch("crystal_clear.clients.base_client.requests.request")
@@ -122,15 +116,15 @@ class TestAlliumClient:
                     "to_address": "0x456",
                     "call_type": "call",
                     "call_count": 10,
-                    "n_matching_transactions": 5
+                    "n_matching_transactions": 5,
                 },
                 {
                     "from_address": "0x123",
                     "to_address": "0x789",
                     "call_type": "delegate",
                     "call_count": 3,
-                    "n_matching_transactions": 2
-                }
+                    "n_matching_transactions": 2,
+                },
             ]
         }
         mock_response.raise_for_status.return_value = None
@@ -147,7 +141,7 @@ class TestAlliumClient:
         assert call_args[1]["json"] == {
             "param_87": "1000000",
             "param_43": "2000000",
-            "param_97": "0x123"
+            "param_97": "0x123",
         }
 
         # Assert the result is correct
@@ -160,10 +154,10 @@ class TestAlliumClient:
             "nodes": ["0x123", "0x456", "0x789"],
             "edges": [
                 {"source": "0x123", "target": "0x456", "types": {"CALL": 10}},
-                {"source": "0x123", "target": "0x789", "types": {"DELEGATE": 3}}
-            ]
+                {"source": "0x123", "target": "0x789", "types": {"DELEGATE": 3}},
+            ],
         }
-        
+
         # Since the order of nodes in the list isn't guaranteed, we need to check separately
         assert result["address"] == expected["address"]
         assert result["from_block"] == expected["from_block"]
@@ -171,11 +165,18 @@ class TestAlliumClient:
         assert result["n_nodes"] == expected["n_nodes"]
         assert result["n_matching_transactions"] == expected["n_matching_transactions"]
         assert set(result["nodes"]) == set(expected["nodes"])
-        
+
         # Check edges
         assert len(result["edges"]) == len(expected["edges"])
         for edge in result["edges"]:
-            matching_edge = next((e for e in expected["edges"] if e["source"] == edge["source"] and e["target"] == edge["target"]), None)
+            matching_edge = next(
+                (
+                    e
+                    for e in expected["edges"]
+                    if e["source"] == edge["source"] and e["target"] == edge["target"]
+                ),
+                None,
+            )
             assert matching_edge is not None
             assert edge["types"] == matching_edge["types"]
 
@@ -221,7 +222,7 @@ class TestAlliumClient:
                     "call_count": 10,
                     "n_matching_transactions": 5,
                     "from_block": 1000000,
-                    "to_block": 1000020
+                    "to_block": 1000020,
                 },
                 {
                     "from_address": "0x123",
@@ -230,8 +231,8 @@ class TestAlliumClient:
                     "call_count": 3,
                     "n_matching_transactions": 2,
                     "from_block": 1000000,
-                    "to_block": 1000020
-                }
+                    "to_block": 1000020,
+                },
             ]
         }
         mock_response.raise_for_status.return_value = None
@@ -245,10 +246,7 @@ class TestAlliumClient:
         call_args = mock_request.call_args
         assert call_args[0][0] == "POST"
         assert "N8wWhdIF1OWEALVQVQlA/run" in call_args[0][1]
-        assert call_args[1]["json"] == {
-            "param_69": "20",
-            "param_97": "0x123"
-        }
+        assert call_args[1]["json"] == {"param_69": "20", "param_97": "0x123"}
 
         # Assert the result is correct
         expected = {
@@ -260,10 +258,10 @@ class TestAlliumClient:
             "nodes": ["0x123", "0x456", "0x789"],
             "edges": [
                 {"source": "0x123", "target": "0x456", "types": {"CALL": 10}},
-                {"source": "0x123", "target": "0x789", "types": {"DELEGATE": 3}}
-            ]
+                {"source": "0x123", "target": "0x789", "types": {"DELEGATE": 3}},
+            ],
         }
-        
+
         # Since the order of nodes in the list isn't guaranteed, we need to check separately
         assert result["address"] == expected["address"]
         assert result["from_block"] == expected["from_block"]
@@ -271,16 +269,25 @@ class TestAlliumClient:
         assert result["n_nodes"] == expected["n_nodes"]
         assert result["n_matching_transactions"] == expected["n_matching_transactions"]
         assert set(result["nodes"]) == set(expected["nodes"])
-        
+
         # Check edges
         assert len(result["edges"]) == len(expected["edges"])
         for edge in result["edges"]:
-            matching_edge = next((e for e in expected["edges"] if e["source"] == edge["source"] and e["target"] == edge["target"]), None)
+            matching_edge = next(
+                (
+                    e
+                    for e in expected["edges"]
+                    if e["source"] == edge["source"] and e["target"] == edge["target"]
+                ),
+                None,
+            )
             assert matching_edge is not None
             assert edge["types"] == matching_edge["types"]
 
     @patch("crystal_clear.clients.base_client.requests.request")
-    def test_get_contract_dependencies_latest_default_block_range(self, mock_request, client):
+    def test_get_contract_dependencies_latest_default_block_range(
+        self, mock_request, client
+    ):
         # Setup mock response
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -292,7 +299,7 @@ class TestAlliumClient:
                     "call_count": 5,
                     "n_matching_transactions": 2,
                     "from_block": 2000000,
-                    "to_block": 2000010
+                    "to_block": 2000010,
                 }
             ]
         }
@@ -305,10 +312,7 @@ class TestAlliumClient:
         # Assert the correct API call was made with default block_range=10
         mock_request.assert_called_once()
         call_args = mock_request.call_args
-        assert call_args[1]["json"] == {
-            "param_69": "5",
-            "param_97": "0xabc"
-        }
+        assert call_args[1]["json"] == {"param_69": "5", "param_97": "0xabc"}
 
         # Verify result
         assert result["address"] == "0xabc"

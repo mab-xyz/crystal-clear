@@ -1,6 +1,6 @@
+from crystal_clear import CrystalClear
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from crystal_clear import CrystalClear
 
 
 class Settings(BaseSettings):
@@ -51,5 +51,5 @@ cc = CrystalClear(
     url=settings.eth_node_url,
     allium_api_key=settings.allium_api_key,
     etherscan_api_key=settings.etherscan_api_key,
-    log_level=settings.log_level
+    log_level=settings.log_level,
 )

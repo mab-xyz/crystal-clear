@@ -1,7 +1,10 @@
-from sqlmodel import Session, select
-from api.models.label import Label, LabelCreate, LabelUpdate, AddressList
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
+
+from sqlmodel import Session, select
+
+from api.models.label import AddressList, Label, LabelCreate, LabelUpdate
+
 
 def create_label(session: Session, label_data: LabelCreate) -> Label:
     label = Label(**label_data.model_dump())
@@ -14,11 +17,15 @@ def create_label(session: Session, label_data: LabelCreate) -> Label:
 def get_label(session: Session, address: str) -> Label | None:
     return session.get(Label, address)
 
+
 def get_all_labels(session: Session) -> Dict[str, str]:
     result = session.exec(select(Label)).all()
     return {row.address: row.label for row in result}
 
-def update_label(session: Session, address: str, label_data: LabelUpdate) -> Label | None:
+
+def update_label(
+    session: Session, address: str, label_data: LabelUpdate
+) -> Label | None:
     label = session.get(Label, address)
     if not label:
         return None
@@ -28,6 +35,7 @@ def update_label(session: Session, address: str, label_data: LabelUpdate) -> Lab
     session.commit()
     session.refresh(label)
     return label
+
 
 def get_labels(session: Session, addresses: AddressList) -> List[Label]:
     stmt = select(Label).where(Label.address.in_(addresses.addresses))

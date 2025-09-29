@@ -1,7 +1,9 @@
-from sqlmodel import SQLModel, Field
 from datetime import datetime
-from pydantic import BaseModel
 from typing import List
+
+from pydantic import BaseModel
+from sqlmodel import Field, SQLModel
+
 
 class Label(SQLModel, table=True):
     address: str = Field(primary_key=True)
@@ -14,8 +16,10 @@ class LabelCreate(SQLModel):
     address: str
     label: str
 
+
 class LabelUpdate(SQLModel):
     label: str
+
 
 class AddressList(BaseModel):
     addresses: List[str]

@@ -1,7 +1,11 @@
 from sqlmodel import Session
+
 from api.models.deployment import Deployment, DeploymentCreate
 
-def create_deployment(session: Session, deployment_data: DeploymentCreate) -> Deployment:
+
+def create_deployment(
+    session: Session, deployment_data: DeploymentCreate
+) -> Deployment:
     deployment = Deployment(**deployment_data.model_dump())
     session.add(deployment)
     session.commit()

@@ -1,5 +1,7 @@
-from sqlmodel import SQLModel, Field
 from datetime import datetime
+
+from sqlmodel import Field, SQLModel
+
 
 class Deployment(SQLModel, table=True):
     address: str = Field(primary_key=True)
