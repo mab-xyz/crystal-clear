@@ -4,12 +4,13 @@ import logging
 
 
 class AlliumClient(BaseClient):
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, log_level: str = "INFO"):
         super().__init__(
             base_url="https://api.allium.so/api/v1/explorer/queries",
             api_key=api_key
         )
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(getattr(logging, log_level.upper()))
 
     def get_labels(self, addresses: List[str]) -> Optional[Dict[str, str]]:
         """

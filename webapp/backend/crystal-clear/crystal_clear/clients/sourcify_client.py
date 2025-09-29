@@ -1,12 +1,15 @@
+import logging
 from .base_client import BaseClient
-from typing import Dict
 from .models import VerificationDetails
 
 class SourcifyClient(BaseClient):
-    def __init__(self):
+    def __init__(self, log_level: str = "INFO"):
         super().__init__(
-            base_url="https://sourcify.dev/server/v2"
+            base_url="https://sourcify.dev/server/v2",
+            log_level=log_level
         )
+        self.logger = self.logger.getChild(self.__class__.__name__)
+        self.logger.setLevel(getattr(logging, log_level.upper()))
 
     def check_contract_verified(self, address: str) -> VerificationDetails:
         """
@@ -34,7 +37,7 @@ class SourcifyClient(BaseClient):
                 source="sourcify"
             )
         except Exception as e:
-            print(f"Error checking verification on Sourcify for {address}: {e}")
+            self.logger.error(f"Error checking verification on Sourcify for {address}: {e}")
             return VerificationDetails(
                 address=address,
                 verification= "not-verified",

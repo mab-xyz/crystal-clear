@@ -36,7 +36,7 @@ def main():
 )
 @click.option("--export-dot", type=str, help="Export call graph to DOT file")
 @click.option("--export-json", type=str, help="Export call graph to JSON file")
-@click.option("--log-level", default="CRITICAL", type=str, help="Logging level")
+@click.option("--log-level", default="ERROR", type=str, help="Logging level")
 def dependency(
     node_url, allium_api_key, address, from_block, to_block, export_dot, export_json, log_level
 ):
@@ -52,7 +52,7 @@ def dependency(
         return
 
     try:
-        cc = CrystalClear(url=node_url, allium_api_key=allium_api_key)
+        cc = CrystalClear(url=node_url, allium_api_key=allium_api_key, log_level=log_level)
 
         dep: CallGraph = cc.get_dependencies_full(address, from_block=from_block, to_block=to_block)
         # --- Metadata Panel ---
@@ -150,7 +150,7 @@ def risk(etherscan_api_key, node_url, scope, address, from_block, to_block, bloc
         return
 
     try:
-        cc = CrystalClear(url=node_url, etherscan_api_key=etherscan_key)
+        cc = CrystalClear(url=node_url, etherscan_api_key=etherscan_key, log_level=log_level)
 
         analysis: RiskAnalysis = cc.get_risk_factors(address, scope=scope, from_block=from_block, to_block=to_block, blocks=blocks)
 

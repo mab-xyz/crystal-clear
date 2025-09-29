@@ -35,11 +35,12 @@ class RateLimitRetryMiddleware(Web3Middleware):
 
 
 class TraceCollector:
-    def __init__(self, url: str):
+    def __init__(self, url: str, log_level: str = "INFO"):
         """
         Initializes the TraceCollector with a URL and log level.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(getattr(logging, log_level.upper()))
         self.w3 = Web3(Web3.HTTPProvider(url))
         if not self.w3.is_connected():
             raise ConnectionError("Failed to connect to the Ethereum node.")

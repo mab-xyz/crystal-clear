@@ -3,9 +3,10 @@ from typing import Optional, Dict, Any
 from .models import VerificationDetails
 
 class EtherscanClient(BaseClient):
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, log_level: str = "INFO"):
         super().__init__(
-            base_url="https://api.etherscan.io/v2/api"
+            base_url="https://api.etherscan.io/v2/api",
+            log_level=log_level,
         )
         self.etherscan_api_key = api_key
 

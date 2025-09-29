@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, List
 from pydantic import BaseModel, Field
 from crystal_clear.traces import TraceCollector, CallGraph
@@ -22,7 +23,7 @@ class RiskAnalysis(BaseModel):
         }
 
 class CrystalClear:
-    def __init__(self, url: str, allium_api_key: str = None, etherscan_api_key: str = None):
+    def __init__(self, url: str, allium_api_key: str = None, etherscan_api_key: str = None, log_level: str = "INFO"):
         """
         Wrapper class for CrystalClear library.
 
@@ -40,11 +41,14 @@ class CrystalClear:
         ValueError:
             If url is not provided.
         """
-        self.trace_collector = TraceCollector(url) if url else None
-        self.allium_client = AlliumClient(allium_api_key) if allium_api_key else None
+        self.log_level = log_level.upper()
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(getattr(logging, self.log_level))
+        self.trace_collector = TraceCollector(url, log_level=self.log_level) if url else None
+        self.allium_client = AlliumClient(allium_api_key, log_level=self.log_level) if allium_api_key else None
         self.etherscan_key = etherscan_api_key
-        self.sourcify_client = SourcifyClient()
-        self.etherscan_client = EtherscanClient(etherscan_api_key) if etherscan_api_key else None
+        self.sourcify_client = SourcifyClient(log_level=self.log_level)
+        self.etherscan_client = EtherscanClient(etherscan_api_key, log_level=self.log_level) if etherscan_api_key else None
 
     def get_dependencies(self, address: str, from_block: str = None, to_block: str = None, blocks: int = 5) -> CallGraph:
         if not self.trace_collector:

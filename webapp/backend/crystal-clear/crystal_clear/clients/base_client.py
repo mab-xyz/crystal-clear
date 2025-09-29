@@ -5,10 +5,11 @@ import logging
 class BaseClient:
     """Base client for handling HTTP requests."""
 
-    def __init__(self, base_url: str, api_key: str = None):
+    def __init__(self, base_url: str, api_key: str = None, log_level: str = "INFO"):
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(getattr(logging, log_level.upper()))
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Optional[Dict[str, Any]]:
         """Make an HTTP request with error handling."""
