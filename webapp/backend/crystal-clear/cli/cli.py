@@ -13,6 +13,16 @@ from crystal_clear.traces import CallGraph
 from crystal_clear.code_analyzer import ProxyInfo, PermissionsInfo
 from crystal_clear.clients import VerificationDetails
 
+logger = logging.getLogger(__name__)
+
+def setup_logging(log_level: str) -> None:
+    """Setup logging configuration for the CLI"""
+    logging.basicConfig(
+        level=log_level.upper(),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger.setLevel(log_level.upper())
+
 
 @click.group()
 def main():
@@ -41,8 +51,7 @@ def dependency(
     node_url, allium_api_key, address, from_block, to_block, export_dot, export_json, log_level
 ):
     """Analyze contract calls and generate dependency graph"""
-    logging.basicConfig(level=log_level.upper())
-    logger = logging.getLogger(__name__)
+    setup_logging(log_level)
 
     node_url = node_url or os.getenv("NODE_URL")
     allium_api_key = allium_api_key or os.getenv("ALLIUM_API_KEY")
@@ -140,8 +149,7 @@ def dependency(
 @click.option("--export-json", type=str, help="Export call graph to JSON file")
 def risk(etherscan_api_key, node_url, scope, address, from_block, to_block, blocks, log_level, export_json):
     """Analyze contract code for potential vulnerabilities"""
-    logging.basicConfig(level=log_level.upper())
-    logger = logging.getLogger(__name__)
+    setup_logging(log_level)
 
     etherscan_key = os.getenv("ETHERSCAN_API_KEY") or etherscan_api_key
     console = Console()
