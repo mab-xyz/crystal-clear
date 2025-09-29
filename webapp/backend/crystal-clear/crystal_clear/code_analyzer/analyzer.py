@@ -1,3 +1,4 @@
+import logging
 from pydantic import BaseModel, Field
 import slither
 from slither.slither import Slither
@@ -46,10 +47,15 @@ class Risk(BaseModel):
 
 
 class Analyzer:
-    def __init__(self, etherscan_api_key: str, address: str):
+    def __init__(self, etherscan_api_key: str, address: str, log_level: str = "INFO"):
         self.etherscan_api_key = etherscan_api_key
         self.address = address
         self.slither = None
+        self.log_level = log_level.upper()
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(getattr(logging, self.log_level))
+        crytic_logger = logging.getLogger("CryticCompile")
+        crytic_logger.setLevel(getattr(logging, self.log_level))
 
     def _initialize_slither(self):
         if not self.slither:

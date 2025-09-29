@@ -96,7 +96,7 @@ class CrystalClear:
         if not self.etherscan_key:
             raise ValueError("EtherscanClient is not initialized. Please provide an etherscan_api_key.")
         if scope == "single":
-            analyzer = Analyzer(self.etherscan_key, address)
+            analyzer = Analyzer(self.etherscan_key, address, log_level=self.log_level)
             risk = analyzer.risk()
             dependency_risk = DependencyRisk(address=address, dependency_depth=0, **risk.model_dump())
             aggregated_risk = Risk(
@@ -128,7 +128,7 @@ class CrystalClear:
                                     aggregated_risks=aggregated)
             for addr in callgraph.nodes.keys():
                 try:
-                    analyzer = Analyzer(self.etherscan_key, addr)
+                    analyzer = Analyzer(self.etherscan_key, addr, log_level=self.log_level)
                     risk: Risk = analyzer.risk()
                     dependency_risk = DependencyRisk(
                         address=addr,
