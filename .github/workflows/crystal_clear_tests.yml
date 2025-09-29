@@ -1,21 +1,21 @@
-name: SCSC Tests
+name: Crystal Clear Tests
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'scsc/**'
+      - 'webapp/backend/crystal-clear/**'
   pull_request:
     branches: [ main ]
     paths:
-      - 'scsc/**'
+      - 'webapp/backend/crystal-clear/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: scsc
+        working-directory: webapp/backend/crystal-clear
 
     strategy:
       matrix:
@@ -46,7 +46,7 @@ jobs:
 
     - name: Run tests
       run: |
-        poetry run python -m unittest discover -s tests
+        poetry run python -m  pytest tests/ -v
 
     - name: Check if tests passed
       if: failure()
