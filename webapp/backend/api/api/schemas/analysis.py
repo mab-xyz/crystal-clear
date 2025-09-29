@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from crystal_clear.traces.models import CallGraph
-from crystal_clear.code_analyzer import RiskFactors, Risk
+from crystal_clear.code_analyzer import RiskFactors
 class AdditionalRiskFactors(RiskFactors):
     repository: bool = Field(None, description="Contract is linked to a repository")
     audits: bool = Field(None, description="Contract has associated audits")
