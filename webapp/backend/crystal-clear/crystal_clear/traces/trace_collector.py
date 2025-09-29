@@ -1,12 +1,37 @@
 import logging
+import random
+import time
 from typing import Dict, List, Set
 from collections import deque
 
 from hexbytes import HexBytes
 from web3 import Web3
-from web3.types import CallTrace
+from web3.types import CallTrace, RPCResponse
+from web3.middleware import Web3Middleware
 
 from .models import CallEdge, CallGraph
+
+class RateLimitRetryMiddleware(Web3Middleware):
+    def __init__(self, w3: Web3, max_retries: int = 5):
+        super().__init__(w3)
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.max_retries = max_retries
+
+    def wrap_make_request(self, make_request):
+        def middleware(method, params):
+            for attempt in range(self.max_retries):
+                try:
+                    response: RPCResponse = make_request(method, params)                    
+                    return response  # success or non-429 error
+                except Exception as e:
+                    self.logger.warning(f"Request failed attempt {attempt + 1}: {e}. Retrying in {2 ** attempt} seconds...")
+                    wait_time = (2 ** attempt) + random.random()
+                    time.sleep(wait_time)
+                    continue
+            self.logger.warning("Max retries(5) reached. Giving up.")
+            return response  # give up after max_retries
+
+        return middleware
 
 
 class TraceCollector:
@@ -15,10 +40,10 @@ class TraceCollector:
         Initializes the TraceCollector with a URL and log level.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
-
         self.w3 = Web3(Web3.HTTPProvider(url))
         if not self.w3.is_connected():
             raise ConnectionError("Failed to connect to the Ethereum node.")
+        self.w3.middleware_onion.add(RateLimitRetryMiddleware)
         self.logger.info("Connected to the Ethereum node.")
 
     def _validate_contract(self, address: str, block: str) -> bool:

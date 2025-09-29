@@ -13,16 +13,16 @@ SCSC helps you understand contract interactions by generating detailed call grap
 - 📊 Generate comprehensive call graphs from smart contract interactions
 - 🔍 Analyze contract dependencies across specified block ranges
 - 📈 Export visualizations in DOT format for further analysis
-- 🌐 Interactive web interface for visualizing contract interactions
 - ⚙️ Flexible configuration options for node connections and logging
-- 🚀 Built with modern Python and best practices
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.12 or higher
-- Access to an Ethereum node (local or remote)
+- Access to an Archive Ethereum node (local or remote)
+- Allium API access: optional, used to enrich addresses with labels
+- Etherscan API access: required for retrieving verified smart contract source code
 - Poetry
 
 ### Installation
@@ -48,7 +48,7 @@ Crystal-Clear CLI provides two main commands:
 **Dependency Graph**
 ```bash
 # note the RPC node must have method trace_filter 
-crystal-clear dependency --url <node_url> \
+crystal-clear dependency --node-url <node_url> \
             --address <contract_address> \
             --from-block <block> \
             --to-block <block> \
@@ -64,17 +64,18 @@ crystal-clear dependency
 
 **Risk analysis per contract** (computes the risk factors, incl. proxy and permission risks)
 
-TODO
 
-```
-crystal-clear risk --url <node_url> \
+```bash
+crystal-clear risk --etherscan-api-key <etherscan_api> \
+            --node-url <node_url> \
             --scope [single|supply-chain]
             --address <contract_address> \
             [options]
 
 crystal-clear risk
             --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
-            --export-dot graph.dot
+            --scope single
+            --export-json analysis.json
 ```
 
 
@@ -82,26 +83,15 @@ crystal-clear risk
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `--url` | Ethereum node URL | `http://localhost:8545` |
+| `--node-url` | Ethereum node URL | `http://localhost:8545` |
+| `--allium-api-key` | Allium API Key| `` | 
+| `--etherscan-api-key` | Etherscan API Key | `` |
 | `--address` | Contract address to analyze | `0xE592427A0AEce92De3Edee1F18E0157C05861564` |
 | `--from-block` | Starting block number (hex/decimal) | `0x14c3b86` or `21665670` |
 | `--to-block` | Ending block number (hex/decimal) | `0x14c3b90` or `21665680` |
 | `--log-level` | Logging verbosity (analyze only) | `ERROR`, `INFO`, `DEBUG` |
 | `--export-dot` | Output file for DOT graph (analyze only) | `output.dot` |
 | `--export-json` | Output file for JSON (analyze only) | `output.json` |
-| `--port` | Web server port (web only) | `8050` |
-| `--debug` | Enable debug mode (web only) | |
-
-### Examples
-
-CLI Analysis:
-```bash
-crystal-clear dependency --url http://localhost:8545 \
-            --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
-            --from-block 0x14c3b86 \
-            --to-block 0x14c3b90 \
-            --export-dot call_graph.dot
-```
 
 
 ## 🛠️ Development

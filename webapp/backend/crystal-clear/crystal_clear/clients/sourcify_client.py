@@ -17,17 +17,27 @@ class SourcifyClient(BaseClient):
         Returns:
             bool: True if the contract is verified, False otherwise
         """
-
-        response = self.get(f"contract/1/{address}")
-        match_mapping = {"exact_match": "fully-verified", "match": "verified", "not_match": "not-verified"}
-        if response:
+        try:
+            response = self.get(f"contract/1/{address}")
+            match_mapping = {"exact_match": "fully-verified", "match": "verified", "not_match": "not-verified"}
+            if response:
+                return VerificationDetails(
+                    address=response["address"],
+                    verification=match_mapping.get(response["match"], "not-verified"),
+                    verifiedAt=response["verifiedAt"],
+                    source="sourcify"
+                )
             return VerificationDetails(
-                address=response["address"],
-                verification=match_mapping.get(response["match"], "not-verified"),
-                verifiedAt=response["verifiedAt"]
+                address=address,
+                verification= "not-verified",
+                verifiedAt="N/A",
+                source="sourcify"
             )
-        return VerificationDetails(
-            address=address,
-            verification= "not-verified",
-            verifiedAt="N/A"
-        )
+        except Exception as e:
+            print(f"Error checking verification on Sourcify for {address}: {e}")
+            return VerificationDetails(
+                address=address,
+                verification= "not-verified",
+                verifiedAt="N/A",
+                source="sourcify"
+            )
