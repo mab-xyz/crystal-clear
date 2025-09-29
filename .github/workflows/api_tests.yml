@@ -1,21 +1,23 @@
-name: Crystal Clear Tests
+name: API Tests
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'webapp/backend/crystal-clear/**'
+      - 'webapp/backend/api/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'webapp/backend/crystal-clear/**'
+      - 'webapp/backend/api/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: webapp/backend/crystal-clear
+        working-directory: webapp/backend/api
 
     strategy:
       matrix:
