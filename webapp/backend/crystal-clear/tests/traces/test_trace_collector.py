@@ -25,7 +25,9 @@ def test_init_connection_failure():
             TraceCollector("http://mock.ethereum.node")
 
 
-@patch.object(TraceCollector, "_filter_txs_from", return_value={"0x123", "0x456"})
+@patch.object(
+    TraceCollector, "_filter_txs_from", return_value={"0x123", "0x456"}
+)
 @patch.object(TraceCollector, "_validate_contract", return_value=True)
 @patch("web3.Web3")
 def test_get_calls_from(
@@ -67,15 +69,16 @@ def test_get_calls_from(
         "0x5D27FDD96c8e4028edbAbF3D667be24769425199",
     }
 
-    assert result.edges[0].source == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
-    assert result.edges[0].target == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    assert (
+        result.edges[0].source == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+    )
+    assert (
+        result.edges[0].target == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
+    )
     assert result.edges[0].types == {"CALL": 2}
     assert len(result.dependency_depths) == 1
-    assert (
-        result.dependency_depths[0].address
-        == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
-    )
-    assert result.dependency_depths[0].depth == 1
+    address = "0x5D27FDD96c8e4028edbAbF3D667be24769425199".lower()
+    assert result.dependency_depths[address] == 1
 
     mock_validate_contract.assert_called_with(
         "0x5D27FDD96c8e4028edbAbF3D667be24769425199", hex(to_block)
