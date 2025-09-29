@@ -146,4 +146,3 @@ class Analyzer:
         risk_result.details["proxy_info"] = proxy_info.to_dict()
         risk_result.details["permissions_info"] = permissions_info.to_dict()
         return risk_result
-

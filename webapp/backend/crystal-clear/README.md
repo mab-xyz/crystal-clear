@@ -64,7 +64,6 @@ crystal-clear dependency
 
 **Risk analysis per contract** (computes the risk factors, incl. proxy and permission risks)
 
-
 ```bash
 crystal-clear risk --etherscan-api-key <etherscan_api> \
             --node-url <node_url> \

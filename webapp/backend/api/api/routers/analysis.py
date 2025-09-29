@@ -93,13 +93,10 @@ async def get_contract_risk(
     to_block: str = Query(None, description="End block"),
     session: Session = Depends(get_session)
 ):
-    """
-    Get the risk assessment for a contract.
 
-    - **address**: Ethereum contract address
-    """
     request = ContractRiskRequest(address=address, from_block=from_block, to_block=to_block)
 
     risk_data = await assess_contract_risk(session, request.address, request.from_block, request.to_block)
 
     return risk_data
+

@@ -16,4 +16,3 @@ class VerificationDetails(BaseModel):
             "verifiedAt": self.verifiedAt,
             "source": self.source
         }
-

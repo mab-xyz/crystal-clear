@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from crystal_clear.traces.models import CallGraph
 from crystal_clear.code_analyzer import RiskFactors
+
 class AdditionalRiskFactors(RiskFactors):
     repository: bool = Field(None, description="Contract is linked to a repository")
     audits: bool = Field(None, description="Contract has associated audits")
@@ -52,6 +53,7 @@ class RiskAnalysisResponse(BaseModel):
             "aggregated_risks": self.aggregated_risks.to_dict()
         }
 
+
 class ContractDependenciesRequest(BaseModel):
     """Request model for contract dependencies analysis."""
 
@@ -70,5 +72,4 @@ class ContractRiskRequest(BaseModel):
     address: str = Field(..., description="Contract address to analyze")
     from_block: Optional[str] = Field(None, description="Start block")
     to_block: Optional[str] = Field(None, description="End block")
-
 

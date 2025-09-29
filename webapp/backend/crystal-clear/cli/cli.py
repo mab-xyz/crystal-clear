@@ -24,6 +24,7 @@ def setup_logging(log_level: str) -> None:
     logger.setLevel(log_level.upper())
 
 
+
 @click.group()
 def main():
     """Smart Contract Supply Chain Analysis Tool"""

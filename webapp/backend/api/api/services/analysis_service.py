@@ -8,6 +8,7 @@ from sqlmodel import Session
 from api.core.config import settings, cc
 from api.core.exceptions import InputValidationError, InternalServerError
 from api.core.database import get_session
+
 from api.services.info_service import get_scorecard_data
 from api.services.contract_service import ContractService
 from api.crud import label as label_crud
@@ -106,6 +107,7 @@ async def assess_contract_risk(
     from_block: Optional[str] = None,
     to_block: Optional[str] = None,
 ) -> RiskAnalysisResponse:
+
     """
     Assess risk factors for a contract.
 
@@ -258,3 +260,4 @@ def _finalize_scorecard_average(risk_analysis: RiskAnalysisResponse) -> None:
         aggregated_risks.risk_factors.scorecard = round(
             aggregated_risks.risk_factors.scorecard / len(dependencies)
         , 2)
+

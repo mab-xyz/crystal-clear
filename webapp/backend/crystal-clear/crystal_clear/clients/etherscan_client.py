@@ -43,6 +43,7 @@ class EtherscanClient(BaseClient):
         """
 
         contract_source = self.get_contract_source(address)
+
         if contract_source and len(contract_source.get('SourceCode')) > 0:
             return VerificationDetails(
                 address=address,
