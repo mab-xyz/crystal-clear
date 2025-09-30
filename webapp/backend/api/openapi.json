@@ -1,0 +1,1075 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Crystal-Clear API",
+    "description": "API for analyzing Ethereum smart contracts",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health check",
+        "description": "Check if the API is running and healthy.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/eth-node": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Ethereum node health check",
+        "description": "Check if the Ethereum node connection is working.",
+        "operationId": "eth_node_health_check_health_eth_node_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/{address}/dependencies": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Get contract dependencies",
+        "description": "Analyze and return the dependency network for a given contract address.",
+        "operationId": "get_contract_dependencies_v1_analysis__address__dependencies_get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Address"
+            }
+          },
+          {
+            "name": "from_block",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Start block",
+              "title": "From Block"
+            },
+            "description": "Start block"
+          },
+          {
+            "name": "to_block",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "End block",
+              "title": "To Block"
+            },
+            "description": "End block"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractDependenciesResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/{address}/risk": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Get contract risk assessment",
+        "description": "Calculate and return the risk assessment for a given contract address.",
+        "operationId": "get_contract_risk_v1_analysis__address__risk_get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Address"
+            }
+          },
+          {
+            "name": "from_block",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Start block",
+              "title": "From Block"
+            },
+            "description": "Start block"
+          },
+          {
+            "name": "to_block",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "End block",
+              "title": "To Block"
+            },
+            "description": "End block"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskAnalysisResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/info/block-latest": {
+      "get": {
+        "tags": [
+          "info"
+        ],
+        "summary": "Get latest block number",
+        "description": "Fetch the latest block number from the Ethereum network.",
+        "operationId": "get_latest_block_info_block_latest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatestBlockResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/info/deployment/{address}": {
+      "get": {
+        "tags": [
+          "info"
+        ],
+        "summary": "Get deployment information",
+        "description": "Fetch deployment information for a given contract address.",
+        "operationId": "get_deployment_info_info_deployment__address__get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentInfoResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Deployment information not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/info/verification/{address}": {
+      "get": {
+        "tags": [
+          "info"
+        ],
+        "summary": "Get contract information",
+        "description": "Fetch contract information for a given address.",
+        "operationId": "get_contract_info_info_verification__address__get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationInfoResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/info/reposcore/{address}": {
+      "get": {
+        "tags": [
+          "info"
+        ],
+        "summary": "Get scorecard data",
+        "description": "Fetch scorecard data for a given repository.",
+        "operationId": "get_scorecard_info_info_reposcore__address__get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScorecardResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Scorecard data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/info/proxy/{address}": {
+      "get": {
+        "tags": [
+          "info"
+        ],
+        "summary": "Get proxy information",
+        "description": "Fetch proxy information for a given address.",
+        "operationId": "get_proxy_info_info_proxy__address__get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyInfoResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Proxy information not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/info/permissions/{address}": {
+      "get": {
+        "tags": [
+          "info"
+        ],
+        "summary": "Get permissioned functions for a contract",
+        "description": "Fetch functions that have permission checks for a given contract address.",
+        "operationId": "get_permissions_info_info_permissions__address__get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionsInfoResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Request timed out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Permissions information not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdditionalDependencyRisk": {
+        "properties": {
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "description": "Indicates if the contract is verified"
+          },
+          "risk_factors": {
+            "$ref": "#/components/schemas/AdditionalRiskFactors",
+            "description": "Identified risk factors of the contract"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Detailed analysis results"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "description": "Contract address of the dependency"
+          },
+          "dependency_depth": {
+            "type": "integer",
+            "title": "Dependency Depth",
+            "description": "Depth of the dependency chain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "verified",
+          "risk_factors",
+          "address",
+          "dependency_depth"
+        ],
+        "title": "AdditionalDependencyRisk"
+      },
+      "AdditionalRisk": {
+        "properties": {
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "description": "Indicates if the contract is verified"
+          },
+          "risk_factors": {
+            "$ref": "#/components/schemas/AdditionalRiskFactors",
+            "description": "Identified risk factors of the contract"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Detailed analysis results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "verified",
+          "risk_factors"
+        ],
+        "title": "AdditionalRisk"
+      },
+      "AdditionalRiskFactors": {
+        "properties": {
+          "upgradeability": {
+            "type": "boolean",
+            "title": "Upgradeability",
+            "description": "Contract is upgradeable"
+          },
+          "permissioned": {
+            "type": "boolean",
+            "title": "Permissioned",
+            "description": "Contract has permissioned functions"
+          },
+          "repository": {
+            "type": "boolean",
+            "title": "Repository",
+            "description": "Contract is linked to a repository"
+          },
+          "audits": {
+            "type": "boolean",
+            "title": "Audits",
+            "description": "Contract has associated audits"
+          },
+          "scorecard": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scorecard",
+            "description": "Contract has a scorecard"
+          }
+        },
+        "type": "object",
+        "title": "AdditionalRiskFactors"
+      },
+      "CallEdge": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Caller contract address"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "description": "Target contract address"
+          },
+          "types": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Types",
+            "description": "Call type frequencies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "target"
+        ],
+        "title": "CallEdge",
+        "description": "Model representing a call edge between contracts."
+      },
+      "ContractDependenciesResponse": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "description": "Target contract address"
+          },
+          "from_block": {
+            "type": "integer",
+            "title": "From Block",
+            "description": "Starting block number"
+          },
+          "to_block": {
+            "type": "integer",
+            "title": "To Block",
+            "description": "Ending block number"
+          },
+          "n_nodes": {
+            "type": "integer",
+            "title": "N Nodes",
+            "description": "Number of unique nodes"
+          },
+          "nodes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Nodes",
+            "description": "Node addresses with metadata"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/CallEdge"
+            },
+            "type": "array",
+            "title": "Edges",
+            "description": "Call edges between nodes"
+          },
+          "dependency_depths": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Dependency Depths",
+            "description": "Depth of each dependency from the root contract"
+          },
+          "n_matching_transactions": {
+            "type": "integer",
+            "title": "N Matching Transactions",
+            "description": "Number of matching transactions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "from_block",
+          "to_block",
+          "n_nodes",
+          "nodes",
+          "edges",
+          "dependency_depths",
+          "n_matching_transactions"
+        ],
+        "title": "ContractDependenciesResponse",
+        "description": "Response model for contract dependencies analysis."
+      },
+      "DeploymentInfoResponse": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "description": "Contract address"
+          },
+          "deployer": {
+            "type": "string",
+            "title": "Deployer",
+            "description": "Deployer address"
+          },
+          "deployer_eoa": {
+            "type": "string",
+            "title": "Deployer Eoa",
+            "description": "Deployer EOA address"
+          },
+          "tx_hash": {
+            "type": "string",
+            "title": "Tx Hash",
+            "description": "Transaction hash"
+          },
+          "block_number": {
+            "type": "integer",
+            "title": "Block Number",
+            "description": "Block number of deployment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "deployer",
+          "deployer_eoa",
+          "tx_hash",
+          "block_number"
+        ],
+        "title": "DeploymentInfoResponse",
+        "description": "Response model for deployment information."
+      },
+      "ErrorResponse": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorResponse"
+      },
+      "LatestBlockResponse": {
+        "properties": {
+          "block_number": {
+            "type": "integer",
+            "title": "Block Number",
+            "description": "Latest block number from the Ethereum network"
+          }
+        },
+        "type": "object",
+        "required": [
+          "block_number"
+        ],
+        "title": "LatestBlockResponse",
+        "description": "Request model for contract dependencies analysis."
+      },
+      "PermissionedFunction": {
+        "properties": {
+          "function": {
+            "type": "string",
+            "title": "Function",
+            "description": "Function signature"
+          },
+          "state_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "State Variables",
+            "description": "State variables involved in permission checks"
+          },
+          "conditions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Conditions",
+            "description": "Conditions involving msg.sender or state variables"
+          }
+        },
+        "type": "object",
+        "required": [
+          "function",
+          "state_variables",
+          "conditions"
+        ],
+        "title": "PermissionedFunction",
+        "description": "Model representing a permissioned function in a contract."
+      },
+      "PermissionsInfoResponse": {
+        "properties": {
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionedFunction"
+            },
+            "type": "array",
+            "title": "Permissions",
+            "description": "Permissioned functions"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "description": "Contract address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "permissions",
+          "address"
+        ],
+        "title": "PermissionsInfoResponse",
+        "description": "Response model for permissioned functions of a contract."
+      },
+      "ProxyInfoResponse": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Description of the proxy pattern detected"
+          },
+          "implementation_slot": {
+            "type": "string",
+            "title": "Implementation Slot",
+            "description": "Storage slot of the implementation contract address"
+          },
+          "implementation_variable": {
+            "type": "string",
+            "title": "Implementation Variable",
+            "description": "Variable holding the implementation contract address"
+          },
+          "is_upgradeable": {
+            "type": "boolean",
+            "title": "Is Upgradeable",
+            "description": "Indicates if the contract is upgradeable"
+          },
+          "is_proxy": {
+            "type": "boolean",
+            "title": "Is Proxy",
+            "description": "Indicates if the contract is a proxy"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "description": "Contract address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description",
+          "implementation_slot",
+          "implementation_variable",
+          "is_upgradeable",
+          "is_proxy",
+          "address"
+        ],
+        "title": "ProxyInfoResponse",
+        "description": "Response model for proxy information."
+      },
+      "RiskAnalysisResponse": {
+        "properties": {
+          "root_address": {
+            "type": "string",
+            "title": "Root Address",
+            "description": "Root contract address"
+          },
+          "from_block": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Block",
+            "description": "Starting block number for the analysis"
+          },
+          "to_block": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Block",
+            "description": "Ending block number for the analysis"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/AdditionalDependencyRisk"
+            },
+            "type": "array",
+            "title": "Dependencies",
+            "description": "List of analyzed dependencies with risk factors"
+          },
+          "aggregated_risks": {
+            "$ref": "#/components/schemas/AdditionalRisk",
+            "description": "Aggregated risk factors across all dependencies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "root_address",
+          "dependencies",
+          "aggregated_risks"
+        ],
+        "title": "RiskAnalysisResponse",
+        "description": "Response model for contract risk analysis."
+      },
+      "ScorecardResponse": {
+        "properties": {
+          "repo_info": {
+            "type": "string",
+            "title": "Repo Info"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "checks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "repo_info",
+          "source",
+          "score",
+          "date",
+          "checks"
+        ],
+        "title": "ScorecardResponse"
+      },
+      "VerificationInfoResponse": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "description": "Contract address"
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "fully-verified",
+              "not-verified"
+            ],
+            "title": "Verification",
+            "description": "Verification status: verified, fully-verified, or not-verified"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "title": "Verifiedat"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "etherscan",
+              "sourcify"
+            ],
+            "title": "Source",
+            "description": "Source of verification information"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "verification",
+          "source"
+        ],
+        "title": "VerificationInfoResponse",
+        "description": "Response model for contract verification information."
+      }
+    }
+  }
+}
