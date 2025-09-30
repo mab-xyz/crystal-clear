@@ -1,9 +1,11 @@
-name: Publish Crystal-Clear Package on PYPI
+name: Publish Crystal-Clear PYPI Package
 
 on:
   push:
-    tags:
-      - 'v*.*.*'   # e.g., v0.1.0, v1.2.3
+    branches:
+      - main
+    paths:
+      - 'webapp/backend/crystal-clear/**'
 
 jobs:
   publish:
@@ -23,11 +25,21 @@ jobs:
       - name: Install Poetry
         run: python -m pip install poetry
 
-      - name: Set version from tag
+      - name: Bump Poetry version
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}  # Strip "refs/tags/"
-          echo "Updating Poetry project version to $TAG_VERSION"
-          poetry version $TAG_VERSION --no-interaction
+          echo "Bumping project version"
+          poetry version patch
+          NEW_VERSION=$(poetry version -s)
+          echo "New version: $NEW_VERSION"
+
+      - name: Commit and tag new version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "Bump version to $NEW_VERSION"
+          git tag "crystal-clear-v$NEW_VERSION"
+          git push origin main --tags
 
       - name: Configure Poetry for PyPI
         run: poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
