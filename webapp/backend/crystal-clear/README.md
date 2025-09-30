@@ -114,15 +114,6 @@ poetry install --with dev
 pre-commit install
 ```
 
-## 📚 Documentation [TODO]
-
-For more detailed information about SCSC features and usage, check out our documentation:
-
-- [Installation Guide](docs/installation.md)
-- [Usage Examples](docs/examples.md)
-- [Configuration Options](docs/configuration.md)
-- [Contributing Guide](CONTRIBUTING.md)
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
