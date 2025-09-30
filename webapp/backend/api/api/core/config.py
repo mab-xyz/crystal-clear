@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Ethereum Node Configuration
-    eth_node_url: str = Field(..., alias="ETH_NODE_URL")
+    eth_node_url: str | None = Field(default=None, alias="ETH_NODE_URL")
 
     # Database Configuration
     database_url: str = Field(..., alias="DATABASE_URL")
