@@ -101,7 +101,6 @@ crystal-clear risk
 We use modern Python tools to maintain high code quality:
 
 - **Black**: Code formatting
-- **isort**: Import sorting
 - **Ruff**: Fast Python linting
 - **pre-commit**: Git hooks
 
