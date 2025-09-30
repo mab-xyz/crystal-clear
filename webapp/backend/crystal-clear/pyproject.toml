@@ -1,5 +1,5 @@
 [project]
-name = "crystal-clear"
+name = "mab-crystal-clear"
 version = "1.0.0"
 description = "Crystal-Clear CLI: Smart Contract Supply Chain Tool"
 authors = [
