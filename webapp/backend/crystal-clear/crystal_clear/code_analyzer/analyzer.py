@@ -1,28 +1,45 @@
 import logging
+from typing import Any, Dict
+
 from pydantic import BaseModel, Field
-import slither
-from slither.slither import Slither
-from crystal_clear.clients import EtherscanClient, VerificationDetails, SourcifyClient
 from slither.detectors.proxy.proxy_patterns import ProxyPatterns
-from .permissions import detect_permissions, PermissionsInfo
-from typing import Dict, Any
+from slither.slither import Slither
+
+from crystal_clear.clients import (
+    EtherscanClient,
+    SourcifyClient,
+    VerificationDetails,
+)
+
+from .permissions import PermissionsInfo, detect_permissions
+
 
 class ProxyInfo(BaseModel):
     """Model representing proxy information of a contract."""
-    description: str = Field(..., description="Description of the proxy pattern detected")
-    implementation_slot: str = Field(..., description="Storage slot of the implementation contract address")
-    implementation_variable: str = Field(..., description="Variable holding the implementation contract address")
-    is_upgradeable: bool = Field(..., description="Indicates if the contract is upgradeable")
+
+    description: str = Field(
+        ..., description="Description of the proxy pattern detected"
+    )
+    implementation_slot: str = Field(
+        ..., description="Storage slot of the implementation contract address"
+    )
+    implementation_variable: str = Field(
+        ..., description="Variable holding the implementation contract address"
+    )
+    is_upgradeable: bool = Field(
+        ..., description="Indicates if the contract is upgradeable"
+    )
     is_proxy: bool = Field(..., description="Indicates if the contract is a proxy")
 
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
-    
+
 
 class RiskFactors(BaseModel):
     """Model representing risk information of a contract."""
+
     upgradeability: bool = Field(None, description="Contract is upgradeable")
-    permissioned: bool = Field(None, description="Contract has permissioned functions")\
+    permissioned: bool = Field(None, description="Contract has permissioned functions")
 
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
@@ -39,8 +56,12 @@ class RiskFactors(BaseModel):
 
 class Risk(BaseModel):
     verified: bool = Field(..., description="Indicates if the contract is verified")
-    risk_factors: RiskFactors = Field(..., description="Identified risk factors of the contract")
-    details: Dict[str, Any] | None = Field(default=None, description="Detailed analysis results")
+    risk_factors: RiskFactors = Field(
+        ..., description="Identified risk factors of the contract"
+    )
+    details: Dict[str, Any] | None = Field(
+        default=None, description="Detailed analysis results"
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         return self.model_dump()
@@ -60,12 +81,21 @@ class Analyzer:
     def _initialize_slither(self):
         if not self.slither:
             try:
-                self.slither = Slither(self.address, etherscan_api_key=self.etherscan_api_key, disallow_partial=True, disable_solc_warnings=True)
+                self.slither = Slither(
+                    self.address,
+                    etherscan_api_key=self.etherscan_api_key,
+                    disallow_partial=True,
+                    disable_solc_warnings=True,
+                )
             except Exception as e:
                 verification = self.get_verification_info_etherscan()
                 if verification.verification == "not-verified":
-                    raise ValueError(f"Contract at address {self.address} is not verified on Etherscan.")
-                raise ValueError(f"Failed to initialize Slither for address {self.address}: {e}")
+                    raise ValueError(
+                        f"Contract at address {self.address} is not verified on Etherscan."
+                    ) from None
+                raise ValueError(
+                    f"Failed to initialize Slither for address {self.address}: {e}"
+                ) from e
 
     def get_main_contract_name(self) -> str:
         self._initialize_slither()
@@ -84,31 +114,34 @@ class Analyzer:
             implementation_slot="N/A",
             implementation_variable="N/A",
             is_upgradeable=False,
-            is_proxy=False
+            is_proxy=False,
         )
         for result in results[0]:
             if result["contract"].startswith(mainContract):
                 proxy_info.description = result.get("description", "")
-                proxy_info.implementation_slot = result["features"].get("impl_address_slot", "")
-                proxy_info.implementation_variable = result["features"].get("impl_address_variable", "")
-       
+                proxy_info.implementation_slot = result["features"].get(
+                    "impl_address_slot", ""
+                )
+                proxy_info.implementation_variable = result["features"].get(
+                    "impl_address_variable", ""
+                )
 
         contract = self.slither.get_contract_from_name(mainContract)[0]
         proxy_info.is_upgradeable = contract._is_upgradeable_proxy
         proxy_info.is_proxy = contract._is_proxy
 
         return proxy_info
-    
+
     def get_permissions_info(self) -> PermissionsInfo:
         self._initialize_slither()
         permissions = detect_permissions(self.slither)
         return permissions
-    
+
     def get_verification_info_etherscan(self) -> VerificationDetails:
         etherscan_client = EtherscanClient(self.etherscan_api_key)
         verification_info = etherscan_client.check_contract_verified(self.address)
         return verification_info
-    
+
     def get_veritification_info(self) -> VerificationDetails:
         sourcify_client = SourcifyClient()
         verification = sourcify_client.check_contract_verified(self.address)
@@ -117,15 +150,8 @@ class Analyzer:
         return verification
 
     def risk(self) -> Risk:
-        risk_factors = RiskFactors(
-            upgradeability=False,
-            permissioned=False
-        )
-        risk_result = Risk(
-            verified=False,
-            risk_factors=risk_factors,
-            details={}
-        )
+        risk_factors = RiskFactors(upgradeability=False, permissioned=False)
+        risk_result = Risk(verified=False, risk_factors=risk_factors, details={})
         verification = self.get_veritification_info()
         risk_result.details["verification_info"] = verification.to_dict()
         if verification.verification == "not-verified":
@@ -134,7 +160,9 @@ class Analyzer:
         try:
             self._initialize_slither()
         except Exception as e:
-            risk_result.details["slither_error"] = f"Failed to analyze contract with Slither: {e}"
+            risk_result.details[
+                "slither_error"
+            ] = f"Failed to analyze contract with Slither: {e}"
             return risk_result
         proxy_info = self.get_proxy_info()
         if proxy_info.is_proxy and proxy_info.is_upgradeable:

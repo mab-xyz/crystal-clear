@@ -1,11 +1,11 @@
+from crystal_clear import CrystalClear
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from crystal_clear import CrystalClear
 
 
 class Settings(BaseSettings):
     # Ethereum Node Configuration
-    eth_node_url: str = Field(..., alias="ETH_NODE_URL")
+    eth_node_url: str | None = Field(default=None, alias="ETH_NODE_URL")
 
     # Database Configuration
     database_url: str = Field(..., alias="DATABASE_URL")
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     request_timeout: int = Field(60 * 2, alias="REQUEST_TIMEOUT")
 
     # Maximum block range for analysis
-    MAX_BLOCK_RANGE: int = Field(7000, alias="MAX_BLOCK_RANGE")
+    MAX_BLOCK_RANGE: int = Field(500, alias="MAX_BLOCK_RANGE")
 
     # Logging Configuration
     log_level: str = Field("ERROR", alias="LOG_LEVEL")
@@ -51,5 +51,5 @@ cc = CrystalClear(
     url=settings.eth_node_url,
     allium_api_key=settings.allium_api_key,
     etherscan_api_key=settings.etherscan_api_key,
-    log_level=settings.log_level
+    log_level=settings.log_level,
 )

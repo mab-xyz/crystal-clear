@@ -17,6 +17,22 @@ sqlmodel = ">=0.0.25,<0.0.26"
 psycopg2-binary = ">=2.9.10,<3.0.0"
 crystal-clear = { path = "../crystal-clear", develop = true }
 
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^1.2.0"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
+target-version = ['py312']
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.ruff]
+line-length = 79
+select = ["E", "F", "W", "I", "B"]
+ignore = ["E203", "E266", "E501", "B008"]

@@ -1,8 +1,11 @@
-from sqlmodel import Session, select
-from api.models.audit import Audit, AuditCreate, AuditUpdate
-from typing import List
 from datetime import datetime
+from typing import List
+
 from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select
+
+from api.models.audit import Audit, AuditCreate, AuditUpdate
+
 
 def create_audit(session: Session, audit_data: AuditCreate) -> Audit:
     """Create new audit entry"""
@@ -16,23 +19,22 @@ def create_audit(session: Session, audit_data: AuditCreate) -> Audit:
         session.rollback()
         raise ValueError("Audit with these details already exists") from e
 
+
 def get_audit(
-    session: Session, 
+    session: Session,
     protocol: str,
     company: str,
     version: str | None = None,
 ) -> Audit | None:
     """Get audit by protocol, company and optional version"""
-    stmt = select(Audit).where(
-        Audit.protocol == protocol,
-        Audit.company == company
-    )
+    stmt = select(Audit).where(Audit.protocol == protocol, Audit.company == company)
     if version is not None:
         stmt = stmt.where(Audit.version == version)
     else:
         stmt = stmt.where(Audit.version.is_(None))
-    
+
     return session.exec(stmt).first()
+
 
 def delete_audit(
     session: Session,
@@ -48,30 +50,32 @@ def delete_audit(
     session.commit()
     return True
 
+
 def get_audits(
-    session: Session, 
-    protocol: str | None = None, 
-    version: str | None = None, 
-    company: str | None = None
+    session: Session,
+    protocol: str | None = None,
+    version: str | None = None,
+    company: str | None = None,
 ) -> List[Audit]:
     """Get audits with optional filters"""
     stmt = select(Audit)
-    
+
     if protocol:
         stmt = stmt.where(Audit.protocol == protocol)
     if company:
         stmt = stmt.where(Audit.company == company)
     if version is not None:
         stmt = stmt.where(Audit.version == version)
-    
+
     return session.exec(stmt).all()
+
 
 def update_audit(
     session: Session,
     audit_data: AuditUpdate,
     protocol: str,
     company: str,
-    version: str | None = None
+    version: str | None = None,
 ) -> Audit | None:
     """Update audit URL"""
     audit = get_audit(session, protocol, company, version)
@@ -80,7 +84,7 @@ def update_audit(
 
     audit.url = audit_data.url
     audit.last_updated = datetime.now()
-    
+
     try:
         session.add(audit)
         session.commit()

@@ -1,9 +1,8 @@
-from typing import Literal, List, Optional
+from typing import List
 
-from pydantic import BaseModel, Field, HttpUrl
-
-from crystal_clear.code_analyzer import PermissionsInfo, ProxyInfo
 from crystal_clear.clients.models import VerificationDetails
+from crystal_clear.code_analyzer import PermissionsInfo, ProxyInfo
+from pydantic import BaseModel, Field
 
 
 class LatestBlockResponse(BaseModel):
@@ -16,11 +15,13 @@ class LatestBlockResponse(BaseModel):
 
 class DeploymentInfoRequest(BaseModel):
     """Request model for deployment information."""
+
     address: str = Field(..., description="Contract address for deployment info")
 
 
 class DeploymentInfoResponse(BaseModel):
     """Response model for deployment information."""
+
     address: str = Field(..., description="Contract address")
     deployer: str = Field(..., description="Deployer address")
     deployer_eoa: str = Field(..., description="Deployer EOA address")
@@ -39,11 +40,14 @@ class ScorecardResponse(BaseModel):
     date: str
     checks: List[dict]
 
+
 class ProxyInfoResponse(ProxyInfo):
     """Response model for proxy information."""
+
     address: str = Field(..., description="Contract address")
+
 
 class PermissionsInfoResponse(PermissionsInfo):
     """Response model for permissioned functions of a contract."""
-    address: str = Field(..., description="Contract address")
 
+    address: str = Field(..., description="Contract address")

@@ -1,6 +1,8 @@
+from typing import Any, Dict, Optional
+
 from .base_client import BaseClient
-from typing import Optional, Dict, Any
 from .models import VerificationDetails
+
 
 class EtherscanClient(BaseClient):
     def __init__(self, api_key: str, log_level: str = "INFO"):
@@ -25,13 +27,13 @@ class EtherscanClient(BaseClient):
             "action": "getsourcecode",
             "chainid": 1,
             "address": address,
-            "apikey": self.etherscan_api_key
+            "apikey": self.etherscan_api_key,
         }
         response = self.get("", params=params)
-        if response and response.get('status') == '1' and 'result' in response:
-            return response['result'][0] if response['result'] else None
+        if response and response.get("status") == "1" and "result" in response:
+            return response["result"][0] if response["result"] else None
         return None
-    
+
     def check_contract_verified(self, address: str) -> Dict[str, str]:
         """
         Check if a contract is verified on Etherscan.
@@ -44,16 +46,16 @@ class EtherscanClient(BaseClient):
 
         contract_source = self.get_contract_source(address)
 
-        if contract_source and len(contract_source.get('SourceCode')) > 0:
+        if contract_source and len(contract_source.get("SourceCode")) > 0:
             return VerificationDetails(
                 address=address,
                 verification="verified",
                 verifiedAt="N/A",
-                source="etherscan"
+                source="etherscan",
             )
         return VerificationDetails(
             address=address,
             verification="not-verified",
             verifiedAt="N/A",
-            source="etherscan"
+            source="etherscan",
         )

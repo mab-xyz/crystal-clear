@@ -1,25 +1,30 @@
-from typing import Any, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
+import api.crud.repository as crud
 from api.core.database import get_session
 from api.models.repository import (
     RepositoryCreate,
-    RepositoryUpdate,
-    RepositoryResponse,
     RepositoryListResponse,
+    RepositoryResponse,
+    RepositoryUpdate,
 )
 from api.schemas.response import ErrorResponse
-import api.crud.repository as crud
 
 router = APIRouter(prefix="/repository", tags=["repository"])
+
 
 @router.post(
     "/",
     response_model=RepositoryResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
-        400: {"model": ErrorResponse, "description": "Invalid input or duplicate repository"},
+        400: {
+            "model": ErrorResponse,
+            "description": "Invalid input or duplicate repository",
+        },
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Create a new repository entry",
@@ -32,9 +37,12 @@ async def create_repository(
     try:
         return crud.create_repository(session, repository_in)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create repository: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create repository: {str(e)}"
+        ) from e
+
 
 @router.get(
     "/{protocol}",
@@ -53,8 +61,9 @@ async def get_repository(
     """Get repository entry"""
     repository = crud.get_repository(session, protocol, version)
     if not repository:
-        raise HTTPException(status_code=404, detail="Repository not found")
+        raise HTTPException(status_code=404, detail="Repository not found") from None
     return repository
+
 
 @router.get(
     "/",
@@ -73,13 +82,10 @@ async def list_repositories(
 ) -> Any:
     """List repository entries with optional filters"""
     repositories = crud.get_repositories(
-        session=session,
-        skip=skip,
-        limit=limit,
-        protocol=protocol,
-        version=version
+        session=session, skip=skip, limit=limit, protocol=protocol, version=version
     )
     return RepositoryListResponse(total=len(repositories), items=repositories)
+
 
 @router.put(
     "/{protocol}",
@@ -99,12 +105,15 @@ async def update_repository(
 ) -> Any:
     """Update repository URL"""
     try:
-        repository = crud.update_repository(session,repository_in, protocol, version)
+        repository = crud.update_repository(session, repository_in, protocol, version)
         if not repository:
-            raise HTTPException(status_code=404, detail="Repository not found")
+            raise HTTPException(
+                status_code=404, detail="Repository not found"
+            ) from None
         return repository
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 
 @router.delete(
     "/{protocol}",
@@ -122,4 +131,4 @@ async def delete_repository(
 ) -> None:
     """Delete repository entry"""
     if not crud.delete_repository(session, protocol, version):
-        raise HTTPException(status_code=404, detail="Repository not found")
+        raise HTTPException(status_code=404, detail="Repository not found") from None

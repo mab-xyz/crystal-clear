@@ -1,21 +1,23 @@
-name: SCSC Tests
+name: API Tests
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'scsc/**'
+      - 'webapp/backend/api/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'scsc/**'
+      - 'webapp/backend/api/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: scsc
+        working-directory: webapp/backend/api
 
     strategy:
       matrix:
@@ -44,9 +46,12 @@ jobs:
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --with dev
 
+    - name: Copy .env.example to .env
+      run: cp .env.example .env
+
     - name: Run tests
       run: |
-        poetry run python -m unittest discover -s tests
+        poetry run pytest
 
     - name: Check if tests passed
       if: failure()

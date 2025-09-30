@@ -1,18 +1,17 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 import asyncio
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
-
-from api.core.config import settings
-from api.core.logging import setup_logging
-from api.routers import health, audit, contract, repository, info, analysis
-from api.core.database import create_db_and_tables
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-
 from redis import asyncio as aioredis
+
+from api.core.config import settings
+from api.core.database import create_db_and_tables
+from api.core.logging import setup_logging
+from api.routers import analysis, audit, contract, health, info, repository
 
 # Setup logging
 setup_logging()
@@ -26,6 +25,7 @@ async def lifespan(app: FastAPI):
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     yield
     # Shutdown: add cleanup here if needed
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -46,12 +46,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 @app.middleware("http")
 async def timeout_middleware(request: Request, call_next):
     try:
-        return await asyncio.wait_for(call_next(request), timeout=settings.request_timeout)
+        return await asyncio.wait_for(
+            call_next(request), timeout=settings.request_timeout
+        )
     except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="Request timed out")
+        raise HTTPException(status_code=504, detail="Request timed out") from None
+
 
 # # Include routers
 app.include_router(health.router)
