@@ -40,7 +40,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pyproject.toml
           NEW_VERSION=$(poetry version -s)
-          git commit -m "Bump version to $NEW_VERSION"
+          git commit -m "chore: bump crystal-clear version to $NEW_VERSION [skip ci]"
           git tag "crystal-clear-v$NEW_VERSION"
           git push origin main --tags
 
