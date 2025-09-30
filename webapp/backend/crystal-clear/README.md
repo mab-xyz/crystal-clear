@@ -64,6 +64,9 @@ crystal-clear dependency
 
 **Risk analysis per contract** (computes the risk factors, incl. proxy and permission risks)
 
+You can select the scope of the analysis:
+- `single` – assesses the risk of the specified contract only.
+- `supply-chain` – assesses the risk of the contract and all dependent contracts in its supply chain.
 ```bash
 crystal-clear risk --etherscan-api-key <etherscan_api> \
             --node-url <node_url> \
