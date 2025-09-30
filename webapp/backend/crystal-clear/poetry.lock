@@ -2581,8 +2581,10 @@ optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "implementation_name == \"cpython\" or implementation_name == \"pypy\""
-files = []
-develop = false
+files = [
+    {file = "uschunter-0.0.1-py3-none-any.whl", hash = "sha256:56774114e3f00848f32320639da253c2764f5508161155c4d81c58026f8cfe33"},
+    {file = "uschunter-0.0.1.tar.gz", hash = "sha256:673fc9485711efe7350ae44c9049f391beda7133d168122b2b631f7f5c7f8d5d"},
+]
 
 [package.dependencies]
 crytic-compile = ">=0.3.9,<0.4.0"
@@ -2599,12 +2601,6 @@ dev = ["openai", "slither-analyzer[doc,lint,test]"]
 doc = ["pdoc"]
 lint = ["black (==22.3.0)", "pylint (==3.0.3)"]
 test = ["coverage[toml]", "deepdiff", "filelock", "numpy", "orderly-set (==5.3.2)", "pytest", "pytest-cov", "pytest-insta", "pytest-xdist"]
-
-[package.source]
-type = "git"
-url = "https://github.com/mab-xyz/uschunt-revived"
-reference = "0.0.1"
-resolved_reference = "e055b39f4dfc30f85891c09513e2f364d71fd842"
 
 [[package]]
 name = "virtualenv"
@@ -2630,15 +2626,15 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wcwidth"
-version = "0.2.13"
+version = "0.2.14"
 description = "Measures the displayed width of unicode strings in a terminal"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 groups = ["main"]
 markers = "implementation_name == \"cpython\" or implementation_name == \"pypy\""
 files = [
-    {file = "wcwidth-0.2.13-py2.py3-none-any.whl", hash = "sha256:3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859"},
-    {file = "wcwidth-0.2.13.tar.gz", hash = "sha256:72ea0c06399eb286d978fdedb6923a9eb47e1c486ce63e9b4e64fc18303972b5"},
+    {file = "wcwidth-0.2.14-py2.py3-none-any.whl", hash = "sha256:a7bb560c8aee30f9957e5f9895805edd20602f2d7f720186dfd906e82b4982e1"},
+    {file = "wcwidth-0.2.14.tar.gz", hash = "sha256:4d478375d31bc5395a3c55c40ccdf3354688364cd61c4f6adacaa9215d0b3605"},
 ]
 
 [[package]]
@@ -2881,4 +2877,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.12.0,<4"
-content-hash = "0b6cc746150c695c03d1c7db631446d16880df93014b5034e809ae126b8ac93b"
+content-hash = "2d691e5c8829c647bbb7628472b52ef06635e64b0d79c8f2fc9fb2846fcf5d4f"
