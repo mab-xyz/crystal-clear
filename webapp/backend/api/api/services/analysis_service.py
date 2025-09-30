@@ -56,10 +56,14 @@ def analyze_contract_dependencies(
         raise InputValidationError(str(e)) from e
     except Exception as e:
         logger.error(f"Internal server error: {e}")
-        raise InternalServerError(f"Failed to analyze contract: {str(e)}") from e
+        raise InternalServerError(
+            f"Failed to analyze contract: {str(e)}"
+        ) from e
 
 
-def _validate_block_range(from_block: Optional[str], to_block: Optional[str]) -> None:
+def _validate_block_range(
+    from_block: Optional[str], to_block: Optional[str]
+) -> None:
     """Validate the block range if provided."""
     if to_block is not None and from_block is not None:
         try:
@@ -67,8 +71,8 @@ def _validate_block_range(from_block: Optional[str], to_block: Optional[str]) ->
                 raise ValueError(
                     f"Block range exceeds maximum limit of {settings.MAX_BLOCK_RANGE} blocks."
                 )
-        except ValueError:
-            raise ValueError("Block numbers must be valid integers") from None
+        except ValueError as e:
+            raise ValueError(f"Invalid block number: {e}") from e
 
 
 def _process_node_labels(session: Session, callgraph: CallGraph) -> List[str]:
@@ -156,7 +160,9 @@ async def assess_contract_risk(
 
     # Process dependencies
     for dep in analysis.dependencies:
-        dep_risk = await _process_dependency_risk(session, contract_service, dep)
+        dep_risk = await _process_dependency_risk(
+            session, contract_service, dep
+        )
         additional_risk_analysis.dependencies.append(dep_risk)
 
         # Update aggregated risks based on dependency risks
@@ -206,19 +212,25 @@ async def _process_dependency_risk(
         dep_risk.details["scorecard"] = scorecard_data
         dep_risk.details["repository_url"] = scorecard_data["repo"]
     except Exception as e:
-        logger.error(f"Error fetching scorecard data for {dependency.address}: {e}")
+        logger.error(
+            f"Error fetching scorecard data for {dependency.address}: {e}"
+        )
 
     # Fetch contract audits
     try:
         logger.info(f"Fetching contract audits for {dependency.address}.")
-        audits_data = await contract_service.get_contract_audits(dependency.address)
+        audits_data = await contract_service.get_contract_audits(
+            dependency.address
+        )
         if audits_data["audits"]:
             dep_risk.risk_factors.audits = True
             dep_risk.details["audits"] = [
                 audit.model_dump() for audit in audits_data["audits"]
             ]
     except Exception as e:
-        logger.error(f"Error fetching contract audits for {dependency.address}: {e}")
+        logger.error(
+            f"Error fetching contract audits for {dependency.address}: {e}"
+        )
 
     return dep_risk
 
@@ -240,7 +252,9 @@ def _update_aggregated_risks(
 
     if dep_risk.risk_factors.scorecard is not None:
         if aggregated_risks.risk_factors.scorecard is not None:
-            aggregated_risks.risk_factors.scorecard += dep_risk.risk_factors.scorecard
+            aggregated_risks.risk_factors.scorecard += (
+                dep_risk.risk_factors.scorecard
+            )
     else:
         aggregated_risks.risk_factors.scorecard = None
 
@@ -255,7 +269,10 @@ def _finalize_scorecard_average(risk_analysis: RiskAnalysisResponse) -> None:
     aggregated_risks = risk_analysis.aggregated_risks
     dependencies = risk_analysis.dependencies
 
-    if aggregated_risks.risk_factors.scorecard is not None and len(dependencies) > 0:
+    if (
+        aggregated_risks.risk_factors.scorecard is not None
+        and len(dependencies) > 0
+    ):
         aggregated_risks.risk_factors.scorecard = round(
             aggregated_risks.risk_factors.scorecard / len(dependencies), 2
         )
