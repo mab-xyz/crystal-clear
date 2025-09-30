@@ -1,0 +1,30 @@
+name: Publish Crystal-Clear Package on PYPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # e.g., v0.1.0, v1.2.3
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webapp/backend/crystal-clear
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install Poetry
+        run: python -m pip install poetry
+
+      - name: Configure Poetry for PyPI
+        run: poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Publish package
+        run: poetry publish --build --no-interaction
