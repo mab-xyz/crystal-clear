@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from web3 import Web3
@@ -253,3 +253,59 @@ def test_get_calls(MockWeb3, trace_collector):
     assert calls[0].source == "0xE592427A0AEce92De3Edee1F18E0157C05861564"
     assert calls[0].target == "0x5D27FDD96c8e4028edbAbF3D667be24769425199"
     assert calls[0].types == {"call": 1}
+
+    @patch.object(TraceCollector, "_filter_txs_from", return_value={"0x123"})
+    @patch.object(TraceCollector, "_validate_contract", return_value=True)
+    @patch.object(TraceCollector, "_get_calls_from_tx")
+    @patch.object(TraceCollector, "_filter_contract_calls")
+    def test_get_calls_from(
+        mock_filter_contract_calls,
+        mock_get_calls_from_tx,
+        mock_validate_contract,
+        mock_filter_txs_from,
+        trace_collector,
+    ):
+        # Mock call trace result
+        call_trace = {
+            "from": "0xAAA",
+            "to": "0xBBB",
+            "type": "CALL",
+            "calls": [],
+        }
+        mock_get_calls_from_tx.return_value = call_trace
+
+        # Mock filter_contract_calls returns one CallEdge
+        from api.models import CallEdge  # adjust if located elsewhere
+
+        edge = CallEdge(source="0xAAA", target="0xBBB", types={"CALL": 1})
+        mock_filter_contract_calls.return_value = [edge]
+
+        result: CallGraph = trace_collector.get_calls_from(1, 2, "0xAAA")
+
+        assert isinstance(result, CallGraph)
+        assert result.address == "0xAAA"
+        assert result.from_block == 1
+        assert result.to_block == 2
+        assert result.n_nodes == 2
+        assert result.n_matching_transactions == 1
+        assert set(result.nodes) == {"0xAAA", "0xBBB"}
+        assert result.edges[0].source == "0xAAA"
+        assert result.edges[0].target == "0xBBB"
+        assert result.dependency_depths["0xbbb"] == 1
+
+    @patch.object(TraceCollector, "get_calls_from")
+    def test_get_call_graph_with_defaults(
+        mock_get_calls_from, trace_collector
+    ):
+        # Pretend latest block = 200, so from=195, to=200
+        trace_collector.w3.eth.block_number = 200
+
+        dummy_graph = MagicMock(spec=CallGraph)
+        mock_get_calls_from.return_value = dummy_graph
+
+        result = trace_collector.get_call_graph(
+            "0xAAA", from_block=None, to_block=None, blocks=5
+        )
+
+        assert result is dummy_graph
+        mock_get_calls_from.assert_called_once_with(195, 200, "0xAAA")
