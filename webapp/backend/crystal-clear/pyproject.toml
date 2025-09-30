@@ -7,6 +7,10 @@ authors = [
     {name = "Raphina Liu", email = "raphinaliu@gmail.com"},
     {name = "Martin Monperrus", email= "martin@monperrus.com"}
 ]
+packages = [
+    { include = "crystal_clear" },
+    { include = "cli" }
+]
 license = "MIT"
 readme = "README.md"
 requires-python = ">3.12.0,<4"
