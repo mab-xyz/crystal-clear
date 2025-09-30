@@ -1,16 +1,11 @@
-name: API Tests
+name: Export OpenAPI Spec
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'webapp/backend/api/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'webapp/backend/api/**'
+      - 'webapp/backend/api/api/**'
 
 jobs:
   test:
@@ -47,15 +42,19 @@ jobs:
 
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --with dev
-
-    - name: Copy .env.example to .env
-      run: cp .env.example .env
-
-    - name: Run tests
+      run: poetry install --no-interaction
+    
+    - name: Generate OpenAPI spec
       run: |
-        poetry run pytest
+        poetry run python api/export_openapi.py
+    
+    - name: Commit and push OpenAPI spec
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add openapi.yaml
+        git commit -m "chore: update openapi.json [skip ci]"
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Check if tests passed
-      if: failure()
-      run: exit 1
