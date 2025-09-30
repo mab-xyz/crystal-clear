@@ -43,6 +43,9 @@ jobs:
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction
+
+    - name: Copy .env.example to .env
+      run: cp .env.example .env
     
     - name: Generate OpenAPI spec
       run: |
