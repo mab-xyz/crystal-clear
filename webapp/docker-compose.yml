@@ -2,6 +2,7 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: ./api/Dockerfile
     container_name: cc-api-backend
     image: cc-api-backend
     ports:
@@ -49,14 +50,14 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${PWD}/postgres_data
+      device: ./postgres_data
 
   redis_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${PWD}/redis_data
+      device: ./redis_data
 
 networks:
   cc-network:
