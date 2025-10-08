@@ -24,15 +24,24 @@ RUN npm install --global sevm
 # Clean up apt cache
 RUN rm -rf /var/lib/apt/lists/*
 
-# Install Python requirements
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Poetry to manage Python dependencies
+RUN pip install --no-cache-dir poetry
 
-# Copy your app files
-COPY . .
+# Copy dependency definitions first for better caching
+COPY api/pyproject.toml api/poetry.lock ./
+
+# Copying the dependency into the image
+COPY crystal-clear/ /crystal-clear
+
+# Copy your app files (needed before installing due to local path deps)
+COPY api/ ./
+
+# Install Python dependencies with Poetry
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-root
 
 # Expose the API port
 EXPOSE ${API_PORT}
 
 # Start the application
-CMD uvicorn main:app --host ${API_HOST} --port ${API_PORT}
+CMD uvicorn api.main:app --host ${API_HOST} --port ${API_PORT}
