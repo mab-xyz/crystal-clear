@@ -181,3 +181,7 @@ webapp/frontend/additional_data/
 
 # notes
 *.md
+
+
+postgres_data/
+redis_data/

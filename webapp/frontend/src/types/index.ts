@@ -42,3 +42,13 @@ export type {
 export type { Node as GraphNode } from "./graph";
 export type { Edge as GraphEdge } from "./graph";
 export type { GraphData as JsonData } from "./graph";
+
+// Monitoring types
+export type {
+  MonitoringAction,
+  NotificationMethod,
+  MonitoringRequest,
+  MonitoringResponse,
+  MonitoringError,
+  MonitoringResult,
+} from "./monitoring";

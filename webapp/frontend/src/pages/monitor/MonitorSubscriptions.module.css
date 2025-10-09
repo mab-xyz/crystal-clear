@@ -1,0 +1,244 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background: #ffffff;
+}
+
+.card {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2.5rem;
+  border-radius: 1rem;
+  background-color: #ffffff;
+  box-shadow: 0 25px 45px -30px rgba(27, 94, 32, 0.25);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1b5e20;
+}
+
+.description {
+  font-size: 1rem;
+  color: #2f3b35;
+  line-height: 1.6;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.actions {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #405348;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.actionList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.actionOption {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(27, 94, 32, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition: border 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.actionOption:hover {
+  border-color: rgba(27, 94, 32, 0.4);
+  box-shadow: 0 12px 24px -22px rgba(27, 94, 32, 0.55);
+}
+
+.actionOptionActive {
+  border-color: #1b5e20;
+  background: rgba(27, 94, 32, 0.08);
+  box-shadow: 0 16px 32px -26px rgba(27, 94, 32, 0.65);
+}
+
+.actionOptionUnsubscribe {
+  border-color: rgba(198, 40, 40, 0.3);
+  background: rgba(255, 235, 237, 0.92);
+}
+
+.actionOptionUnsubscribe:hover {
+  border-color: rgba(198, 40, 40, 0.55);
+  box-shadow: 0 12px 24px -18px rgba(198, 40, 40, 0.55);
+}
+
+.actionOptionUnsubscribeActive {
+  border-color: #c62828;
+  background: rgba(198, 40, 40, 0.14);
+  box-shadow: 0 18px 32px -20px rgba(198, 40, 40, 0.6);
+}
+
+.actionInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.actionLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #143d16;
+}
+
+.actionLabelUnsubscribe {
+  color: #a12323;
+}
+
+.actionDescription {
+  font-size: 0.875rem;
+  color: #425248;
+  line-height: 1.4;
+}
+
+.actionDescriptionUnsubscribe {
+  color: #b23a48;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1f2d23;
+}
+
+.consentRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: #233228;
+}
+
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0.5rem;
+}
+
+.actionsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  min-width: 180px;
+  flex: 1 1 180px;
+  justify-content: center;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.actionButtonPrimary {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+  box-shadow: 0 15px 30px -20px rgba(27, 94, 32, 0.7);
+}
+
+.actionButtonPrimary:hover:not([aria-disabled="true"]) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px -20px rgba(27, 94, 32, 0.85);
+}
+
+.actionButtonDestructive {
+  background-color: #c62828 !important;
+  border-color: #c62828 !important;
+  color: #ffffff !important;
+  box-shadow: 0 15px 30px -20px rgba(198, 40, 40, 0.7);
+}
+
+.actionButtonDestructive:hover:not([aria-disabled="true"]) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px -20px rgba(198, 40, 40, 0.85);
+}
+
+.actionButtonGhost {
+  border-color: rgba(27, 94, 32, 0.4);
+  color: #1b5e20;
+}
+
+.actionButtonGhost:hover {
+  border-color: rgba(27, 94, 32, 0.65);
+  background: rgba(27, 94, 32, 0.07);
+}
+
+.actionButton[aria-disabled="true"] {
+  opacity: 1;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  background-color: #d3d8d4 !important;
+  border-color: #c4cac6 !important;
+  color: #6b7570 !important;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #6c4bcf;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1.75rem;
+    gap: 1.5rem;
+  }
+
+  .actionList {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}

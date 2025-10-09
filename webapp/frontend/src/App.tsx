@@ -11,6 +11,9 @@ import "./index.css";
 // Lazy load route components to reduce initial bundle size
 const Home = lazy(() => import("./pages/homepage/Home"));
 const Graph = lazy(() => import("./pages/graph/Graph"));
+const MonitorSubscriptionsPage = lazy(
+  () => import("./pages/monitor/MonitorSubscriptions"),
+);
 
 // Global styles with optimized font loading
 const GlobalStyles = createGlobalStyle`
@@ -74,6 +77,7 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/graph" element={<Graph />} />
             <Route path="/graph/:address" element={<Graph />} />
+            <Route path="/monitor" element={<MonitorSubscriptionsPage />} />
             <Route
               path="*"
               element={
