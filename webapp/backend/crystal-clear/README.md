@@ -30,7 +30,7 @@ SCSC helps you understand contract interactions by generating detailed call grap
 ```bash
 # Clone the repository
 git clone https://github.com/chains-project/crystal-clear.git
-cd crystal-clear/webapp/backend 
+cd crystal-clear/webapp/backend/crystal-clear
 
 # Install with Poetry
 poetry install
