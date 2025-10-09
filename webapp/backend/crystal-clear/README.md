@@ -30,7 +30,7 @@ SCSC helps you understand contract interactions by generating detailed call grap
 ```bash
 # Clone the repository
 git clone https://github.com/chains-project/crystal-clear.git
-cd crystal-clear
+cd crystal-clear/webapp/backend 
 
 # Install with Poetry
 poetry install
@@ -55,7 +55,7 @@ crystal-clear dependency --node-url <node_url> \
             [options]
 
 # this exports the smart contract dependency graph
-crystal-clear dependency
+crystal-clear dependency  --node-url <node_url>
             --address 0xE592427A0AEce92De3Edee1F18E0157C05861564 \
             --from-block 0x14c3b86 \
             --to-block 0x14c3b90 \
