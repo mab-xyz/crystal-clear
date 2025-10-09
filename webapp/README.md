@@ -33,14 +33,14 @@ Crystal-Clear is a tool designed to help developers, auditors, and researchers a
 
 1. Clone the repository:
 ```bash
-git clone [repository-url]
-cd crystal-clear
+git clone https://github.com/mab-xyz/crystal-clear.git
+cd crystal-clear/webapp
 ```
 
 2. Set up environment variables:
 ```bash
-cp backend/.env.example backend/.env
-# Edit backend/.env with your configuration
+cp backend/api/.env.example backend/api/.env
+# Edit .env with your configuration
 ```
 
 3. Start the services:
