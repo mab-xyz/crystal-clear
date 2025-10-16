@@ -60,5 +60,6 @@ jobs:
         with:
           app-name: 'cc-api'
           slot-name: 'Production'
-
+          package: webapp/backend
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E2EE509066C443CA93AC9F77931EF3F7 }}
+
