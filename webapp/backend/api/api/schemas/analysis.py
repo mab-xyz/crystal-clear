@@ -92,3 +92,32 @@ class ContractRiskRequest(BaseModel):
     address: str = Field(..., description="Contract address to analyze")
     from_block: Optional[str] = Field(None, description="Start block")
     to_block: Optional[str] = Field(None, description="End block")
+
+
+class SimulationRequest(BaseModel):
+    """Request model for pre-sign transaction simulation."""
+
+    from_addr: str = Field(..., description="EOA sender address")
+    to_addr: Optional[str] = Field(None, description="Target contract address")
+    data: Optional[str] = Field("0x", description="Calldata hex")
+    value: Optional[str] = Field("0x0", description="Wei value (hex)")
+    gas: Optional[str] = Field(None, description="Gas limit (hex)")
+    maxFeePerGas: Optional[str] = Field(None, description="maxFeePerGas (hex)")
+    maxPriorityFeePerGas: Optional[str] = Field(
+        None, description="maxPriorityFeePerGas (hex)"
+    )
+    tx_type: Optional[str] = Field(None, description="Tx type, e.g., 0x2")
+    block_tag: Optional[str] = Field("latest", description="Block tag or number")
+    allium_query_id: Optional[str] = Field(
+        None, description="Allium query ID for first-time interaction"
+    )
+
+
+class SimulationResultItem(BaseModel):
+    address: str
+    first_time: bool
+    verification: dict | None = None
+
+
+class SimulationResponse(BaseModel):
+    results: List[SimulationResultItem]

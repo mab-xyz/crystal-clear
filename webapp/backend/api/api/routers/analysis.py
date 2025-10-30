@@ -8,6 +8,8 @@ from api.schemas.analysis import (
     ContractDependenciesRequest,
     ContractDependenciesResponse,
     ContractRiskRequest,
+    SimulationRequest,
+    SimulationResponse,
     RiskAnalysisResponse,
 )
 from api.schemas.response import ErrorResponse
@@ -15,6 +17,7 @@ from api.services.analysis_service import (
     analyze_contract_dependencies,
     assess_contract_risk,
 )
+from api.core.config import cc
 
 router = APIRouter(
     prefix="/v1/analysis",
@@ -100,3 +103,56 @@ async def get_contract_risk(
     )
 
     return risk_data
+
+
+@router.post(
+    "/tx-risk",
+    response_model=SimulationResponse,
+    responses={
+        500: {
+            "description": "Internal server error",
+            "model": ErrorResponse,
+        },
+        422: {
+            "description": "Input validation error",
+            "model": ErrorResponse,
+        },
+    },
+    status_code=status.HTTP_200_OK,
+    summary="Transaction risk: simulate and check",
+    description=(
+        "Simulate a transaction via Erigon trace_call, list all touched contracts (including DELEGATECALL), "
+        "and report whether it's the first interaction by the sender and the verification status."
+    ),
+)
+async def simulate_transaction(body: SimulationRequest) -> SimulationResponse:
+    call_object = {"from": body.from_addr}
+    if body.to_addr:
+        call_object["to"] = body.to_addr
+    if body.data:
+        call_object["data"] = body.data
+    if body.value:
+        call_object["value"] = body.value
+    if body.gas:
+        call_object["gas"] = body.gas
+    if body.maxFeePerGas:
+        call_object["maxFeePerGas"] = body.maxFeePerGas
+    if body.maxPriorityFeePerGas:
+        call_object["maxPriorityFeePerGas"] = body.maxPriorityFeePerGas
+    if body.tx_type:
+        call_object["type"] = body.tx_type
+
+    results = cc.simulate_and_check(
+        call_object,
+        block_tag=body.block_tag or "latest",
+        allium_query_id=body.allium_query_id,
+    )
+    items = [
+        {
+            "address": addr,
+            "first_time": info.get("first_time", False),
+            "verification": info.get("verification"),
+        }
+        for addr, info in results.items()
+    ]
+    return SimulationResponse(results=items)
