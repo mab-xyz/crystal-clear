@@ -26,7 +26,7 @@ class RateLimitRetryMiddleware(Web3Middleware):
                     return response  # success or non-429 error
                 except Exception as e:
                     self.logger.warning(
-                        f"Request failed attempt {attempt + 1}: {e}. Retrying in {2 ** attempt} seconds..."
+                        f"Request failed attempt {attempt + 1}: {e}. Retrying in {2**attempt} seconds..."
                     )
                     wait_time = (2**attempt) + random.random()
                     time.sleep(wait_time)
@@ -38,6 +38,9 @@ class RateLimitRetryMiddleware(Web3Middleware):
 
 
 class TraceCollector:
+    # Hard cap to prevent excessive processing when trace_filter returns many results
+    TRACE_FILTER_TX_LIMIT = 10
+
     def __init__(self, url: str, log_level: str = "INFO"):
         """
         Initializes the TraceCollector with a URL and log level.
@@ -97,8 +100,15 @@ class TraceCollector:
             self.logger.error(f"Error filtering transactions: {e}")
             return set()
 
-        if res is None:
+        if res is None or not isinstance(res, list):
             return set()
+        # If provider returns more than our cap, stop early to avoid heavy scans
+        if len(res) > self.TRACE_FILTER_TX_LIMIT:
+            self.logger.warning(
+                f"trace_filter returned {len(res)} results (> {self.TRACE_FILTER_TX_LIMIT}). Capping to limit."
+            )
+            res = res[: self.TRACE_FILTER_TX_LIMIT]
+        allowed = {"call", "delegatecall", "staticcall", "callcode"}
         tx_hashes = {
             (
                 r["transactionHash"].to_0x_hex()
@@ -106,10 +116,235 @@ class TraceCollector:
                 else r["transactionHash"]
             )
             for r in res
-            if r["type"] == "call"
+            if str(r.get("type", "")).lower() in allowed
         }
         self.logger.info(f"Found {len(tx_hashes)} transactions.")
         return tx_hashes
+
+    def _filter_txs_from_to(
+        self,
+        from_block: str,
+        to_block: str,
+        from_address: str,
+        to_address: str,
+    ) -> Set[str]:
+        """
+        [UNUSED] Deprecated in favor of `has_from_to_interaction` (existence-only)
+        or `filter_txs_from_to_desc` (ordered list if needed).
+        """
+        raise NotImplementedError(
+            "_filter_txs_from_to is unused. Use has_from_to_interaction instead."
+        )
+
+    def filter_txs_from_to_desc(
+        self,
+        from_block: str | int | None,
+        to_block: str | int | None,
+        from_address: str,
+        to_address: str,
+        batch_size: int = 1_000,
+        page_size: int = 100,
+    ) -> List[str]:
+        """
+        [UNUSED] Kept for reference. Current flow uses `has_from_to_interaction` for
+        first-time checks (KISS/YAGNI). This returns an ordered list if ever needed.
+        """
+        raise NotImplementedError(
+            "filter_txs_from_to_desc is unused. Use has_from_to_interaction instead."
+        )
+
+        def to_int_block(b: str | int | None, latest: int) -> int:
+            if b is None:
+                return latest
+            if isinstance(b, int):
+                return b
+            if isinstance(b, str):
+                if b == "latest":
+                    return latest
+                if b.startswith("0x"):
+                    try:
+                        return int(b, 16)
+                    except Exception:
+                        pass
+                if b.isdigit():
+                    return int(b)
+            return latest
+
+        try:
+            latest_block = int(self.w3.eth.block_number)
+        except Exception:
+            latest_block = 0
+
+        hi = to_int_block(to_block, latest_block)
+        lo = to_int_block(from_block, 0) if from_block is not None else 0
+        hi = max(0, hi)
+        lo = max(0, lo)
+
+        from_address = Web3.to_checksum_address(from_address)
+        to_address = Web3.to_checksum_address(to_address)
+        self.logger.info(
+            f"First-time check: {from_address} -> {to_address} in [{hex(lo)}, {hex(hi)}], "
+            f"batch_size={batch_size}, page_size={page_size}"
+        )
+
+        collected: Dict[str, int] = {}
+
+        while hi >= lo:
+            win_start = max(lo, hi - max(1, int(batch_size)) + 1)
+            after = 0
+            while True:
+                params = {
+                    "fromBlock": hex(win_start),
+                    "toBlock": hex(hi),
+                    "fromAddress": [from_address],
+                    "toAddress": [to_address],
+                    "count": max(1, int(page_size)),
+                    "after": after,
+                }
+                try:
+                    res = self.w3.tracing.trace_filter(params)
+                except Exception as e:
+                    self.logger.error(
+                        f"trace_filter error in window {hex(win_start)}-{hex(hi)}: {e}"
+                    )
+                    break
+
+                if not isinstance(res, list) or len(res) == 0:
+                    break
+
+                allowed = {"call", "delegatecall", "staticcall", "callcode"}
+                for r in res:
+                    if str(r.get("type", "")).lower() not in allowed:
+                        continue
+                    txh = (
+                        r["transactionHash"].to_0x_hex()
+                        if isinstance(r.get("transactionHash"), HexBytes)
+                        else r.get("transactionHash")
+                    )
+                    if not txh or txh in collected:
+                        continue
+
+                    bn = r.get("blockNumber")
+                    if isinstance(bn, str) and bn.startswith("0x"):
+                        try:
+                            bn = int(bn, 16)
+                        except Exception:
+                            bn = None
+                    if not isinstance(bn, int):
+                        try:
+                            receipt = self.w3.eth.get_transaction_receipt(txh)
+                            bn = getattr(
+                                receipt, "blockNumber", None
+                            ) or receipt.get("blockNumber")
+                        except Exception:
+                            bn = None
+                    if isinstance(bn, int):
+                        collected[txh] = bn
+
+                if len(res) < int(page_size):
+                    break
+                after += len(res)
+
+            hi = win_start - 1
+
+        ordered = sorted(collected.items(), key=lambda kv: kv[1], reverse=True)
+        return [txh for txh, _ in ordered]
+
+    def has_from_to_interaction(
+        self,
+        from_block: str | int | None,
+        to_block: str | int | None,
+        from_address: str,
+        to_address: str,
+        batch_size: int = 500,
+        page_size: int = 15,
+    ) -> bool:
+        """
+        Returns True as soon as any matching call trace is found for
+        from_address -> to_address within the given block range. Scans
+        from the latest blocks backwards using block windows and paginated
+        trace_filter calls. Does not collect or sort results.
+        """
+
+        def to_int_block(b: str | int | None, latest: int) -> int:
+            if b is None:
+                return latest
+            if isinstance(b, int):
+                return b
+            if isinstance(b, str):
+                if b == "latest":
+                    return latest
+                if b.startswith("0x"):
+                    try:
+                        return int(b, 16)
+                    except Exception:
+                        pass
+                if b.isdigit():
+                    return int(b)
+            return latest
+
+        try:
+            latest_block = int(self.w3.eth.block_number)
+        except Exception:
+            latest_block = 0
+
+        hi = to_int_block(to_block, latest_block)
+        lo = to_int_block(from_block, 0) if from_block is not None else 0
+        hi = max(0, hi)
+        lo = max(0, lo)
+
+        from_address = Web3.to_checksum_address(from_address)
+        to_address = Web3.to_checksum_address(to_address)
+
+        while hi >= lo:
+            win_start = max(lo, hi - max(1, int(batch_size)) + 1)
+            after = 0
+            while True:
+                params = {
+                    "fromBlock": hex(win_start),
+                    "toBlock": hex(hi),
+                    "fromAddress": [from_address],
+                    "toAddress": [to_address],
+                    "count": max(1, int(page_size)),
+                    "after": after,
+                }
+                try:
+                    res = self.w3.tracing.trace_filter(params)
+                except Exception as e:
+                    self.logger.error(
+                        f"trace_filter error in window {hex(win_start)}-{hex(hi)}: {e}"
+                    )
+                    break
+
+                if not isinstance(res, list) or len(res) == 0:
+                    break
+
+                allowed = {"call", "delegatecall", "staticcall", "callcode"}
+                self.logger.debug(
+                    f"Window {hex(win_start)}-{hex(hi)} after={after}: {len(res)} trace(s)"
+                )
+                for r in res:
+                    if str(r.get("type", "")).lower() in allowed:
+                        txh = (
+                            r.get("transactionHash").to_0x_hex()
+                            if isinstance(r.get("transactionHash"), HexBytes)
+                            else r.get("transactionHash")
+                        )
+                        self.logger.info(
+                            f"Interaction found: tx={txh} type={r.get('type')} in window {hex(win_start)}-{hex(hi)} after={after}"
+                        )
+                        return True
+
+                if len(res) < int(page_size):
+                    break
+                after += len(res)
+
+            hi = win_start - 1
+
+        self.logger.info(
+            f"No prior interaction for {from_address} -> {to_address} in [{hex(lo)}, {hex(hi + 1)}]"
+        )
+        return False
 
     def _get_calls_from_tx(self, tx_hash: str) -> CallTrace:
         """
@@ -126,7 +361,10 @@ class TraceCollector:
         return res
 
     def _extract_all_subcalls(
-        self, call: CallTrace, calls: Dict[tuple[str, str], CallEdge], caller: str
+        self,
+        call: CallTrace,
+        calls: Dict[tuple[str, str], CallEdge],
+        caller: str,
     ) -> None:
         """
         Recursively extracts all subcalls from a call.
@@ -156,7 +394,9 @@ class TraceCollector:
             for subcall in call.get("calls", []):
                 self._extract_calls(subcall, contract_address, calls)
 
-    def get_calls(self, tx_hashes: Set[str], contract_address: str) -> List[CallEdge]:
+    def get_calls(
+        self, tx_hashes: Set[str], contract_address: str
+    ) -> List[CallEdge]:
         """
         Gets calls for a given set of transaction hashes and contract address.
         """
@@ -169,11 +409,15 @@ class TraceCollector:
         self.logger.info(f"Extracted {len(calls)} calls.")
         return list(calls.values())
 
-    def _filter_contract_calls(self, calls: List[CallEdge], to_block) -> List[CallEdge]:
+    def _filter_contract_calls(
+        self, calls: List[CallEdge], to_block
+    ) -> List[CallEdge]:
         """
         Filters calls to contract addresses.
         """
-        return [c for c in calls if self._validate_contract(c.target, to_block)]
+        return [
+            c for c in calls if self._validate_contract(c.target, to_block)
+        ]
 
     def get_calls_from(
         self, from_block: str | int, to_block: str | int, contract_address: str
@@ -208,7 +452,9 @@ class TraceCollector:
 
         nodes_dict = {node: "" for node in nodes}
 
-        depths: Dict[str, int] = self.get_depths(nodes, edges, contract_address.lower())
+        depths: Dict[str, int] = self.get_depths(
+            nodes, edges, contract_address.lower()
+        )
         graph = CallGraph(
             address=contract_address,
             from_block=int(from_block_hex, 16),
@@ -256,7 +502,9 @@ class TraceCollector:
                     int(block, 16)
                     return block
                 except ValueError as e:
-                    raise ValueError(f"Invalid hex block number: {block}") from e
+                    raise ValueError(
+                        f"Invalid hex block number: {block}"
+                    ) from e
 
             if block.isdigit():
                 return hex(int(block))
