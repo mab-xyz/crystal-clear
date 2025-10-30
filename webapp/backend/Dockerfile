@@ -21,6 +21,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
 # Install sevm globally via npm
 RUN npm install --global sevm
 
+# Add npm global bin to PATH
+ENV PATH="/usr/local/lib/node_modules/.bin:${PATH}"
+
+# Verify sevm is accessible
+RUN which sevm && sevm --version || echo "sevm installation check"
+
 # Clean up apt cache
 RUN rm -rf /var/lib/apt/lists/*
 
