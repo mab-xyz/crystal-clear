@@ -1,6 +1,13 @@
 # webapp db and cache files
 webapp/Postgresql-data/
+webapp/postgres_data.bak/
+webapp/postgres_data/
 webapp/Redis/
+webapp/redis_data/
+
+test_tracecall.json
+
+webapp/backend/crystal-clear/scripts/
 
 
 # webapp analysis files

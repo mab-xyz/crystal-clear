@@ -56,7 +56,27 @@ def from_trace_call(traces: List[Dict[str, Any]], logger: Optional[logging.Logge
         if len(path) == 0:
             continue
         parent_path = path[:-1]
-        parent = nodes.get(parent_path)
+
+        # Special-case: when parent_path is empty, the parent is one of the
+        # multiple top-level roots. In providers like Erigon, children of each
+        # top-level frame use a single-index path like [0], [1], ... where the
+        # index corresponds to the position of the top-level frame. Using
+        # nodes.get(()) would be incorrect because multiple roots share the
+        # same empty key and the last one would overwrite previous ones.
+        if len(parent_path) == 0:
+            try:
+                root_idx = int(path[0]) if len(path) > 0 else None
+            except Exception:
+                root_idx = None
+
+            parent = (
+                roots[root_idx]
+                if (root_idx is not None and 0 <= root_idx < len(roots))
+                else None
+            )
+        else:
+            parent = nodes.get(parent_path)
+
         if parent is not None:
             parent["calls"].append(node)
         else:
@@ -71,4 +91,3 @@ def from_trace_call(traces: List[Dict[str, Any]], logger: Optional[logging.Logge
     synthetic_root["calls"] = roots
     log.debug("Constructed synthetic root for %d roots", len(roots))
     return synthetic_root
-

@@ -277,7 +277,9 @@ class CrystalClear:
         from_block: str | int | None = None,
         to_block: str | int | None = None,
         latest_offset: int | None = None,
-        allium_query_id: str | None = None,  # reserved for future use
+        # allium_query_id: str | None = None,  # reserved for future use
+        full_tree: bool = True,
+        include_root: bool = True,
     ) -> dict:
         if not self.simulation_collector:
             raise ValueError(
@@ -289,6 +291,21 @@ class CrystalClear:
         )
         from_addr = call_object.get("from", "")
         results: dict[str, dict] = {}
+        # Always include the root callee (depth=0) if present
+        root_addr = call_object.get("to", "") or ""
+        if root_addr:
+            info = {
+                "first_time": self.first_time(
+                    from_addr,
+                    root_addr,
+                    from_block=from_block,
+                    to_block=to_block,
+                    latest_offset=latest_offset,
+                ),
+                "verification": self._verification_details(root_addr),
+                "depth": 0,
+            }
+            results[root_addr] = info
         for edge in edges:
             addr = edge.target
             info = {
@@ -301,6 +318,10 @@ class CrystalClear:
                 ),
                 "verification": self._verification_details(addr),
             }
+            if hasattr(edge, "depth"):
+                info["depth"] = getattr(edge, "depth")
+            if hasattr(edge, "types") and isinstance(edge.types, dict):
+                info["types"] = edge.types
             results[addr] = info
         return results
 
@@ -311,6 +332,8 @@ class CrystalClear:
         from_block: str | int | None = None,
         to_block: str | int | None = None,
         latest_offset: int | None = None,
+        full_tree: bool = True,
+        include_root: bool = True,
     ) -> dict:
         if not self.simulation_collector:
             raise ValueError(
@@ -355,6 +378,32 @@ class CrystalClear:
                 pass
 
         results: dict[str, dict] = {}
+        # Always include the root callee (tx.to or provided root_contract)
+        root_addr = root_contract
+        if not root_addr:
+            try:
+                # fall back to tx.to
+                tx = self.simulation_collector.w3.eth.get_transaction(tx_hash)
+                root_addr = (
+                    tx.get("to", "")
+                    if isinstance(tx, dict)
+                    else getattr(tx, "to", "")
+                )
+            except Exception:
+                root_addr = ""
+        if root_addr:
+            info = {
+                "first_time": self.first_time(
+                    from_addr,
+                    root_addr,
+                    from_block=from_block,
+                    to_block=to_block,
+                    latest_offset=latest_offset,
+                ),
+                "verification": self._verification_details(root_addr),
+                "depth": 0,
+            }
+            results[root_addr] = info
         for edge in edges:
             addr = edge.target
             info = {
@@ -367,6 +416,10 @@ class CrystalClear:
                 ),
                 "verification": self._verification_details(addr),
             }
+            if hasattr(edge, "depth"):
+                info["depth"] = getattr(edge, "depth")
+            if hasattr(edge, "types") and isinstance(edge.types, dict):
+                info["types"] = edge.types
             results[addr] = info
         return results
 
