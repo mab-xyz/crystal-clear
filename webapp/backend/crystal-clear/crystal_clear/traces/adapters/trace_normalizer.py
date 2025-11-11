@@ -35,10 +35,26 @@ def from_trace_call(traces: List[Dict[str, Any]], logger: Optional[logging.Logge
         action = tr.get("action", {}) or {}
         trace_addr: Tuple[int, ...] = tuple(tr.get("traceAddress", []) or [])
 
+        # For call-like frames returned by Erigon/OpenEthereum, the top-level
+        # `type` is often just "CALL" while the specific call kind lives in
+        # `action.callType` (e.g., delegatecall, staticcall, callcode).
+        # Prefer the detailed `callType` when available.
         if ttype in {"CALL", "DELEGATECALL", "STATICCALL", "CALLCODE"}:
             src = action.get("from")
             dst = action.get("to")
-            node = _node(src, dst, ttype)
+            call_type = str(action.get("callType", "")).upper()
+            if ttype == "CALL" and call_type in {
+                "CALL",
+                "DELEGATECALL",
+                "STATICCALL",
+                "CALLCODE",
+            }:
+                effective_type = call_type
+            else:
+                # Keep the original type (handles cases where providers already
+                # set DELEGATECALL/STATICCALL/CALLCODE in `type`).
+                effective_type = ttype
+            node = _node(src, dst, effective_type)
         elif ttype in {"CREATE", "CREATE2"}:
             src = action.get("from")
             created = (tr.get("result") or {}).get("address")

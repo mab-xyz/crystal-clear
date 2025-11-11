@@ -171,7 +171,19 @@ async def simulate_transaction(body: SimulationRequest) -> SimulationResponse:
         }
         for addr, info in results.items()
     ]
-    return SimulationResponse(results=items)
+
+    # Derive global status without short-circuiting; keep all details
+    status = "OK"
+    for it in items:
+        if it.get("first_time", False):
+            status = "DANGEROUS"
+        else:
+            v = it.get("verification") or {}
+            ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
+            if ver not in {"verified", "fully-verified"}:
+                status = "DANGEROUS"
+
+    return SimulationResponse(status=status, details=items)
 
 
 def _validate_tx_hash(tx_hash: str) -> str:
@@ -229,4 +241,15 @@ async def get_tx_risk(
         }
         for addr, info in results.items()
     ]
-    return SimulationResponse(results=items)
+
+    status = "OK"
+    for it in items:
+        if it.get("first_time", False):
+            status = "DANGEROUS"
+        else:
+            v = it.get("verification") or {}
+            ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
+            if ver not in {"verified", "fully-verified"}:
+                status = "DANGEROUS"
+
+    return SimulationResponse(status=status, details=items)

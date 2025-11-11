@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from crystal_clear.code_analyzer import RiskFactors
 from crystal_clear.traces.models import CallGraph
@@ -145,4 +145,5 @@ class SimulationResultItem(BaseModel):
 
 
 class SimulationResponse(BaseModel):
-    results: List[SimulationResultItem]
+    status: Literal["OK", "DANGEROUS"]
+    details: List[SimulationResultItem]

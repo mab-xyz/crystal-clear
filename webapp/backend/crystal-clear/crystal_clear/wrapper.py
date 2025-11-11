@@ -293,6 +293,19 @@ class CrystalClear:
         results: dict[str, dict] = {}
         # Always include the root callee (depth=0) if present
         root_addr = call_object.get("to", "") or ""
+        # Compute depths for all nodes using existing helper
+        try:
+            nodes = set()
+            if root_addr:
+                nodes.add(root_addr)
+            for e in edges:
+                nodes.add(e.source)
+                nodes.add(e.target)
+            depths = self.simulation_collector.get_depths(
+                nodes, edges, root_addr.lower() if root_addr else ""
+            )
+        except Exception:
+            depths = {}
         if root_addr:
             info = {
                 "first_time": self.first_time(
@@ -318,8 +331,11 @@ class CrystalClear:
                 ),
                 "verification": self._verification_details(addr),
             }
-            if hasattr(edge, "depth"):
-                info["depth"] = getattr(edge, "depth")
+            # Populate depth from computed depths map; fallback to None
+            try:
+                info["depth"] = depths.get(addr.lower(), -1)
+            except Exception:
+                info["depth"] = None
             if hasattr(edge, "types") and isinstance(edge.types, dict):
                 info["types"] = edge.types
             results[addr] = info
@@ -391,6 +407,19 @@ class CrystalClear:
                 )
             except Exception:
                 root_addr = ""
+        # Compute depths for all nodes
+        try:
+            nodes = set()
+            if root_addr:
+                nodes.add(root_addr)
+            for e in edges:
+                nodes.add(e.source)
+                nodes.add(e.target)
+            depths = self.simulation_collector.get_depths(
+                nodes, edges, root_addr.lower() if root_addr else ""
+            )
+        except Exception:
+            depths = {}
         if root_addr:
             info = {
                 "first_time": self.first_time(
@@ -416,8 +445,10 @@ class CrystalClear:
                 ),
                 "verification": self._verification_details(addr),
             }
-            if hasattr(edge, "depth"):
-                info["depth"] = getattr(edge, "depth")
+            try:
+                info["depth"] = depths.get(addr.lower(), -1)
+            except Exception:
+                info["depth"] = None
             if hasattr(edge, "types") and isinstance(edge.types, dict):
                 info["types"] = edge.types
             results[addr] = info

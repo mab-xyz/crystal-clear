@@ -196,6 +196,166 @@
         }
       }
     },
+    "/v1/analysis/tx-risk": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Transaction risk: simulate and check",
+        "description": "Simulate a transaction via Erigon trace_call, list all touched contracts (including DELEGATECALL), and report whether it's the first interaction by the sender and the verification status.",
+        "operationId": "simulate_transaction_v1_analysis_tx_risk_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/tx-risk/{tx_hash}": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Transaction risk by tx hash",
+        "description": "Analyze a confirmed transaction by hash, list all touched contracts (including DELEGATECALL), and report whether it's the first interaction by the sender and the verification status.",
+        "operationId": "get_tx_risk_v1_analysis_tx_risk__tx_hash__get",
+        "parameters": [
+          {
+            "name": "tx_hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tx Hash"
+            }
+          },
+          {
+            "name": "from_block",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Lower bound block for first-time checks",
+              "title": "From Block"
+            },
+            "description": "Lower bound block for first-time checks"
+          },
+          {
+            "name": "to_block",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Upper bound block for first-time checks",
+              "title": "To Block"
+            },
+            "description": "Upper bound block for first-time checks"
+          },
+          {
+            "name": "latest_offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limit first-time checks to N latest blocks",
+              "default": 100,
+              "title": "Latest Offset"
+            },
+            "description": "Limit first-time checks to N latest blocks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/info/block-latest": {
       "get": {
         "tags": [
@@ -1029,6 +1189,236 @@
           "checks"
         ],
         "title": "ScorecardResponse"
+      },
+      "SimulationRequest": {
+        "properties": {
+          "from_addr": {
+            "type": "string",
+            "title": "From Addr",
+            "description": "EOA sender address"
+          },
+          "to_addr": {
+            "type": "string",
+            "title": "To Addr",
+            "description": "Target contract address"
+          },
+          "data": {
+            "type": "string",
+            "title": "Data",
+            "description": "Calldata hex",
+            "default": "0x"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "Wei value (hex)",
+            "default": "0x0"
+          },
+          "gas": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gas",
+            "description": "Gas limit (hex)"
+          },
+          "gasPrice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gasprice",
+            "description": "Gas price (hex)"
+          },
+          "maxFeePerGas": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxfeepergas",
+            "description": "maxFeePerGas (hex)"
+          },
+          "maxPriorityFeePerGas": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxpriorityfeepergas",
+            "description": "maxPriorityFeePerGas (hex)"
+          },
+          "tx_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tx Type",
+            "description": "Tx type, e.g., 0x2"
+          },
+          "block_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Tag",
+            "description": "Block tag or number",
+            "default": "latest"
+          },
+          "latest_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Offset",
+            "description": "Limit first-time checks to N latest blocks (performance control)",
+            "default": 100
+          },
+          "from_block": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Block",
+            "description": "Lower bound block for first-time checks"
+          },
+          "to_block": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Block",
+            "description": "Upper bound block for first-time checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_addr",
+          "to_addr"
+        ],
+        "title": "SimulationRequest",
+        "description": "Request model for pre-sign transaction simulation."
+      },
+      "SimulationResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "DANGEROUS"
+            ],
+            "title": "Status"
+          },
+          "details": {
+            "items": {
+              "$ref": "#/components/schemas/SimulationResultItem"
+            },
+            "type": "array",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "details"
+        ],
+        "title": "SimulationResponse"
+      },
+      "SimulationResultItem": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "first_time": {
+            "type": "boolean",
+            "title": "First Time"
+          },
+          "verification": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verification"
+          },
+          "depth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth"
+          },
+          "types": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Types"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "first_time"
+        ],
+        "title": "SimulationResultItem"
       },
       "VerificationInfoResponse": {
         "properties": {
