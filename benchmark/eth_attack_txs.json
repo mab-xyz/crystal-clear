@@ -6,11 +6,7 @@
     "Lost": 1500000000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x46deef0f52e3a983b67abf4714448a41dd7ffd6d32d32da69d62081c68ad7882",
-      "https://etherscan.io/tx/0xb61413c495fdad6114a7aa863a00b2e3c28945979a10885b12b30316ea9f072c",
-      "https://etherscan.io/tx/0xbcf316f5835362b7f1586215173cc8b294f5499c60c029a3de6318bf25ca7b20",
-      "https://etherscan.io/tx/0x847b8403e8a4816a4de1e63db321705cdb6f998fb01ab58f653b863fda988647",
-      "https://etherscan.io/tx/0xa284a1bc4c7e0379c924c73fcea1067068635507254b03ebbbd3f4e222c1fae0"
+      "https://etherscan.io/tx/0x46deef0f52e3a983b67abf4714448a41dd7ffd6d32d32da69d62081c68ad7882"
     ]
   },
   {
@@ -107,8 +103,6 @@
     "Lost": 104000000.0,
     "lossType": "USD",
     "attack_txs": [
-      "0x260d5eb9151c565efda80466de2e7eee9c6bd4973d54ff68c8e045a26f62ea73",
-      "0x444854ee7e7570f146b64aa8a557ede82f326232e793873f0bbd04275fa7e54c",
       "https://etherscan.io/tx/0x260d5eb9151c565efda80466de2e7eee9c6bd4973d54ff68c8e045a26f62ea73",
       "https://etherscan.io/tx/0x444854ee7e7570f146b64aa8a557ede82f326232e793873f0bbd04275fa7e54c"
     ]
@@ -130,7 +124,6 @@
     "Lost": 65000000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x26a83db7e28838dd9fee6fb7314ae58dcc6aee9a20bf224c386ff5e80f7e4cf2",
       "https://etherscan.io/tx/0x26a83db7e28838dd9fee6fb7314ae58dcc6aee9a20bf224c386ff5e80f7e4cf2"
     ]
   },
@@ -141,8 +134,6 @@
     "Lost": 48000000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x485e08dc2b6a4b3aeadcb89c3d18a37666dc7d9424961a2091d6b3696792f0f3",
-      "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       "https://etherscan.io/tx/0x485e08dc2b6a4b3aeadcb89c3d18a37666dc7d9424961a2091d6b3696792f0f3"
     ]
   },
@@ -304,26 +295,6 @@
     ]
   },
   {
-    "date": "20230818",
-    "name": "ExactlyProtocol",
-    "contract": "src/test/2023-08/Exactly_exp.sol",
-    "Lost": 7000000.0,
-    "lossType": "USD",
-    "attack_txs": [
-      "https://optimistic.etherscan.io/tx/0x3d6367de5c191204b44b8a5cf975f257472087a9aadc59b5d744ffdef33a520e"
-    ]
-  },
-  {
-    "date": "20230415",
-    "name": "HundredFinance",
-    "contract": "src/test/2023-04/HundredFinance_2_exp.sol",
-    "Lost": 7000000.0,
-    "lossType": "USD",
-    "attack_txs": [
-      "https://optimistic.etherscan.io/tx/0x6e9ebcdebbabda04fa9f2e3bc21ea8b2e4fb4bf4f4670cb8483e2f0b2604f451"
-    ]
-  },
-  {
     "date": "20220723",
     "name": "Audius",
     "contract": "src/test/2022-07/Audius_exp.sol",
@@ -343,7 +314,6 @@
     "Lost": 6000000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x23fcf9d4517f7cc39815b09b0a80c023ab2c8196c826c93b4100f2e26b701286",
       "https://etherscan.io/tx/0x23fcf9d4517f7cc39815b09b0a80c023ab2c8196c826c93b4100f2e26b701286"
     ]
   },
@@ -470,8 +440,7 @@
     "Lost": 3000000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0xec7523660f8b66d9e4a5931d97ad8b30acc679c973b20038ba4c15d4336b393d",
-      "0xec7523660f8b66d9e4a5931d97ad8b30acc679c973b20038ba4c15d4336b393d"
+      "https://etherscan.io/tx/0xec7523660f8b66d9e4a5931d97ad8b30acc679c973b20038ba4c15d4336b393d"
     ]
   },
   {
@@ -592,7 +561,6 @@
     "Lost": 1500000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x9a97d85642f956ad7a6b852cf7bed6f9669e2c2815f3279855acf7f1328e7d46",
       "https://etherscan.io/tx/0x9a97d85642f956ad7a6b852cf7bed6f9669e2c2815f3279855acf7f1328e7d46"
     ]
   },
@@ -623,7 +591,6 @@
     "Lost": 1400000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0xe2912b8bf34d561983f2ae95f34e33ecc7792a2905a3e317fcc98052bce66431",
       "https://etherscan.io/tx/0xe2912b8bf34d561983f2ae95f34e33ecc7792a2905a3e317fcc98052bce66431"
     ]
   },
@@ -644,7 +611,6 @@
     "Lost": 1100000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0xeb8c3bebed11e2e4fcd30cbfc2fb3c55c4ca166003c7f7d319e78eaab9747098",
       "https://etherscan.io/tx/0xeb8c3bebed11e2e4fcd30cbfc2fb3c55c4ca166003c7f7d319e78eaab9747098"
     ]
   },
@@ -685,7 +651,6 @@
     "Lost": 845000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0xb36486f032a450782d5d2fac118ea90a6d3b08cac3409d949c59b43bcd6dbb8f",
       "https://etherscan.io/tx/0xb36486f032a450782d5d2fac118ea90a6d3b08cac3409d949c59b43bcd6dbb8f"
     ]
   },
@@ -819,7 +784,6 @@
     "Lost": 400000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://optimistic.etherscan.io/tx/0xca7c1a0fde444e1a68a8c2b8ae3fb76ec384d1f7ae9a50d26f8bfdd37c7a0afe",
       "https://etherscan.io/tx/0xefc4ac015069fdf9946997be0459db44c0491221159220be782454c32ec2d651"
     ]
   },
@@ -890,7 +854,6 @@
     "Lost": 282000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x674f74b30a3d7bdf15fa60a7c29d96a402ea894a055f624164a8009df98386a0",
       "https://etherscan.io/tx/0x674f74b30a3d7bdf15fa60a7c29d96a402ea894a055f624164a8009df98386a0"
     ]
   },
@@ -931,7 +894,6 @@
     "Lost": 220000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x32c83905db61047834f29385ff8ce8cb6f3d24f97e24e6101d8301619efee96e?line=37",
       "https://etherscan.io/tx/0x32c83905db61047834f29385ff8ce8cb6f3d24f97e24e6101d8301619efee96e"
     ]
   },
@@ -942,8 +904,6 @@
     "Lost": 208000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x0fc5c0d41e5506fdb9434fab4815a4ff671afc834e47a533b3bed7182ece73b0",
-      "https://etherscan.io/tx/0xb072f2e88058c147d8ff643694b43a42e36525b7173ce1daf76e6c06170b0e77",
       "https://etherscan.io/tx/0x0fc5c0d41e5506fdb9434fab4815a4ff671afc834e47a533b3bed7182ece73b0",
       "https://etherscan.io/tx/0xb072f2e88058c147d8ff643694b43a42e36525b7173ce1daf76e6c06170b0e77"
     ]
@@ -1034,7 +994,6 @@
     "Lost": 180000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x93a033917fcdbd5fe8ae24e9fe22f002949cba2f621a1c43a54f6519479caceb",
       "https://etherscan.io/tx/0x93a033917fcdbd5fe8ae24e9fe22f002949cba2f621a1c43a54f6519479caceb"
     ]
   },
@@ -1075,8 +1034,7 @@
     "Lost": 151600.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0xf1818f62c635e5c80ef16b7857da812c74ce330ebed46682b4d173bffe84c666",
-      "https://etherscan.io/tx/0xf1818f62c635e5c80ef16b7857da812c74ce330ebed46682b4d173bffe84c666?line=74"
+      "https://etherscan.io/tx/0xf1818f62c635e5c80ef16b7857da812c74ce330ebed46682b4d173bffe84c666"
     ]
   },
   {
@@ -1086,7 +1044,6 @@
     "Lost": 150000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x53eeab4447db331dbb47f93fd58a95d6faa230d559acde0687f8b5f5829e7a45",
       "https://etherscan.io/tx/0x53eeab4447db331dbb47f93fd58a95d6faa230d559acde0687f8b5f5829e7a45"
     ]
   },
@@ -1107,8 +1064,7 @@
     "Lost": 130000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x995e880635f4a7462a420a58527023f946710167ea4c6c093d7d193062a33b01",
-      "https://phalcon.blocksec.com/explorer/tx/eth/0x995e880635f4a7462a420a58527023f946710167ea4c6c093d7d193062a33b01"
+      "https://etherscan.io/tx/0x995e880635f4a7462a420a58527023f946710167ea4c6c093d7d193062a33b01"
     ]
   },
   {
@@ -1139,8 +1095,7 @@
     "Lost": 114000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x97201900198d0054a2f7a914f5625591feb6a18e7fc6bb4f0c964b967a6c15f6",
-      "https://phalcon.blocksec.com/explorer/tx/eth/0x97201900198d0054a2f7a914f5625591feb6a18e7fc6bb4f0c964b967a6c15f6"
+      "https://etherscan.io/tx/0x97201900198d0054a2f7a914f5625591feb6a18e7fc6bb4f0c964b967a6c15f6"
     ]
   },
   {
@@ -1234,8 +1189,7 @@
     "Lost": 88000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x03543ef96c26d6c79ff6c24219c686ae6d0eb5453b322e54d3b6a5ce456385e5",
-      "https://phalcon.blocksec.com/explorer/tx/eth/0x03543ef96c26d6c79ff6c24219c686ae6d0eb5453b322e54d3b6a5ce456385e5"
+      "https://etherscan.io/tx/0x03543ef96c26d6c79ff6c24219c686ae6d0eb5453b322e54d3b6a5ce456385e5"
     ]
   },
   {
@@ -1255,8 +1209,7 @@
     "Lost": 80000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x927b784148b60d5233e57287671cdf67d38e3e69e5b6d0ecacc7c1aeaa98985b",
-      "https://phalcon.blocksec.com/tx/eth/0x927b784148b60d5233e57287671cdf67d38e3e69e5b6d0ecacc7c1aeaa98985b"
+      "https://etherscan.io/tx/0x927b784148b60d5233e57287671cdf67d38e3e69e5b6d0ecacc7c1aeaa98985b"
     ]
   },
   {
@@ -1306,7 +1259,7 @@
     "Lost": 57000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0xd17266bcdf30cbcbd7d0b5a006f43141981aeee2e1f860f68c9a1805ecacbc68?line=3"
+      "https://etherscan.io/tx/0xd17266bcdf30cbcbd7d0b5a006f43141981aeee2e1f860f68c9a1805ecacbc68"
     ]
   },
   {
@@ -1428,7 +1381,6 @@
     "Lost": 26000.0,
     "lossType": "USD",
     "attack_txs": [
-      "0x90b4fcf583444d44efb8625e6f253cfcb786d2f4eda7198bdab67a54108cd5f4",
       "https://etherscan.io/tx/0x90b4fcf583444d44efb8625e6f253cfcb786d2f4eda7198bdab67a54108cd5f4"
     ]
   },
@@ -1450,7 +1402,7 @@
     "Lost": 24000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://phalcon.blocksec.com/explorer/tx/eth/0x35a73969f582872c25c96c48d8bb31c23eab8a49c19282c67509b96186734e60"
+      "https://etherscan.io/tx/0x35a73969f582872c25c96c48d8bb31c23eab8a49c19282c67509b96186734e60"
     ]
   },
   {
@@ -1480,7 +1432,6 @@
     "Lost": 20000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x2881e839d4d562fad5356183e4f6a9d427ba6f475614ce8ef64dbfe557a4a2cc",
       "https://etherscan.io/tx/0x2881e839d4d562fad5356183e4f6a9d427ba6f475614ce8ef64dbfe557a4a2cc"
     ]
   },
@@ -1531,7 +1482,6 @@
     "Lost": 17000.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x7c5a909b45014e35ddb89697f6be38d08eff30e7c3d3d553033a6efc3b444fdd",
       "https://etherscan.io/tx/0x7c5a909b45014e35ddb89697f6be38d08eff30e7c3d3d553033a6efc3b444fdd"
     ]
   },
@@ -1573,8 +1523,7 @@
     "lossType": "USD",
     "attack_txs": [
       "https://etherscan.io/tx/0x8a8145ab28b5d2a2e61d74c02c12350731f479b3175893de2014124f998bff32",
-      "0x3078000000000000000000000000000000000000000000000000000000000000",
-      "https://etherscan.io/tx/0x8a8145ab28b5d2a2e61d74c02c12350731f479b3175893de2014124f998bff32"
+      "0x3078000000000000000000000000000000000000000000000000000000000000"
     ]
   },
   {
@@ -1720,8 +1669,7 @@
     "Lost": 827.0,
     "lossType": "USD",
     "attack_txs": [
-      "https://etherscan.io/tx/0x9a036058afb58169bfa91a826f5fcf4c0a376e650960669361d61bef99205f35",
-      "https://etherscan.io/tx/0x9a036058afb58169bfa91a826f5fcf4c0a376e650960669361d61bef99205f35?line=41"
+      "https://etherscan.io/tx/0x9a036058afb58169bfa91a826f5fcf4c0a376e650960669361d61bef99205f35"
     ]
   },
   {
@@ -1800,7 +1748,6 @@
     "Lost": 176.0,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0x3b19e152943f31fe0830b67315ddc89be9a066dc89174256e17bc8c2d35b5af8",
       "https://etherscan.io/tx/0x3b19e152943f31fe0830b67315ddc89be9a066dc89174256e17bc8c2d35b5af8"
     ],
     "LostUSD": 616000.0
@@ -1856,7 +1803,6 @@
     "Lost": 76.0,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0x661505c39efe1174da44e0548158db95e8e71ce867d5b7190b9eabc9f314fe91",
       "https://etherscan.io/tx/0x661505c39efe1174da44e0548158db95e8e71ce867d5b7190b9eabc9f314fe91"
     ],
     "LostUSD": 266000.0
@@ -1901,7 +1847,7 @@
     "Lost": 26.0,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0x3e9bcee951cdad84805e0c82d2a1e982e71f2ec301a1cbd344c832e0acaee813?line=136"
+      "https://etherscan.io/tx/0x3e9bcee951cdad84805e0c82d2a1e982e71f2ec301a1cbd344c832e0acaee813"
     ],
     "LostUSD": 91000.0
   },
@@ -1912,7 +1858,6 @@
     "Lost": 22.0,
     "lossType": "ETH",
     "attack_txs": [
-      "https://phalcon.blocksec.com/tx/eth/0x6200bf5c43c214caa1177c3676293442059b4f39eb5dbae6cfd4e6ad16305668",
       "https://etherscan.io/tx/0x6200bf5c43c214caa1177c3676293442059b4f39eb5dbae6cfd4e6ad16305668"
     ],
     "LostUSD": 77000.0
@@ -1935,8 +1880,7 @@
     "Lost": 20.0,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0x0eb8f8d148508e752d9643ccf49ac4cb0c21cbad346b5bbcf2d06974d31bd5c4",
-      "https://phalcon.blocksec.com/explorer/tx/eth/0x0eb8f8d148508e752d9643ccf49ac4cb0c21cbad346b5bbcf2d06974d31bd5c4"
+      "https://etherscan.io/tx/0x0eb8f8d148508e752d9643ccf49ac4cb0c21cbad346b5bbcf2d06974d31bd5c4"
     ],
     "LostUSD": 70000.0
   },
@@ -1969,8 +1913,7 @@
     "Lost": 18.0,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0x998f1da472d927e74405b0aa1bbf5c1dbc50d74b39977bed3307ea2ada1f1d3f",
-      "https://etherscan.io/tx/0x998f1da472d927e74405b0aa1bbf5c1dbc50d74b39977bed3307ea2ada1f1d3f?line=25"
+      "https://etherscan.io/tx/0x998f1da472d927e74405b0aa1bbf5c1dbc50d74b39977bed3307ea2ada1f1d3f"
     ],
     "LostUSD": 63000.0
   },
@@ -2025,7 +1968,6 @@
     "Lost": 9.2,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0xe8277ef6ba8611bd12dc5a6e7ca4b984423bc0b3828159f83b466fdcf4fe054f",
       "https://etherscan.io/tx/0xe8277ef6ba8611bd12dc5a6e7ca4b984423bc0b3828159f83b466fdcf4fe054f"
     ],
     "LostUSD": 32199.999999999996
@@ -2071,7 +2013,7 @@
     "Lost": 5.06,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0x4019890fe5a5bd527cd3b9f7ee6d94e55b331709b703317860d028745e33a8ca?line=4"
+      "https://etherscan.io/tx/0x4019890fe5a5bd527cd3b9f7ee6d94e55b331709b703317860d028745e33a8ca"
     ],
     "LostUSD": 17710.0
   },
@@ -2082,7 +2024,7 @@
     "Lost": 4.37,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0xd927843e30c6b2bf43103d83bca6abead648eac3cad0d05b1b0eb84cd87de9b6?line=0"
+      "https://etherscan.io/tx/0xd927843e30c6b2bf43103d83bca6abead648eac3cad0d05b1b0eb84cd87de9b6"
     ],
     "LostUSD": 15295.0
   },
@@ -2115,7 +2057,6 @@
     "Lost": 2.3,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0xedc214a62ff6fd764200ddaa8ceae54f842279eadab80900be5f29d0b75212df",
       "https://etherscan.io/tx/0xedc214a62ff6fd764200ddaa8ceae54f842279eadab80900be5f29d0b75212df"
     ],
     "LostUSD": 8049.999999999999
@@ -2139,8 +2080,7 @@
     "Lost": 1.7,
     "lossType": "ETH",
     "attack_txs": [
-      "https://etherscan.io/tx/0x3bba4fb6de00dd38df3ad68e51c19fe575a95a296e0632028f101c5199b6f714",
-      "https://etherscan.io/tx/0x3bba4fb6de00dd38df3ad68e51c19fe575a95a296e0632028f101c5199b6f71"
+      "https://etherscan.io/tx/0x3bba4fb6de00dd38df3ad68e51c19fe575a95a296e0632028f101c5199b6f714"
     ],
     "LostUSD": 5950.0
   },
@@ -2176,55 +2116,5 @@
       "https://etherscan.io/tx/0x6fb7f8e9eb09d6ae17dbe82b2b42f46f64fb9c3197438b68ecf03e832d5fc791"
     ],
     "LostUSD": 1050.0
-  },
-  {
-    "date": "20210509",
-    "name": "RariCapital",
-    "contract": "src/test/2021-05/RariCapital_exp.sol",
-    "Lost": null,
-    "lossType": "USD",
-    "attack_txs": [
-      "0x171072422efb5cd461546bfe986017d9b5aa427ff1c07ebe8acc064b13a7b7be"
-    ]
-  },
-  {
-    "date": "20220824",
-    "name": "LuckyTiger NFT",
-    "contract": "src/test/2022-08/LuckyTiger_exp.sol",
-    "Lost": null,
-    "lossType": "USD",
-    "attack_txs": [
-      "https://etherscan.io/tx/0x804ff3801542bff435a5d733f4d8a93a535d73d0de0f843fd979756a7eab26af"
-    ]
-  },
-  {
-    "date": "20220810",
-    "name": "XSTABLE Protocol",
-    "contract": "src/test/2022-08/XST_exp.sol",
-    "Lost": null,
-    "lossType": "USD",
-    "attack_txs": [
-      "https://tools.blocksec.com/tx/eth/0x873f7c77d5489c1990f701e9bb312c103c5ebcdcf0a472db726730814bfd55f3"
-    ]
-  },
-  {
-    "date": "20220706",
-    "name": "FlippazOne NFT",
-    "contract": "src/test/2022-07/FlippazOne_exp.sol",
-    "Lost": null,
-    "lossType": "USD",
-    "attack_txs": [
-      "https://etherscan.io/tx/0x8bded20c1db5a1d5f595b15e682a95ce11d3c895d6031147fa49c4ffa5729a30"
-    ]
-  },
-  {
-    "date": "20230317",
-    "name": "ParaSpace NFT",
-    "contract": "src/test/2023-03/paraspace_exp.sol",
-    "Lost": null,
-    "lossType": "USD",
-    "attack_txs": [
-      "https://etherscan.io/tx/0xe3f0d14cfb6076cabdc9057001c3fafe28767a192e88005bc37bd7d385a1116a"
-    ]
   }
 ]
