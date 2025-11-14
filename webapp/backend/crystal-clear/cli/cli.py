@@ -24,9 +24,19 @@ def setup_logging(log_level: str) -> None:
     logger.setLevel(log_level.upper())
 
 
-@click.group()
+@click.group(
+    context_settings=dict(help_option_names=["-h", "--help"]),
+    help=(
+        "Smart Contract Supply Chain Analysis Tool.\n\n"
+        "Commands:\n"
+        "  - dependency: Build call graph dependencies across blocks\n"
+        "  - risk:       Assess code-level risks via Etherscan sources\n"
+        "  - tx-risk:    Simulate a call or inspect a tx and check 'first-time' + verification\n\n"
+        "Use --help on any subcommand for details and examples."
+    ),
+)
 def main():
-    """Smart Contract Supply Chain Analysis Tool"""
+    """Crystal-Clear CLI"""
     pass
 
 
@@ -42,8 +52,12 @@ def main():
     help="Allium API key",
 )
 @click.option("--address", required=True, type=str, help="Contract address")
-@click.option("--from-block", required=False, type=str, help="Starting block number")
-@click.option("--to-block", required=False, type=str, help="Ending block number")
+@click.option(
+    "--from-block", required=False, type=str, help="Starting block number"
+)
+@click.option(
+    "--to-block", required=False, type=str, help="Ending block number"
+)
 @click.option("--export-dot", type=str, help="Export call graph to DOT file")
 @click.option("--export-json", type=str, help="Export call graph to JSON file")
 @click.option("--log-level", default="ERROR", type=str, help="Logging level")
@@ -101,7 +115,9 @@ def dependency(
         node_table.add_column("Depth", style="white")
 
         # present the first 10 nodes only for readability
-        for i, (node, label) in enumerate(list(dep.nodes.items())[:10], start=1):
+        for i, (node, label) in enumerate(
+            list(dep.nodes.items())[:10], start=1
+        ):
             depth = dep.dependency_depths.get(node.lower(), 0)
             node_table.add_row(str(i), node, label, str(depth))
         if len(dep.nodes) > 10:
@@ -127,7 +143,9 @@ def dependency(
             edge_table.add_row(edge.source, edge.target, types)
 
         if len(dep.edges) > 10:
-            edge_table.add_row("...", "...", f"... {len(dep.edges) - 10} more ...")
+            edge_table.add_row(
+                "...", "...", f"... {len(dep.edges) - 10} more ..."
+            )
         console.print(edge_table)
         console.print(
             "[grey]Export the report to a JSON file for complete analysis.[/grey]"
@@ -151,8 +169,12 @@ def dependency(
                 for edge in dep.edges:
                     source = edge.source
                     target = edge.target
-                    label = ", ".join(f"{k} ({v})" for k, v in edge.types.items())
-                    f.write(f'    "{source}" -> "{target}" [label="{label}"];\n')
+                    label = ", ".join(
+                        f"{k} ({v})" for k, v in edge.types.items()
+                    )
+                    f.write(
+                        f'    "{source}" -> "{target}" [label="{label}"];\n'
+                    )
 
                 f.write("}\n")
 
@@ -246,12 +268,16 @@ def risk(
         table.add_column("Contract Address", style="cyan", no_wrap=True)
         table.add_column("Dependency Depth", style="magenta")
         table.add_column("Risk Factors", style="red")
-        sorted_deps = sorted(analysis.dependencies, key=lambda d: d.dependency_depth)
+        sorted_deps = sorted(
+            analysis.dependencies, key=lambda d: d.dependency_depth
+        )
 
         for i, dep in enumerate(sorted_deps):
             if i >= 5:
                 table.add_row(
-                    "...", "...", f"... {len(analysis.dependencies) - 5} more ..."
+                    "...",
+                    "...",
+                    f"... {len(analysis.dependencies) - 5} more ...",
                 )
                 break
             table.add_row(
@@ -292,7 +318,9 @@ def risk(
             proxy_info = None if not proxy_data else ProxyInfo(**proxy_data)
             permissions_data = details.get("permissions_info") or None
             permissions_info = (
-                None if not permissions_data else PermissionsInfo(**permissions_data)
+                None
+                if not permissions_data
+                else PermissionsInfo(**permissions_data)
             )
 
             # --- Metadata text ---
@@ -309,7 +337,9 @@ def risk(
 
             # --- Permissioned Functions Table ---
             if not permissions_info or len(permissions_info.permissions) == 0:
-                func_table = "[green]No permissioned functions detected.[/green]"
+                func_table = (
+                    "[green]No permissioned functions detected.[/green]"
+                )
             else:
                 func_table = Table(
                     title="⚠️ Permissioned Functions",
@@ -319,7 +349,9 @@ def risk(
                 )
                 func_table.add_column("Function", style="white", no_wrap=True)
                 func_table.add_column("State Variables Written", style="white")
-                func_table.add_column("Conditions on msg.sender", style="white")
+                func_table.add_column(
+                    "Conditions on msg.sender", style="white"
+                )
 
                 # Show only first 3 functions
                 for j, item in enumerate(permissions_info.permissions):
@@ -330,7 +362,9 @@ def risk(
                             f"[yellow]{len(permissions_info.permissions) - 3} more functions omitted[/yellow]",
                         )
                         break
-                    conditions = "\n".join([f"- {cond}" for cond in item.conditions])
+                    conditions = "\n".join(
+                        [f"- {cond}" for cond in item.conditions]
+                    )
                     state_vars = ", ".join(item.state_variables)
                     func_table.add_row(item.function, state_vars, conditions)
 
@@ -352,6 +386,259 @@ def risk(
 
     except Exception as e:
         logger.error(f"risk: {e}")
+
+
+@main.group(
+    name="tx-risk",
+    help=(
+        "Simulate a call (trace_call) or analyze a single on-chain transaction.\n\n"
+        "Examples:\n"
+        "  crystal-clear tx-risk call --node-url $NODE --from 0xEOA --to 0xCONTRACT --data 0x --value 0x0\n"
+        "  crystal-clear tx-risk tx   --node-url $NODE --tx-hash 0x...\n\n"
+        "Checks 'first-time' interactions on-chain. Use --from-block/--to-block to bound history."
+    ),
+)
+def simulate_group():
+    """Tx risk simulation for calls and single transactions"""
+    pass
+
+
+@simulate_group.command(name="call")
+@click.option("--node-url", type=str, help="Ethereum node URL")
+@click.option(
+    "--etherscan-api-key", type=str, help="Etherscan API key (optional)"
+)
+@click.option(
+    "--from", "from_addr", required=True, type=str, help="Sender address"
+)
+@click.option(
+    "--to", "to_addr", required=True, type=str, help="Target contract address"
+)
+@click.option("--data", default="0x", type=str, help="Calldata (hex)")
+@click.option("--value", default="0x0", type=str, help="Value (hex)")
+@click.option("--gas", required=False, type=str, help="Gas limit (hex)")
+@click.option("--gas-price", required=False, type=str, help="Gas price (hex)")
+@click.option(
+    "--block-tag",
+    default="latest",
+    type=str,
+    help='Block tag (e.g. "latest", number, or 0x-hex)',
+)
+@click.option(
+    "--from-block",
+    required=False,
+    type=str,
+    help="On-chain scan start (optional)",
+)
+@click.option(
+    "--to-block", required=False, type=str, help="On-chain scan end (optional)"
+)
+@click.option(
+    "--latest-offset",
+    default=0,
+    type=int,
+    help="If set (>0) and --from-block not given, from_block = max(0, to_block - offset)",
+)
+@click.option(
+    "--call-file",
+    type=str,
+    help=(
+        "Path to JSON file with a full call object (keys: from,to,data,value[,gas,gasPrice]); flags override file"
+    ),
+)
+@click.option("--export-json", type=str, help="Export results to JSON file")
+@click.option("--log-level", default="ERROR", type=str, help="Logging level")
+def simulate_call(
+    node_url,
+    etherscan_api_key,
+    from_addr,
+    to_addr,
+    data,
+    value,
+    gas,
+    gas_price,
+    block_tag,
+    from_block,
+    to_block,
+    latest_offset,
+    call_file,
+    export_json,
+    log_level,
+):
+    """Run a trace_call and assess tx risk targets"""
+    setup_logging(log_level)
+    console = Console()
+
+    node_url = node_url or os.getenv("NODE_URL")
+    if not node_url:
+        console.print(
+            "[red]Error: You must provide a node URL via --node-url or NODE_URL env variable.[/red]"
+        )
+        return
+
+    # Load call object from file if provided
+    call_object = {}
+    if call_file:
+        try:
+            with open(call_file, "r") as f:
+                loaded = json.load(f)
+                if isinstance(loaded, dict):
+                    call_object.update(loaded)
+        except Exception as e:
+            console.print(f"[red]Error loading call file: {e}[/red]")
+            return
+
+    # Apply CLI flag overrides
+    if from_addr:
+        call_object["from"] = from_addr
+    if to_addr:
+        call_object["to"] = to_addr
+    if data is not None:
+        call_object["data"] = data
+    if value is not None:
+        call_object["value"] = value
+    if gas:
+        call_object["gas"] = gas
+    if gas_price:
+        call_object["gasPrice"] = gas_price
+
+    if not call_object.get("to"):
+        console.print(
+            "[red]Error: target address is required (use --to or call file).[/red]"
+        )
+        return
+
+    try:
+        cc = CrystalClear(
+            url=node_url,
+            etherscan_api_key=etherscan_api_key,
+            log_level=log_level,
+        )
+        results = cc.simulate_and_check(
+            call_object,
+            block_tag=block_tag,
+            from_block=from_block,
+            to_block=to_block,
+            latest_offset=latest_offset,
+        )
+
+        # Render results
+        table = Table(
+            title="🎯 Tx Risk (Simulated Call)", header_style="bold green"
+        )
+        table.add_column("Address", style="cyan")
+        table.add_column("First Time", style="yellow")
+        table.add_column("Verification", style="magenta")
+        table.add_column("Source", style="white")
+
+        for addr, info in results.items():
+            v = info.get("verification", {}) or {}
+            table.add_row(
+                addr,
+                "Yes" if info.get("first_time") else "No",
+                str(v.get("verification", "unknown")),
+                str(v.get("source", "-")),
+            )
+
+        console.print(table)
+
+        if export_json:
+            with open(export_json, "w") as f:
+                json.dump(results, f, indent=4)
+            logger.info(
+                f"Tx-risk results exported to JSON file: {export_json}"
+            )
+    except Exception as e:
+        logger.error(f"tx-risk call: {e}")
+
+
+@simulate_group.command(name="tx")
+@click.option("--node-url", type=str, help="Ethereum node URL")
+@click.option(
+    "--etherscan-api-key", type=str, help="Etherscan API key (optional)"
+)
+@click.option("--tx-hash", required=True, type=str, help="Transaction hash")
+@click.option(
+    "--from-block",
+    required=False,
+    type=str,
+    help="On-chain scan start (optional)",
+)
+@click.option(
+    "--to-block",
+    required=False,
+    type=str,
+    help="On-chain scan end (optional). Defaults to block-1 of the tx",
+)
+@click.option(
+    "--latest-offset",
+    default=0,
+    type=int,
+    help="If set (>0) and --from-block not given, from_block = max(0, to_block - offset)",
+)
+@click.option("--export-json", type=str, help="Export results to JSON file")
+@click.option("--log-level", default="ERROR", type=str, help="Logging level")
+def simulate_tx(
+    node_url,
+    etherscan_api_key,
+    tx_hash,
+    from_block,
+    to_block,
+    latest_offset,
+    export_json,
+    log_level,
+):
+    """Analyze an on-chain tx via debug trace and assess tx risk targets"""
+    setup_logging(log_level)
+    console = Console()
+
+    node_url = node_url or os.getenv("NODE_URL")
+    if not node_url:
+        console.print(
+            "[red]Error: You must provide a node URL via --node-url or NODE_URL env variable.[/red]"
+        )
+        return
+
+    try:
+        cc = CrystalClear(
+            url=node_url,
+            etherscan_api_key=etherscan_api_key,
+            log_level=log_level,
+        )
+        results = cc.simulate_from_tx(
+            tx_hash,
+            from_block=from_block,
+            to_block=to_block,
+            latest_offset=latest_offset,
+        )
+
+        table = Table(
+            title="🧾 Tx Risk (On-chain Tx)", header_style="bold green"
+        )
+        table.add_column("Address", style="cyan")
+        table.add_column("First Time", style="yellow")
+        table.add_column("Verification", style="magenta")
+        table.add_column("Source", style="white")
+
+        for addr, info in results.items():
+            v = info.get("verification", {}) or {}
+            table.add_row(
+                addr,
+                "Yes" if info.get("first_time") else "No",
+                str(v.get("verification", "unknown")),
+                str(v.get("source", "-")),
+            )
+
+        console.print(table)
+
+        if export_json:
+            with open(export_json, "w") as f:
+                json.dump(results, f, indent=4)
+            logger.info(
+                f"Tx-risk (tx) results exported to JSON file: {export_json}"
+            )
+    except Exception as e:
+        logger.error(f"tx-risk tx: {e}")
 
 
 if __name__ == "__main__":

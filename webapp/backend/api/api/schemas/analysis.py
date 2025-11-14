@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from crystal_clear.code_analyzer import RiskFactors
 from crystal_clear.traces.models import CallGraph
@@ -6,9 +6,13 @@ from pydantic import BaseModel, Field
 
 
 class AdditionalRiskFactors(RiskFactors):
-    repository: bool = Field(None, description="Contract is linked to a repository")
+    repository: bool = Field(
+        None, description="Contract is linked to a repository"
+    )
     audits: bool = Field(None, description="Contract has associated audits")
-    scorecard: float | None = Field(None, description="Contract has a scorecard")
+    scorecard: float | None = Field(
+        None, description="Contract has a scorecard"
+    )
 
     def to_dict(self):
         return super().to_dict()
@@ -20,7 +24,9 @@ class AdditionalRiskFactors(RiskFactors):
         if not self.audits:
             str_parts.append("Contract has no associated audits.")
         if self.scorecard is not None and self.scorecard < 5:
-            str_parts.append(f"Contract has a low scorecard: {self.scorecard}.")
+            str_parts.append(
+                f"Contract has a low scorecard: {self.scorecard}."
+            )
 
         return (
             " ".join(str_parts)
@@ -30,7 +36,9 @@ class AdditionalRiskFactors(RiskFactors):
 
 
 class AdditionalRisk(BaseModel):
-    verified: bool = Field(..., description="Indicates if the contract is verified")
+    verified: bool = Field(
+        ..., description="Indicates if the contract is verified"
+    )
     risk_factors: AdditionalRiskFactors = Field(
         ..., description="Identified risk factors of the contract"
     )
@@ -44,7 +52,9 @@ class AdditionalRisk(BaseModel):
 
 class AdditionalDependencyRisk(AdditionalRisk):
     address: str = Field(..., description="Contract address of the dependency")
-    dependency_depth: int = Field(..., description="Depth of the dependency chain")
+    dependency_depth: int = Field(
+        ..., description="Depth of the dependency chain"
+    )
 
 
 class RiskAnalysisResponse(BaseModel):
@@ -92,3 +102,48 @@ class ContractRiskRequest(BaseModel):
     address: str = Field(..., description="Contract address to analyze")
     from_block: Optional[str] = Field(None, description="Start block")
     to_block: Optional[str] = Field(None, description="End block")
+
+
+class SimulationRequest(BaseModel):
+    """Request model for pre-sign transaction simulation."""
+
+    from_addr: str = Field(..., description="EOA sender address")
+    to_addr: str = Field(..., description="Target contract address")
+    data: str = Field("0x", description="Calldata hex")
+    value: Optional[str] = Field("0x0", description="Wei value (hex)")
+    gas: Optional[str] = Field(None, description="Gas limit (hex)")
+    gasPrice: Optional[str] = Field(None, description="Gas price (hex)")
+    maxFeePerGas: Optional[str] = Field(None, description="maxFeePerGas (hex)")
+    maxPriorityFeePerGas: Optional[str] = Field(
+        None, description="maxPriorityFeePerGas (hex)"
+    )
+    tx_type: Optional[str] = Field(None, description="Tx type, e.g., 0x2")
+    block_tag: Optional[str] = Field(
+        "latest", description="Block tag or number"
+    )
+    # allium_query_id: Optional[str] = Field(
+    #     None, description="Allium query ID for first-time interaction"
+    # )
+    latest_offset: Optional[int] = Field(
+        100,
+        description="Limit first-time checks to N latest blocks (performance control)",
+    )
+    from_block: Optional[str] = Field(
+        None, description="Lower bound block for first-time checks"
+    )
+    to_block: Optional[str] = Field(
+        None, description="Upper bound block for first-time checks"
+    )
+
+
+class SimulationResultItem(BaseModel):
+    address: str
+    first_time: bool
+    verification: dict | None = None
+    depth: int | None = None
+    types: Dict[str, int] | None = None
+
+
+class SimulationResponse(BaseModel):
+    status: Literal["OK", "DANGEROUS"]
+    details: List[SimulationResultItem]
