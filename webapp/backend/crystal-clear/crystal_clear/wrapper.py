@@ -1,6 +1,8 @@
 import logging
 from typing import Dict, List
 
+from web3 import Web3
+
 from pydantic import BaseModel, Field
 
 from crystal_clear.clients import AlliumClient, EtherscanClient, SourcifyClient
@@ -293,6 +295,12 @@ class CrystalClear:
         results: dict[str, dict] = {}
         # Always include the root callee (depth=0) if present
         root_addr = call_object.get("to", "") or ""
+        # Normalize root to checksum if possible
+        try:
+            if root_addr:
+                root_addr = Web3.to_checksum_address(root_addr)
+        except Exception:
+            pass
         # Compute depths for all nodes using existing helper
         try:
             nodes = set()
@@ -320,7 +328,14 @@ class CrystalClear:
             }
             results[root_addr] = info
         for edge in edges:
+            # Edge targets are checksum-normalized by model validators
             addr = edge.target
+            # Skip duplicate entry if edge target is the root (case-insensitive)
+            try:
+                if root_addr and addr.lower() == root_addr.lower():
+                    continue
+            except Exception:
+                pass
             info = {
                 "first_time": self.first_time(
                     from_addr,
@@ -407,6 +422,12 @@ class CrystalClear:
                 )
             except Exception:
                 root_addr = ""
+        # Normalize root to checksum if possible
+        try:
+            if root_addr:
+                root_addr = Web3.to_checksum_address(root_addr)
+        except Exception:
+            pass
         # Compute depths for all nodes
         try:
             nodes = set()
@@ -435,6 +456,12 @@ class CrystalClear:
             results[root_addr] = info
         for edge in edges:
             addr = edge.target
+            # Skip duplicate entry if edge target is the root (case-insensitive)
+            try:
+                if root_addr and addr.lower() == root_addr.lower():
+                    continue
+            except Exception:
+                pass
             info = {
                 "first_time": self.first_time(
                     from_addr,
