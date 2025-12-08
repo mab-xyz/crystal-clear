@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from api.core.database import get_session
+from api.core.security import require_admin_if_enabled
 from api.models.contract import (
     ContractCreate,
     ContractListResponse,
@@ -36,6 +37,7 @@ def get_contract_service(session: Session = Depends(get_session)) -> ContractSer
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Create a new contract",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def create_contract(
     contract_data: ContractCreate,
@@ -68,6 +70,7 @@ async def get_contract(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Update contract by address",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def update_contract(
     address: str,
@@ -85,6 +88,7 @@ async def update_contract(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Delete contract by address",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def delete_contract(
     address: str,
@@ -100,6 +104,7 @@ async def delete_contract(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="List contracts with optional filters",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def get_contracts(
     protocol: str | None = None,
@@ -150,6 +155,7 @@ async def get_contract_audits(
     },
     summary="Get contract repository",
     description="Fetch the repository for a contract by its address.",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def get_contract_repository(
     address: str,
@@ -181,6 +187,7 @@ async def get_contract_repository(
     },
     summary="Add audit to contract",
     description="Add a new audit report for a contract using its protocol and version.",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def add_contract_audit(
     address: str,
@@ -214,6 +221,7 @@ async def add_contract_audit(
     },
     summary="Add repository to contract",
     description="Add repository repository URL for a contract using its protocol and version.",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def add_contract_source_code(
     address: str,
