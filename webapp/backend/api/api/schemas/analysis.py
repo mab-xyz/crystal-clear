@@ -147,3 +147,30 @@ class SimulationResultItem(BaseModel):
 class SimulationResponse(BaseModel):
     status: Literal["OK", "DANGEROUS"]
     details: List[SimulationResultItem]
+
+
+class RawTxRiskRequest(BaseModel):
+    """Request model for raw signed transaction risk check."""
+
+    raw_tx: str = Field(..., description="0x-hex of the signed transaction")
+    sender_address: Optional[str] = Field(
+        None,
+        description=(
+            "The 0x-hex address of the sender. "
+            "Required if 'raw_tx' is an unsigned transaction. "
+            "Ignored if 'raw_tx' is a signed transaction."
+        ),
+    )
+    block_tag: Optional[str] = Field(
+        "latest", description="Block tag or number"
+    )
+    latest_offset: Optional[int] = Field(
+        100,
+        description="Limit first-time checks to N latest blocks (performance control)",
+    )
+    from_block: Optional[str] = Field(
+        None, description="Lower bound block for first-time checks"
+    )
+    to_block: Optional[str] = Field(
+        None, description="Upper bound block for first-time checks"
+    )
