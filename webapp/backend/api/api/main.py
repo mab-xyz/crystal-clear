@@ -55,16 +55,20 @@ async def timeout_middleware(request: Request, call_next):
             call_next(request), timeout=settings.request_timeout
         )
     except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="Request timed out") from None
+        raise HTTPException(
+            status_code=504, detail="Request timed out"
+        ) from None
 
 
 # # Include routers
-app.include_router(health.router)
-app.include_router(analysis.router)
-app.include_router(info.router)
-app.include_router(audit.router)
-app.include_router(contract.router)
-app.include_router(repository.router)
+app.include_router(health.router, include_in_schema=False)
+app.include_router(
+    analysis.router,
+)
+app.include_router(info.router, include_in_schema=False)
+app.include_router(audit.router, include_in_schema=False)
+app.include_router(contract.router, include_in_schema=False)
+app.include_router(repository.router, include_in_schema=False)
 
 
 @app.get("/")
