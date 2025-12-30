@@ -44,15 +44,24 @@ class EtherscanClient(BaseClient):
             bool: True if the contract is verified, False otherwise
         """
 
+        self.logger.info("Etherscan verification requested", extra={"address": address})
         contract_source = self.get_contract_source(address)
 
         if contract_source and len(contract_source.get("SourceCode")) > 0:
+            self.logger.info(
+                "Etherscan verification succeeded",
+                extra={"address": address, "verified": True},
+            )
             return VerificationDetails(
                 address=address,
                 verification="verified",
                 verifiedAt="N/A",
                 source="etherscan",
             )
+        self.logger.info(
+            "Etherscan verification failed",
+            extra={"address": address, "verified": False},
+        )
         return VerificationDetails(
             address=address,
             verification="not-verified",
