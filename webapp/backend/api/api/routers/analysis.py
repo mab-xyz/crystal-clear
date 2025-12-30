@@ -47,6 +47,7 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     summary="Get contract dependencies",
     description="Analyze and return the dependency network for a given contract address.",
+    include_in_schema=False,
 )
 @cache(expire=settings.cache_ttl)
 async def get_contract_dependencies(
@@ -92,6 +93,7 @@ async def get_contract_dependencies(
     status_code=status.HTTP_200_OK,
     summary="Get contract risk assessment",
     description="Calculate and return the risk assessment for a given contract address.",
+    include_in_schema=False,
 )
 @cache(expire=settings.cache_ttl)
 async def get_contract_risk(
@@ -130,6 +132,7 @@ async def get_contract_risk(
         "Simulate a transaction via Erigon trace_call, list all touched contracts (including DELEGATECALL), "
         "and report whether it's the first interaction by the sender and the verification status."
     ),
+    include_in_schema=False,
 )
 async def simulate_transaction(body: SimulationRequest) -> SimulationResponse:
     call_object = {"from": body.from_addr}
@@ -228,6 +231,7 @@ def _validate_tx_hash(tx_hash: str) -> str:
         "Analyze a confirmed transaction by hash, list all touched contracts (including DELEGATECALL), "
         "and report whether it's the first interaction by the sender and the verification status."
     ),
+    include_in_schema=False,
 )
 async def get_tx_risk(
     tx_hash: str,
