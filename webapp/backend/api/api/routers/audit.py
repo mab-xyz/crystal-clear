@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 import api.crud.audit as crud
 from api.core.database import get_session
+from api.core.security import require_admin_if_enabled
 from api.models.audit import (
     AuditCreate,
     AuditListResponse,
@@ -29,6 +30,7 @@ router = APIRouter(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Create a new audit entry",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def create_audit(
     audit_data: AuditCreate,
@@ -74,6 +76,7 @@ async def get_audit(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="List audit entries",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def list_audits(
     protocol: str | None = None,
@@ -97,6 +100,7 @@ async def list_audits(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Update audit url",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def update_audit(
     protocol: str,
@@ -123,6 +127,7 @@ async def update_audit(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Delete audit entry",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def delete_audit(
     protocol: str,

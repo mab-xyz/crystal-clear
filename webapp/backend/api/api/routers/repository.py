@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 import api.crud.repository as crud
 from api.core.database import get_session
+from api.core.security import require_admin_if_enabled
 from api.models.repository import (
     RepositoryCreate,
     RepositoryListResponse,
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/repository", tags=["repository"])
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Create a new repository entry",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def create_repository(
     repository_in: RepositoryCreate,
@@ -72,6 +74,7 @@ async def get_repository(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="List repository entries",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def list_repositories(
     protocol: str | None = None,
@@ -96,6 +99,7 @@ async def list_repositories(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Update repository URL",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def update_repository(
     protocol: str,
@@ -123,6 +127,7 @@ async def update_repository(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
     summary="Delete repository entry",
+    dependencies=[Depends(require_admin_if_enabled)],
 )
 async def delete_repository(
     protocol: str,

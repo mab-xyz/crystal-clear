@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
@@ -12,6 +12,8 @@ from api.core.config import settings
 from api.core.database import create_db_and_tables
 from api.core.logging import setup_logging
 from api.routers import analysis, audit, contract, health, info, repository
+from api.routers import keys
+from api.core.security import require_api_key
 
 # Setup logging
 setup_logging()

@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     api_host: str = Field(..., alias="API_HOST")
     api_port: int = Field(..., alias="API_PORT")
 
+    # API Key Auth Configuration
+    api_key_auth_enabled: bool = Field(False, alias="API_KEY_AUTH_ENABLED")
+    api_key_header: str = Field("X-API-Key", alias="API_KEY_HEADER")
+    root_api_key: str | None = Field(default=None, alias="ROOT_API_KEY")
+
+    root_api_key_hash: str | None = Field(
+        default=None, alias="ROOT_API_KEY_HASH"
+    )
+
     # Request Timeout
     request_timeout: int = Field(60 * 2, alias="REQUEST_TIMEOUT")
 
