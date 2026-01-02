@@ -28,13 +28,13 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir poetry
 
 # Copy dependency definitions first for better caching
-COPY api/pyproject.toml api/poetry.lock ./
+COPY pyproject.toml poetry.lock ./
 
 # Copying the dependency into the image
 COPY crystal-clear/ /crystal-clear
 
 # Copy your app files (needed before installing due to local path deps)
-COPY api/ ./
+COPY src/api/ ./
 
 # Install Python dependencies with Poetry
 RUN poetry config virtualenvs.create false \
@@ -44,4 +44,4 @@ RUN poetry config virtualenvs.create false \
 EXPOSE ${API_PORT}
 
 # Start the application
-CMD uvicorn api.main:app --host ${API_HOST} --port ${API_PORT}
+CMD uvicorn src.api.main:app --host ${API_HOST} --port ${API_PORT}
