@@ -1,10 +1,14 @@
+from pydantic import BaseModel
+from src.api.models.contract import ContractResponse
+from src.api.models.audit import AuditResponse
+from src.api.models.repository import RepositoryResponse
 from typing import List
 
 from pydantic import BaseModel
 
-from api.models.audit import AuditResponse
-from api.models.contract import ContractResponse
-from api.models.repository import RepositoryResponse
+from src.api.models.audit import AuditResponse
+from src.api.models.contract import ContractResponse
+from src.api.models.repository import RepositoryResponse
 
 
 class ContractAuditCheckResponse(BaseModel):

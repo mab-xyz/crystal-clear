@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
-
+from sqlmodel import Session, select
+from src.api.models.repository import *
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -11,7 +12,9 @@ from api.models.repository import (
 )
 
 
-def create_repository(session: Session, repository: RepositoryCreate) -> Repository:
+def create_repository(
+    session: Session, repository: RepositoryCreate
+) -> Repository:
     """Create new repository entry"""
     db_repository = Repository(**repository.model_dump())
     session.add(db_repository)
@@ -78,7 +81,9 @@ def update_repository(
         return db_repository
     except IntegrityError as e:
         session.rollback()
-        raise ValueError("URL update failed due to uniqueness constraint") from e
+        raise ValueError(
+            "URL update failed due to uniqueness constraint"
+        ) from e
 
 
 def delete_repository(

@@ -2,13 +2,16 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-import api.crud.audit as audit_crud
-import api.crud.contract as crud
-import api.crud.repository as repository_crud
-from api.models.audit import AuditCreate
-from api.models.contract import Contract, ContractCreate, ContractUpdate
-from api.models.repository import RepositoryCreate
-from api.schemas.contract import ContractAuditCreate, ContractRepositoryCreate
+import src.api.crud.audit as audit_crud
+import src.api.crud.contract as crud
+import src.api.crud.repository as repository_crud
+from src.api.models.audit import AuditCreate
+from src.api.models.contract import Contract, ContractCreate, ContractUpdate
+from src.api.models.repository import RepositoryCreate
+from src.api.schemas.contract import (
+    ContractAuditCreate,
+    ContractRepositoryCreate,
+)
 
 
 class ContractService:
@@ -34,7 +37,8 @@ class ContractService:
         contract = crud.get_contract(self.session, address)
         if not contract:
             raise HTTPException(
-                status_code=404, detail=f"Contract with address {address} not found"
+                status_code=404,
+                detail=f"Contract with address {address} not found",
             )
         return contract
 
@@ -45,7 +49,8 @@ class ContractService:
         contract = crud.update_contract(self.session, address, contract_data)
         if not contract:
             raise HTTPException(
-                status_code=404, detail=f"Contract with address {address} not found"
+                status_code=404,
+                detail=f"Contract with address {address} not found",
             ) from None
         return contract
 
@@ -53,7 +58,8 @@ class ContractService:
         """Delete contract by address"""
         if not crud.delete_contract(self.session, address):
             raise HTTPException(
-                status_code=404, detail=f"Contract with address {address} not found"
+                status_code=404,
+                detail=f"Contract with address {address} not found",
             ) from None
 
     async def get_contracts(
@@ -82,7 +88,8 @@ class ContractService:
 
         if not repository:
             raise HTTPException(
-                status_code=404, detail=f"Repository for contract {address} not found"
+                status_code=404,
+                detail=f"Repository for contract {address} not found",
             ) from None
 
         return {"contract": contract, "repository": repository}

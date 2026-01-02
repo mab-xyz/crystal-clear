@@ -1,7 +1,9 @@
 from fastapi import APIRouter, status
 from loguru import logger
+from web3 import Web3
 
-from api.core.config import cc
+
+from src.api.core.config import settings
 
 router = APIRouter(
     prefix="/health",
@@ -33,7 +35,7 @@ async def eth_node_health_check():
     Check if the Ethereum node connection is working.
     """
     try:
-        w3 = cc.trace_collector.w3
+        w3 = Web3(Web3.HTTPProvider(settings.eth_node_url))
         connected = w3.is_connected()
         return {
             "status": "healthy",

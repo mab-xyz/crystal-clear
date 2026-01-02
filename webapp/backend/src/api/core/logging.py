@@ -1,51 +1,44 @@
 import logging
 import sys
+from typing import Optional
 
-from loguru import logger
-
-from api.core.config import settings
-
-
-class InterceptHandler(logging.Handler):
-    """Intercepts standard logging and redirects to loguru."""
-
-    def emit(self, record: logging.LogRecord) -> None:
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage()
-        )
+from .config import settings
 
 
-def setup_logging() -> None:
-    """Configure logging for the application."""
-    # Remove all default handlers
-    logging.root.handlers = []
-    logging.root.setLevel(settings.log_level)
+def setup_logging(log_level: Optional[str] = None) -> None:
+    """
+    Configure logging with the specified log level from settings.
 
-    # Add handlers for all loggers
-    for name in logging.root.manager.loggerDict.keys():
-        logging.getLogger(name).handlers = []
-        logging.getLogger(name).propagate = True
+    Args:
+        log_level: Optional override for the log level. If not provided,
+                  the log_level from settings is used.
+    """
+    level = log_level or settings.log_level
+    numeric_level = getattr(logging, level.upper(), None)
 
-    # Configure loguru
-    logger.configure(
-        handlers=[
-            {
-                "sink": sys.stdout,
-                "level": settings.log_level,
-                "format": "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-            }
-        ]
+    if not isinstance(numeric_level, int):
+        raise ValueError(f"Invalid log level: {level}")
+
+    # Configure the root logger
+    logging.basicConfig(
+        level=numeric_level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
-    # Intercept standard logging
-    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+    # Log a message to confirm setup
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Logging configured with level: {level}")
+
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a logger with the specified name.
+
+    Args:
+        name: The name of the logger, typically __name__ of the calling module.
+
+    Returns:
+        A configured Logger instance.
+    """
+    return logging.getLogger(name)

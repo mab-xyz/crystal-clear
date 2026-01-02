@@ -1,3 +1,6 @@
+from sqlmodel import Session, select
+from src.api.models.audit import Audit, AuditCreate, AuditUpdate
+from typing import List
 from datetime import datetime
 from typing import List
 
@@ -27,7 +30,9 @@ def get_audit(
     version: str | None = None,
 ) -> Audit | None:
     """Get audit by protocol, company and optional version"""
-    stmt = select(Audit).where(Audit.protocol == protocol, Audit.company == company)
+    stmt = select(Audit).where(
+        Audit.protocol == protocol, Audit.company == company
+    )
     if version is not None:
         stmt = stmt.where(Audit.version == version)
     else:
@@ -92,4 +97,6 @@ def update_audit(
         return audit
     except IntegrityError as e:
         session.rollback()
-        raise ValueError("URL update failed due to uniqueness constraint") from e
+        raise ValueError(
+            "URL update failed due to uniqueness constraint"
+        ) from e

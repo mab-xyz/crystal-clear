@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
-import api.crud.audit as crud
-from api.core.database import get_session
-from api.core.security import require_admin_if_enabled
-from api.models.audit import (
+import src.api.crud.audit as crud
+from src.api.core.database import get_session
+from src.api.core.security import require_admin_if_enabled
+from src.api.models.audit import (
     AuditCreate,
     AuditListResponse,
     AuditResponse,
     AuditUpdate,
 )
-from api.schemas.response import ErrorResponse
+from src.api.schemas.response import ErrorResponse
 
 router = APIRouter(
     prefix="/audit",
@@ -59,7 +59,9 @@ async def create_audit(
 async def get_audit(
     protocol: str,
     company: str,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     session: Session = Depends(get_session),
 ) -> AuditResponse:
     """Get specific audit entry"""
@@ -81,7 +83,9 @@ async def get_audit(
 async def list_audits(
     protocol: str | None = None,
     company: str | None = None,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     session: Session = Depends(get_session),
 ) -> AuditListResponse:
     """List audit entries with optional filters"""
@@ -106,14 +110,20 @@ async def update_audit(
     protocol: str,
     company: str,
     audit_data: AuditUpdate,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     session: Session = Depends(get_session),
 ) -> AuditResponse:
     """Update audit URL"""
     try:
-        audit = crud.update_audit(session, audit_data, protocol, company, version)
+        audit = crud.update_audit(
+            session, audit_data, protocol, company, version
+        )
         if not audit:
-            raise HTTPException(status_code=404, detail="Audit not found") from None
+            raise HTTPException(
+                status_code=404, detail="Audit not found"
+            ) from None
         return audit
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -132,7 +142,9 @@ async def update_audit(
 async def delete_audit(
     protocol: str,
     company: str,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     session: Session = Depends(get_session),
 ) -> None:
     """Delete audit entry"""

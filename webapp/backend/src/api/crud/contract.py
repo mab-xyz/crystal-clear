@@ -1,3 +1,6 @@
+from sqlmodel import Session, select
+from src.api.models.contract import Contract, ContractCreate, ContractUpdate
+from typing import List
 from datetime import datetime
 from typing import List
 
@@ -6,7 +9,9 @@ from sqlmodel import Session, select
 from api.models.contract import Contract, ContractCreate, ContractUpdate
 
 
-def create_contract(session: Session, contract_data: ContractCreate) -> Contract:
+def create_contract(
+    session: Session, contract_data: ContractCreate
+) -> Contract:
     contract_data.address = contract_data.address.lower()
     contract = Contract(**contract_data.model_dump())
     session.add(contract)

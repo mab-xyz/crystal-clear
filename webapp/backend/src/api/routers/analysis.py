@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
 
-from api.core.config import settings
-from api.core.database import get_session
-from api.schemas.analysis import (
+from src.api.core.config import settings
+from src.api.core.database import get_session
+from src.api.schemas.analysis import (
     ContractDependenciesRequest,
     ContractDependenciesResponse,
     ContractRiskRequest,
@@ -13,12 +13,12 @@ from api.schemas.analysis import (
     RiskAnalysisResponse,
     RawTxRiskRequest,
 )
-from api.schemas.response import ErrorResponse
-from api.services.analysis_service import (
+from src.api.schemas.response import ErrorResponse
+from src.api.services.analysis_service import (
     analyze_contract_dependencies,
     assess_contract_risk,
 )
-from api.core.config import cc
+from src.api.core.config import cc
 from eth_account import Account
 from eth_account.typed_transactions import TypedTransaction
 from hexbytes import HexBytes

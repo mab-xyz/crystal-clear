@@ -3,9 +3,10 @@ from fastapi import APIRouter, Depends, status
 from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
 
-from api.core.config import settings
-from api.core.database import get_session
-from api.schemas.info import (
+from src.api.core.config import settings
+from src.api.core.database import get_session
+from src.api.schemas.info import (
+    LatestBlockResponse,
     DeploymentInfoResponse,
     LatestBlockResponse,
     PermissionsInfoResponse,
@@ -13,8 +14,9 @@ from api.schemas.info import (
     ScorecardResponse,
     VerificationInfoResponse,
 )
-from api.schemas.response import ErrorResponse
-from api.services.info_service import (
+from src.api.schemas.response import ErrorResponse
+from src.api.services.info_service import (
+    get_latest_block_number,
     get_deployment_data,
     get_latest_block_number,
     get_permissions_data,
@@ -144,7 +146,11 @@ async def get_scorecard_info(
 
     scorecard_data = await get_scorecard_data(session, address)
 
-    source = "public_api" if scorecard_data["source"] == "api" else "scorecard_docker"
+    source = (
+        "public_api"
+        if scorecard_data["source"] == "api"
+        else "scorecard_docker"
+    )
     org_repo = scorecard_data["repo"]
 
     return ScorecardResponse(
@@ -228,4 +234,6 @@ async def get_permissions_info(address: str):
 
     data: PermissionsInfo = get_permissions_data(address)
 
-    return PermissionsInfoResponse(address=address, permissions=data.permissions)
+    return PermissionsInfoResponse(
+        address=address, permissions=data.permissions
+    )

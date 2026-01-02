@@ -1,9 +1,11 @@
+from sqlmodel import Session, select
+from src.api.models.label import Label, LabelCreate, LabelUpdate, AddressList
 from datetime import datetime
 from typing import Dict, List
 
 from sqlmodel import Session, select
 
-from api.models.label import AddressList, Label, LabelCreate, LabelUpdate
+from src.api.models.label import AddressList, Label, LabelCreate, LabelUpdate
 
 
 def create_label(session: Session, label_data: LabelCreate) -> Label:

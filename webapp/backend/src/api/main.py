@@ -8,12 +8,12 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 
-from api.core.config import settings
-from api.core.database import create_db_and_tables
-from api.core.logging import setup_logging
-from api.routers import analysis, audit, contract, health, info, repository
-from api.routers import keys
-from api.core.security import require_api_key
+from src.api.core.config import settings
+from src.api.core.database import create_db_and_tables
+from src.api.core.logging import setup_logging
+from src.api.routers import analysis, audit, contract, health, info, repository
+from src.api.routers import keys
+from src.api.core.security import require_api_key
 
 # Setup logging
 setup_logging()

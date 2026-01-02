@@ -5,20 +5,21 @@ from typing import Dict, Optional
 import requests
 from crystal_clear.clients.models import VerificationDetails
 from crystal_clear.code_analyzer import PermissionsInfo, ProxyInfo
+from src.api.clients.allium_client import AlliumClient
 from fastapi import HTTPException
 from loguru import logger
 from sqlmodel import Session
 from web3 import Web3
 
-import api.crud.deployment as crud_deployment
-from api.core.config import cc, settings
-from api.core.exceptions import (
+import src.api.crud.deployment as crud_deployment
+from src.api.core.config import cc, settings
+from src.api.core.exceptions import (
     InputValidationError,
     InternalServerError,
     NotFoundError,
 )
-from api.models.deployment import DeploymentCreate
-from api.services.contract_service import ContractService
+from src.api.models.deployment import DeploymentCreate
+from src.api.services.contract_service import ContractService
 
 
 def get_latest_block_number() -> int:
@@ -34,10 +35,14 @@ def get_latest_block_number() -> int:
         return latest_block
     except Exception as e:
         logger.error(f"Error fetching latest block: {e}")
-        raise InternalServerError(f"Failed to get latest block: {str(e)}") from e
+        raise InternalServerError(
+            f"Failed to get latest block: {str(e)}"
+        ) from e
 
 
-def get_deployment_data(session: Session, address: str) -> Optional[Dict[str, str]]:
+def get_deployment_data(
+    session: Session, address: str
+) -> Optional[Dict[str, str]]:
     """
     Get the deployment information for a given contract address.
 
@@ -52,11 +57,16 @@ def get_deployment_data(session: Session, address: str) -> Optional[Dict[str, st
         if not Web3.is_address(address):
             raise InputValidationError(f"Invalid Ethereum address: {address}")
 
-        deployment_info = crud_deployment.get_deployment(session, address.lower())
+        deployment_info = crud_deployment.get_deployment(
+            session, address.lower()
+        )
         if not deployment_info:
-            deployment_info = cc.allium_client.get_deployment(address.lower())
+            client = AlliumClient(settings.allium_api_key)
+            deployment_info = client.get_deployment(address)
             if not deployment_info:
-                raise NotFoundError(f"No deployment information found for {address}")
+                raise NotFoundError(
+                    f"No deployment information found for {address}"
+                )
             entry = DeploymentCreate(
                 address=deployment_info["address"],
                 deployer=deployment_info["deployer"],
@@ -75,7 +85,9 @@ def get_deployment_data(session: Session, address: str) -> Optional[Dict[str, st
         raise e
     except Exception as e:
         logger.error(f"Error fetching deployment data: {e}")
-        raise InternalServerError(f"Failed to get deployment data: {str(e)}") from e
+        raise InternalServerError(
+            f"Failed to get deployment data: {str(e)}"
+        ) from e
 
 
 def get_verification_data(address: str) -> Optional[Dict[str, str]]:
@@ -93,14 +105,16 @@ def get_verification_data(address: str) -> Optional[Dict[str, str]]:
         if not Web3.is_address(address):
             raise InputValidationError(f"Invalid Ethereum address: {address}")
 
-        response: VerificationDetails = cc.sourcify_client.check_contract_verified(
-            address.lower()
+        response: VerificationDetails = (
+            cc.sourcify_client.check_contract_verified(address.lower())
         )
         if response.verification == "not-verified":
             logger.info(
                 f"Sourcify: Contract {address} not verified. Checking Etherscan..."
             )
-            response = cc.etherscan_client.check_contract_verified(address.lower())
+            response = cc.etherscan_client.check_contract_verified(
+                address.lower()
+            )
 
         return response
     except InputValidationError as e:
@@ -108,7 +122,9 @@ def get_verification_data(address: str) -> Optional[Dict[str, str]]:
         raise e
     except Exception as e:
         logger.error(f"Error fetching verification data: {e}")
-        raise InternalServerError(f"Failed to get verification data: {str(e)}") from e
+        raise InternalServerError(
+            f"Failed to get verification data: {str(e)}"
+        ) from e
 
 
 async def get_scorecard_data(session: Session, address: str) -> Optional[Dict]:
@@ -137,18 +153,24 @@ async def get_scorecard_data(session: Session, address: str) -> Optional[Dict]:
         raise e
     except NotFoundError as e:
         logger.error(f"Repository not found: {e}")
-        raise NotFoundError(f"No repository information found for {address}") from e
+        raise NotFoundError(
+            f"No repository information found for {address}"
+        ) from e
     except HTTPException as e:
         logger.error(f"HTTP error: {e.detail}")
         raise e
     except Exception as e:
         logger.error(f"Error fetching repository data: {e}")
-        raise InternalServerError(f"Failed to get repository data: {str(e)}") from e
+        raise InternalServerError(
+            f"Failed to get repository data: {str(e)}"
+        ) from e
 
     path = f"{org}/{repo}"
 
     try:
-        api_url = f"https://api.securityscorecards.dev/projects/github.com/{path}"
+        api_url = (
+            f"https://api.securityscorecards.dev/projects/github.com/{path}"
+        )
 
         logger.info(f"Checking Scorecard API: {api_url}")
         response = requests.get(api_url)
@@ -179,13 +201,19 @@ async def get_scorecard_data(session: Session, address: str) -> Optional[Dict]:
             logger.error(f"Scorecard Docker run failed: {result.stderr}")
             raise InternalServerError("Scorecard analysis failed.")
 
-        return {"source": "docker", "repo": path, "raw": json.loads(result.stdout)}
+        return {
+            "source": "docker",
+            "repo": path,
+            "raw": json.loads(result.stdout),
+        }
     except InputValidationError as e:
         logger.error(f"Input validation error: {e}")
         raise e
     except requests.RequestException as e:
         logger.error(f"Scorecard API request error: {e}")
-        raise InternalServerError("Failed to reach Scorecard public API.") from e
+        raise InternalServerError(
+            "Failed to reach Scorecard public API."
+        ) from e
     except subprocess.SubprocessError as e:
         logger.error(f"Subprocess error: {e}")
         raise InternalServerError("Failed to run Scorecard subprocess.") from e
@@ -194,7 +222,9 @@ async def get_scorecard_data(session: Session, address: str) -> Optional[Dict]:
         raise InternalServerError("Failed to parse Scorecard output.") from e
     except Exception as e:
         logger.error(f"Unexpected Scorecard error: {e}")
-        raise InternalServerError("Unexpected error during Scorecard analysis.") from e
+        raise InternalServerError(
+            "Unexpected error during Scorecard analysis."
+        ) from e
 
 
 def get_proxy_data(address: str) -> ProxyInfo:
@@ -248,4 +278,6 @@ def get_permissions_data(address: str) -> PermissionsInfo:
         raise NotFoundError(f"No permissions data found for {address}") from ve
     except Exception as e:
         logger.error(f"Error fetching permissions data: {e}")
-        raise InternalServerError(f"Failed to get permissions data: {str(e)}") from e
+        raise InternalServerError(
+            f"Failed to get permissions data: {str(e)}"
+        ) from e

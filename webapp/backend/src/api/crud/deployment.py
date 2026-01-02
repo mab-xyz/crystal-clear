@@ -1,6 +1,7 @@
 from sqlmodel import Session
+from src.api.models.deployment import Deployment, DeploymentCreate
 
-from api.models.deployment import Deployment, DeploymentCreate
+from src.api.models.deployment import Deployment, DeploymentCreate
 
 
 def create_deployment(

@@ -3,16 +3,17 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
-import api.crud.repository as crud
-from api.core.database import get_session
-from api.core.security import require_admin_if_enabled
-from api.models.repository import (
+import src.api.crud.repository as crud
+from src.api.core.database import get_session
+from src.api.core.security import require_admin_if_enabled
+from src.api.models.repository import (
     RepositoryCreate,
     RepositoryListResponse,
     RepositoryResponse,
     RepositoryUpdate,
 )
-from api.schemas.response import ErrorResponse
+from src.api.schemas.response import ErrorResponse
+import src.api.crud.repository as crud
 
 router = APIRouter(prefix="/repository", tags=["repository"])
 
@@ -57,13 +58,17 @@ async def create_repository(
 )
 async def get_repository(
     protocol: str,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     session: Session = Depends(get_session),
 ) -> Any:
     """Get repository entry"""
     repository = crud.get_repository(session, protocol, version)
     if not repository:
-        raise HTTPException(status_code=404, detail="Repository not found") from None
+        raise HTTPException(
+            status_code=404, detail="Repository not found"
+        ) from None
     return repository
 
 
@@ -78,14 +83,20 @@ async def get_repository(
 )
 async def list_repositories(
     protocol: str | None = None,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     skip: int = 0,
     limit: int = Query(default=100, lte=100),
     session: Session = Depends(get_session),
 ) -> Any:
     """List repository entries with optional filters"""
     repositories = crud.get_repositories(
-        session=session, skip=skip, limit=limit, protocol=protocol, version=version
+        session=session,
+        skip=skip,
+        limit=limit,
+        protocol=protocol,
+        version=version,
     )
     return RepositoryListResponse(total=len(repositories), items=repositories)
 
@@ -104,12 +115,16 @@ async def list_repositories(
 async def update_repository(
     protocol: str,
     repository_in: RepositoryUpdate,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     session: Session = Depends(get_session),
 ) -> Any:
     """Update repository URL"""
     try:
-        repository = crud.update_repository(session, repository_in, protocol, version)
+        repository = crud.update_repository(
+            session, repository_in, protocol, version
+        )
         if not repository:
             raise HTTPException(
                 status_code=404, detail="Repository not found"
@@ -131,9 +146,13 @@ async def update_repository(
 )
 async def delete_repository(
     protocol: str,
-    version: str | None = Query(default=None, description="Optional version filter"),
+    version: str | None = Query(
+        default=None, description="Optional version filter"
+    ),
     session: Session = Depends(get_session),
 ) -> None:
     """Delete repository entry"""
     if not crud.delete_repository(session, protocol, version):
-        raise HTTPException(status_code=404, detail="Repository not found") from None
+        raise HTTPException(
+            status_code=404, detail="Repository not found"
+        ) from None
