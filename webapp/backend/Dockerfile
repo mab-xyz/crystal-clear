@@ -37,6 +37,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy your app files
 COPY . .
 
+# Install the bundled crystal-clear SDK
+RUN pip install --no-cache-dir -e ./crystal-clear
+
 # Expose the API port
 EXPOSE ${API_PORT}
 

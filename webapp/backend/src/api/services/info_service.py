@@ -3,8 +3,6 @@ import subprocess
 from typing import Dict, Optional
 
 import requests
-from crystal_clear.clients.models import VerificationDetails
-from crystal_clear.code_analyzer import PermissionsInfo, ProxyInfo
 from src.api.clients.allium_client import AlliumClient
 from fastapi import HTTPException
 from loguru import logger
@@ -248,7 +246,7 @@ async def get_scorecard_data(session: Session, address: str) -> Optional[Dict]:
         ) from e
 
 
-def get_proxy_data(address: str) -> ProxyInfo:
+def get_proxy_data(address: str) -> Optional[Dict[str, str]]:
     """
     Get proxy information for a given contract address.
 
@@ -276,7 +274,7 @@ def get_proxy_data(address: str) -> ProxyInfo:
         raise InternalServerError(f"Failed to get proxy info: {str(e)}") from e
 
 
-def get_permissions_data(address: str) -> PermissionsInfo:
+def get_permissions_data(address: str) -> Dict[str, str]:
     """
     Get permissioned functions of a contract.
 

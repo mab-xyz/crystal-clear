@@ -1,7 +1,5 @@
-from typing import List
+from typing import Literal, List
 
-from crystal_clear.clients.models import VerificationDetails
-from crystal_clear.code_analyzer import PermissionsInfo, ProxyInfo
 from pydantic import BaseModel, Field
 
 
@@ -16,7 +14,9 @@ class LatestBlockResponse(BaseModel):
 class DeploymentInfoRequest(BaseModel):
     """Request model for deployment information."""
 
-    address: str = Field(..., description="Contract address for deployment info")
+    address: str = Field(
+        ..., description="Contract address for deployment info"
+    )
 
 
 class DeploymentInfoResponse(BaseModel):
@@ -29,8 +29,14 @@ class DeploymentInfoResponse(BaseModel):
     block_number: int = Field(..., description="Block number of deployment")
 
 
-class VerificationInfoResponse(VerificationDetails):
+class VerificationInfoResponse(BaseModel):
     """Response model for contract verification information."""
+
+    address: str = Field(..., description="Contract address")
+    verification: Literal["verified", "fully-verified", "not-verified"] = (
+        Field(..., description="Verification status")
+    )
+    verifiedAt: str = Field(None, description="Verification date")
 
 
 class ScorecardResponse(BaseModel):
@@ -41,13 +47,20 @@ class ScorecardResponse(BaseModel):
     checks: List[dict]
 
 
-class ProxyInfoResponse(ProxyInfo):
+class ProxyInfoResponse(BaseModel):
     """Response model for proxy information."""
 
-    address: str = Field(..., description="Contract address")
+    address: str = Field(..., description="Proxy contract address")
+    type: str = Field(..., description="Type of proxy (e.g., 'upgradable')")
+    message: str = Field(
+        ..., description="Additional information about the proxy"
+    )
 
 
-class PermissionsInfoResponse(PermissionsInfo):
+class PermissionsInfoResponse(BaseModel):
     """Response model for permissioned functions of a contract."""
 
     address: str = Field(..., description="Contract address")
+    functions: List[str] = Field(
+        ..., description="List of functions that require specific permissions"
+    )

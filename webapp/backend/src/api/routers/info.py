@@ -1,7 +1,8 @@
-from crystal_clear.code_analyzer.analyzer import PermissionsInfo, ProxyInfo
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
+import asyncio
+
 
 from src.api.core.config import settings
 from src.api.core.database import get_session
@@ -190,14 +191,14 @@ async def get_proxy_info(
     """
     Get proxy information for a given contract address.
     """
-    data: ProxyInfo = get_proxy_data(address)
+    data = get_proxy_data(address)
     return ProxyInfoResponse(
-        address=address,
-        description=data.description,
-        implementation_slot=data.implementation_slot,
-        implementation_variable=data.implementation_variable,
-        is_upgradeable=data.is_upgradeable,
-        is_proxy=data.is_proxy,
+        address=data["address"],
+        description=data["description"],
+        implementation_slot=data["implementation_slot"],
+        implementation_variable=data["implementation_variable"],
+        is_upgradeable=data["is_upgradeable"],
+        is_proxy=data["is_proxy"],
     )
 
 
@@ -232,8 +233,17 @@ async def get_permissions_info(address: str):
     Get permissioned functions for a contract address.
     """
 
-    data: PermissionsInfo = get_permissions_data(address)
+    try:
+        # Run the blocking function in a thread, with a timeout
+        data = await asyncio.wait_for(
+            asyncio.to_thread(get_permissions_data, address),
+            timeout=30,  # seconds
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Request timed out")
+
+    permissioned_functions = [fn["function"] for fn in data]
 
     return PermissionsInfoResponse(
-        address=address, permissions=data.permissions
+        address=address, functions=permissioned_functions
     )
