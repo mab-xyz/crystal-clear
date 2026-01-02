@@ -18,7 +18,8 @@ from src.api.services.analysis_service import (
     analyze_contract_dependencies,
     assess_contract_risk,
 )
-from src.api.core.config import cc
+from src.api.integrations.crystal_clear_adapter import get_risk_engine
+from src.api.integrations.risk_engine import RiskEngine
 from eth_account import Account
 from eth_account.typed_transactions import TypedTransaction
 from hexbytes import HexBytes
@@ -101,13 +102,18 @@ async def get_contract_risk(
     from_block: str = Query(None, description="Start block"),
     to_block: str = Query(None, description="End block"),
     session: Session = Depends(get_session),
+    risk_engine: RiskEngine = Depends(get_risk_engine),
 ):
     request = ContractRiskRequest(
         address=address, from_block=from_block, to_block=to_block
     )
 
     risk_data = await assess_contract_risk(
-        session, request.address, request.from_block, request.to_block
+        session,
+        request.address,
+        request.from_block,
+        request.to_block,
+        risk_engine=risk_engine,
     )
 
     return risk_data
@@ -134,7 +140,10 @@ async def get_contract_risk(
     ),
     include_in_schema=False,
 )
-async def simulate_transaction(body: SimulationRequest) -> SimulationResponse:
+async def simulate_transaction(
+    body: SimulationRequest,
+    risk_engine: RiskEngine = Depends(get_risk_engine),
+) -> SimulationResponse:
     call_object = {"from": body.from_addr}
     if body.to_addr:
         call_object["to"] = body.to_addr
@@ -165,7 +174,7 @@ async def simulate_transaction(body: SimulationRequest) -> SimulationResponse:
         else None
     )
 
-    results = cc.simulate_and_check(
+    results = risk_engine.simulate_and_check(
         call_object,
         block_tag=body.block_tag or "latest",
         from_block=fb,
@@ -244,6 +253,7 @@ async def get_tx_risk(
     latest_offset: int | None = Query(
         100, description="Limit first-time checks to N latest blocks"
     ),
+    risk_engine: RiskEngine = Depends(get_risk_engine),
 ) -> SimulationResponse:
     # Basic tx hash validation and sanitize empty bounds
     tx_hash = _validate_tx_hash(tx_hash)
@@ -251,7 +261,7 @@ async def get_tx_risk(
     tb = to_block if (to_block and to_block.strip() != "") else None
     lo = latest_offset
 
-    results = cc.simulate_from_tx(
+    results = risk_engine.simulate_from_tx(
         tx_hash,
         from_block=fb,
         to_block=tb,
@@ -305,7 +315,10 @@ async def get_tx_risk(
         "and assess risk similarly to other endpoints."
     ),
 )
-async def get_tx_risk_from_raw(body: RawTxRiskRequest) -> SimulationResponse:
+async def get_tx_risk_from_raw(
+    body: RawTxRiskRequest,
+    risk_engine: RiskEngine = Depends(get_risk_engine),
+) -> SimulationResponse:
     s = (body.raw_tx or "").strip()
     if not (s.startswith("0x") and len(s) % 2 == 0):
         raise HTTPException(
@@ -495,7 +508,7 @@ async def get_tx_risk_from_raw(body: RawTxRiskRequest) -> SimulationResponse:
     )
 
     # Simulation step
-    results = cc.simulate_and_check(
+    results = risk_engine.simulate_and_check(
         call_object,
         block_tag=body.block_tag or "latest",
         from_block=fb,

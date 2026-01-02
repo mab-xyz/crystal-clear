@@ -12,14 +12,16 @@ from sqlmodel import Session
 from web3 import Web3
 
 import src.api.crud.deployment as crud_deployment
-from src.api.core.config import cc, settings
+from src.api.core.config import settings
 from src.api.core.exceptions import (
     InputValidationError,
     InternalServerError,
     NotFoundError,
 )
+from src.api.core.proxy import detect_delegatecall_and_address
 from src.api.models.deployment import DeploymentCreate
 from src.api.services.contract_service import ContractService
+from src.api.core.permissions import get_permissions
 
 
 def get_latest_block_number() -> int:
@@ -105,18 +107,37 @@ def get_verification_data(address: str) -> Optional[Dict[str, str]]:
         if not Web3.is_address(address):
             raise InputValidationError(f"Invalid Ethereum address: {address}")
 
-        response: VerificationDetails = (
-            cc.sourcify_client.check_contract_verified(address.lower())
-        )
-        if response.verification == "not-verified":
-            logger.info(
-                f"Sourcify: Contract {address} not verified. Checking Etherscan..."
-            )
-            response = cc.etherscan_client.check_contract_verified(
-                address.lower()
-            )
+        request_url = f"https://sourcify.dev/server/v2/contract/1/{address}"
 
-        return response
+        response = requests.get(request_url)
+        verification_info = response.json()
+
+        if (
+            response.status_code != 200
+            or not verification_info
+            or verification_info.get("match") == "null"
+        ):
+            etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={address}&apikey={settings.etherscan_api_key}"
+            response = requests.get(etherscan_url)
+            if response.status_code == 200:
+                etherscan_data = response.json()["result"]
+                if (
+                    len(etherscan_data) > 0
+                    and len(etherscan_data[0].get("SourceCode")) > 0
+                ):
+                    return {
+                        "address": address,
+                        "match": "match",
+                        "verifiedAt": "na",
+                    }
+
+                return {
+                    "address": address,
+                    "match": "not_match",
+                    "verifiedAt": "na",
+                }
+
+        return verification_info
     except InputValidationError as e:
         logger.error(f"Error: {e}")
         raise e
@@ -242,8 +263,11 @@ def get_proxy_data(address: str) -> ProxyInfo:
         if not Web3.is_address(address):
             raise InputValidationError(f"Invalid Ethereum address: {address}")
 
-        proxy_info = cc.get_proxy_info(address)
-        return proxy_info
+        proxy_type, message, all_lines = detect_delegatecall_and_address(
+            address, settings.eth_node_url
+        )
+
+        return {"address": address, "type": proxy_type, "message": message}
     except InputValidationError as e:
         logger.error(f"Error: {e}")
         raise e
@@ -267,7 +291,7 @@ def get_permissions_data(address: str) -> PermissionsInfo:
         if not Web3.is_address(address):
             raise InputValidationError(f"Invalid Ethereum address: {address}")
 
-        permissions = cc.get_permissions_info(address)
+        permissions = get_permissions(address)
 
         return permissions
     except InputValidationError as e:

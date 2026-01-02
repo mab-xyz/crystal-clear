@@ -7,7 +7,7 @@ from typing import List
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from api.models.audit import Audit, AuditCreate, AuditUpdate
+from src.api.models.audit import Audit, AuditCreate, AuditUpdate
 
 
 def create_audit(session: Session, audit_data: AuditCreate) -> Audit:

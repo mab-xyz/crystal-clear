@@ -5,9 +5,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 from sqlmodel import Session
 
-from api.core.config import settings
-from api.core.database import get_session
-from api.crud.api_key import get_valid_key_by_plaintext, mark_key_used
+from src.api.core.config import settings
+from src.api.core.database import get_session
+from src.api.crud.api_key import get_valid_key_by_plaintext, mark_key_used
 
 
 def _api_key_header() -> APIKeyHeader:

@@ -3,10 +3,10 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
-from api.core.database import get_session
-from api.core.security import require_admin_api_key
-from api.crud.api_key import create_api_key, list_api_keys, revoke_api_key
-from api.models.api_key import (
+from src.api.core.database import get_session
+from src.api.core.security import require_admin_api_key
+from src.api.crud.api_key import create_api_key, list_api_keys, revoke_api_key
+from src.api.models.api_key import (
     ApiKeyCreate,
     ApiKeyCreatedResponse,
     ApiKeyListResponse,
@@ -60,4 +60,3 @@ async def revoke_key(
     if not res:
         raise HTTPException(status_code=404, detail="Key not found or already revoked")
     return res
-

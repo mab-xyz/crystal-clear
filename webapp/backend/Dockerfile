@@ -30,21 +30,12 @@ RUN npm install --global sevm
 # Clean up apt cache
 RUN rm -rf /var/lib/apt/lists/*
 
-# Install Poetry to manage Python dependencies
-RUN pip install --no-cache-dir poetry
+# Install Python requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy dependency definitions first for better caching
-COPY pyproject.toml poetry.lock ./
-
-# Copying the dependency into the image
-COPY crystal-clear/ /crystal-clear
-
-# Copy your app files (needed before installing due to local path deps)
-COPY src/api/ ./
-
-# Install Python dependencies with Poetry
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-root
+# Copy your app files
+COPY . .
 
 # Expose the API port
 EXPOSE ${API_PORT}

@@ -6,7 +6,7 @@ from typing import List
 
 from sqlmodel import Session, select
 
-from api.models.contract import Contract, ContractCreate, ContractUpdate
+from src.api.models.contract import Contract, ContractCreate, ContractUpdate
 
 
 def create_contract(

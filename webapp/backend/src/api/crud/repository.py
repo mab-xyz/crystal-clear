@@ -5,7 +5,7 @@ from src.api.models.repository import *
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from api.models.repository import (
+from src.api.models.repository import (
     Repository,
     RepositoryCreate,
     RepositoryUpdate,

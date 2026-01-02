@@ -4,7 +4,7 @@ import os
 from fastapi.openapi.utils import get_openapi
 
 
-from api.main import app
+from src.api.main import app
 
 
 def get_openapi_spec():

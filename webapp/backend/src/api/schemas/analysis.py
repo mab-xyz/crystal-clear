@@ -1,8 +1,138 @@
 from typing import Any, Dict, List, Optional, Literal
 
-from crystal_clear.code_analyzer import RiskFactors
-from crystal_clear.traces.models import CallGraph
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from web3 import Web3
+
+
+class RiskFactors(BaseModel):
+    """Risk markers mirrored from the Crystal Clear models."""
+
+    upgradeability: bool | None = Field(
+        None, description="Contract is upgradeable"
+    )
+    permissioned: bool | None = Field(
+        None, description="Contract has permissioned functions"
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return self.model_dump()
+
+    def __str__(self) -> str:
+        str_parts: List[str] = []
+        if self.upgradeability:
+            str_parts.append("Contract is upgradeable.")
+        if self.permissioned:
+            str_parts.append("Contract has permissioned functions.")
+
+        return " ".join(str_parts) if str_parts else "No risk factors identified."
+
+
+class CallEdge(BaseModel):
+    """Call edge between contracts."""
+
+    source: str = Field(..., description="Caller contract address")
+    target: str = Field(..., description="Target contract address")
+    types: Dict[str, int] = Field(
+        default_factory=dict, description="Call type frequencies"
+    )
+
+    @field_validator("source", "target", mode="before")
+    @classmethod
+    def validate_and_normalize_address(cls, v: str) -> str:
+        if not v:
+            raise ValueError("Address cannot be empty")
+
+        try:
+            return Web3.to_checksum_address(v)
+        except ValueError as e:
+            raise ValueError(f"Invalid Ethereum address: {v} - {e}") from e
+
+    def to_dict(self) -> Dict[str, Any]:
+        return self.model_dump()
+
+
+class CallGraph(BaseModel):
+    """Result of dependency network analysis."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    address: str = Field(..., description="Target contract address")
+    from_block: int = Field(..., description="Starting block number")
+    to_block: int = Field(..., description="Ending block number")
+    n_nodes: int = Field(..., description="Number of unique nodes")
+    nodes: Dict[str, str] = Field(..., description="Node metadata mapped by address")
+    edges: List[CallEdge] = Field(..., description="Call edges between nodes")
+    dependency_depths: Dict[str, int] = Field(
+        ..., description="Depth of each dependency from the root contract"
+    )
+    n_matching_transactions: int = Field(
+        ..., description="Number of matching transactions"
+    )
+
+    @field_validator("address", mode="before")
+    @classmethod
+    def validate_and_normalize_address(cls, v: str) -> str:
+        if not v:
+            raise ValueError("Address cannot be empty")
+
+        try:
+            return Web3.to_checksum_address(v)
+        except ValueError as e:
+            raise ValueError(f"Invalid Ethereum address: {v} - {e}") from e
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = self.model_dump()
+        data["edges"] = [edge.to_dict() for edge in self.edges]
+        return data
+
+
+class Risk(BaseModel):
+    """Baseline risk information for a contract."""
+
+    verified: bool = Field(
+        ..., description="Indicates if the contract is verified"
+    )
+    risk_factors: RiskFactors = Field(
+        ..., description="Identified risk factors of the contract"
+    )
+    details: Dict[str, Any] | None = Field(
+        default=None, description="Detailed analysis results"
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return self.model_dump()
+
+
+class DependencyRisk(Risk):
+    address: str = Field(..., description="Contract address of the dependency")
+    dependency_depth: int = Field(
+        ..., description="Depth of the dependency chain"
+    )
+
+
+class RiskAnalysis(BaseModel):
+    """Risk information returned by the dependency analyzer."""
+
+    root_address: str = Field(..., description="Root contract address")
+    from_block: int | None = Field(
+        default=None, description="Starting block number for the analysis"
+    )
+    to_block: int | None = Field(
+        default=None, description="Ending block number for the analysis"
+    )
+    dependencies: List[DependencyRisk] = Field(
+        ..., description="List of analyzed dependencies with risk factors"
+    )
+    aggregated_risks: Risk = Field(
+        ..., description="Aggregated risk factors across all dependencies"
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "root_address": self.root_address,
+            "dependencies": [dep.to_dict() for dep in self.dependencies],
+            "aggregated_risks": self.aggregated_risks.to_dict(),
+        }
 
 
 class AdditionalRiskFactors(RiskFactors):

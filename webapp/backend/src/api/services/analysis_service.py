@@ -1,21 +1,23 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 
-from crystal_clear import RiskAnalysis
-from crystal_clear.traces import CallGraph
 from loguru import logger
 from sqlmodel import Session
 
-from api.core.config import cc, settings
-from api.core.exceptions import InputValidationError, InternalServerError
-from api.crud import label as label_crud
-from api.schemas.analysis import (
+from src.api.core.config import settings
+from src.api.core.exceptions import InputValidationError, InternalServerError
+from src.api.clients.allium_client import AlliumClient
+from src.api.crud import label as label_crud
+from src.api.schemas.analysis import (
     AdditionalDependencyRisk,
     AdditionalRisk,
     AdditionalRiskFactors,
+    RiskAnalysis,
     RiskAnalysisResponse,
 )
-from api.services.contract_service import ContractService
-from api.services.info_service import get_scorecard_data
+from src.api.services.contract_service import ContractService
+from src.api.services.info_service import get_scorecard_data
+from src.api.integrations.crystal_clear_adapter import get_risk_engine
+from src.api.integrations.risk_engine import RiskEngine
 
 
 def analyze_contract_dependencies(
@@ -23,7 +25,7 @@ def analyze_contract_dependencies(
     address: str,
     from_block: Optional[str] = None,
     to_block: Optional[str] = None,
-) -> CallGraph:
+) -> Dict[str, Any]:
     """
     Analyze contract dependencies.
 
@@ -44,12 +46,26 @@ def analyze_contract_dependencies(
         logger.info(f"Analyzing contract {address}")
 
         _validate_block_range(from_block, to_block)
-        callgraph: CallGraph = cc.get_dependencies_full(
-            address=address, from_block=from_block, to_block=to_block
-        )
-        callgraph.nodes = _process_node_labels(session, callgraph)
+        client = AlliumClient(settings.allium_api_key)
+
+        if from_block is None and to_block is None:
+            network = client.get_contract_dependencies_latest(
+                address=address, block_range=settings.DEFAULT_BLOCK_RANGE
+            )
+        else:
+            network = client.get_contract_dependencies(
+                address=address, from_block=from_block, to_block=to_block
+            )
+        logger.info(f"Network data: {network}")
+        if not network:
+            raise Exception(
+                f"Error fetching dependencies for address {address}. "
+            )
+
+        network["nodes"] = _process_node_labels(session, client, network)
+        network["edges"] = assess_edge_risk(network.get("edges", []))
         logger.info(f"Analysis completed for {address}")
-        return callgraph
+        return network
 
     except ValueError as e:
         logger.error(f"Analyze contract dependencies: {e}")
@@ -59,6 +75,15 @@ def analyze_contract_dependencies(
         raise InternalServerError(
             f"Failed to analyze contract: {str(e)}"
         ) from e
+
+
+def assess_edge_risk(edges: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    for edge in edges:
+        if "DELEGATECALL" in edge["types"]:
+            edge["risk"] = "High"
+        else:
+            edge["risk"] = "Low"
+    return edges
 
 
 def _validate_block_range(
@@ -75,8 +100,16 @@ def _validate_block_range(
             raise ValueError(f"Invalid block number: {e}") from e
 
 
-def _process_node_labels(session: Session, callgraph: CallGraph) -> List[str]:
-    nodes = list(callgraph.nodes.keys())
+def _process_node_labels(
+    session: Session, client: AlliumClient, network: Optional[Dict[str, Any]]
+) -> List[str]:
+    if not network:
+        raise Exception("No network data found")
+    if "nodes" not in network:
+        raise Exception("No nodes found in network data")
+    if not isinstance(network["nodes"], list):
+        raise Exception("Nodes data is not a list")
+    nodes = network["nodes"]
     logger.info("Processing node labels.")
     logger.info("Fetching labels from database.")
     stored_labels = label_crud.get_labels(
@@ -91,7 +124,7 @@ def _process_node_labels(session: Session, callgraph: CallGraph) -> List[str]:
         return stored_labels
 
     # Fetch and store missing labels
-    allium_labels = cc.allium_client.get_labels(list(missing_addresses))
+    allium_labels = client.get_labels(list(missing_addresses))
     new_labels = {}
 
     for addr in missing_addresses:
@@ -113,6 +146,7 @@ async def assess_contract_risk(
     address: str,
     from_block: Optional[str] = None,
     to_block: Optional[str] = None,
+    risk_engine: RiskEngine | None = None,
 ) -> RiskAnalysisResponse:
     """
     Assess risk factors for a contract.
@@ -135,9 +169,11 @@ async def assess_contract_risk(
     _validate_block_range(from_block, to_block)
 
     # Perform initial risk analysis
-    analysis: RiskAnalysis = cc.get_risk_factors(
+    engine = risk_engine or get_risk_engine()
+    raw_analysis = engine.get_risk_factors(
         address, scope="supply-chain", from_block=from_block, to_block=to_block
     )
+    analysis = RiskAnalysis.model_validate(raw_analysis.model_dump())
 
     # Initialize the response object
     aggregated_risks = AdditionalRisk(
