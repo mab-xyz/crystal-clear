@@ -71,6 +71,11 @@ app.include_router(info.router, include_in_schema=False)
 app.include_router(audit.router, include_in_schema=False)
 app.include_router(contract.router, include_in_schema=False)
 app.include_router(repository.router, include_in_schema=False)
+app.include_router(
+    keys.router,
+    dependencies=[Depends(require_api_key)],
+    include_in_schema=False,
+)
 
 
 @app.get("/")
