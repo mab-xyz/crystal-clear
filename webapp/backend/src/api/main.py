@@ -64,13 +64,27 @@ async def timeout_middleware(request: Request, call_next):
 
 # # Include routers
 app.include_router(health.router, include_in_schema=False)
+app.include_router(analysis.router, dependencies=[Depends(require_api_key)])
 app.include_router(
-    analysis.router,
+    info.router,
+    dependencies=[Depends(require_api_key)],
+    include_in_schema=False,
 )
-app.include_router(info.router, include_in_schema=False)
-app.include_router(audit.router, include_in_schema=False)
-app.include_router(contract.router, include_in_schema=False)
-app.include_router(repository.router, include_in_schema=False)
+app.include_router(
+    audit.router,
+    dependencies=[Depends(require_api_key)],
+    include_in_schema=False,
+)
+app.include_router(
+    contract.router,
+    dependencies=[Depends(require_api_key)],
+    include_in_schema=False,
+)
+app.include_router(
+    repository.router,
+    dependencies=[Depends(require_api_key)],
+    include_in_schema=False,
+)
 app.include_router(
     keys.router,
     dependencies=[Depends(require_api_key)],
