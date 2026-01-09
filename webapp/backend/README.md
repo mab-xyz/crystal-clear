@@ -2,6 +2,8 @@
 
 ## API Key Authentication
 
+### Development
+
 When `API_KEY_AUTH_ENABLED` is true, two types of keys exist:
 
 - **Root API key** – full admin access; required to manage other keys and bypasses database lookups in `require_admin_api_key`.
@@ -113,3 +115,42 @@ Revoking sets `revoked_at` and any subsequent request made with that key will re
 - Missing header → `HTTP 401 API key required`; invalid/revoked key → `HTTP 403 Invalid or revoked API key`.
 
 With these steps your API has a hardened bootstrap process for both root and client keys, and operators have a repeatable workflow for rotation and revocation.
+
+### Azure production deployment
+
+Crystal-Clear's production stack runs in Azure and relies on Key Vault at this moment.
+
+### 1. Store only the root key hash in Key Vault
+
+`ROOT_API_KEY` and `ROOT_API_KEY_HASH` are generated the same way as development
+
+### 2. Inject the hash into the Azure runtime
+
+Set `API_KEY_AUTH_ENABLED=true`, reference the Key Vault secret from Web App configuration so the FastAPI process reads it as `ROOT_API_KEY_HASH`.
+
+The SHA-256 digest is all the backend needs to validate incoming admin calls thanks to `_is_root_key_value` in `src/api/core/security.py`.
+
+### 3. Generate customer keys through the API
+
+Call the `/keys` endpoint to generate or list customer keys. The customer api keys can be revoked via `DELETE /keys/{id}` when access must be removed.
+
+**List**
+```
+curl -H "X-API-Key: ${ROOT_API_KEY}" \
+         "https://api.mab.xyz/keys/?include_revoked=false"
+```
+
+**Generate**
+```
+curl -X POST https://api.mab.xyz/keys/ \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: ${ROOT_API_KEY}" \
+     -d '{"name": "customer-name"}'
+```
+
+**Delete**
+```
+curl -X DELETE https://https://api.mab.xyz/keys/4 \
+         -H "X-API-Key: ${ROOT_API_KEY}"
+```
+
