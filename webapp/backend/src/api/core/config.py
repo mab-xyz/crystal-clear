@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     )
 
     # Request Timeout
-    request_timeout: int = Field(60 * 2, alias="REQUEST_TIMEOUT")
+    request_timeout: int = Field(60 * 5, alias="REQUEST_TIMEOUT")
 
     # Maximum block range for analysis
     MAX_BLOCK_RANGE: int = Field(500, alias="MAX_BLOCK_RANGE")
