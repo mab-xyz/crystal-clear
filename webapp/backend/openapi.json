@@ -1,0 +1,272 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Crystal-Clear API",
+    "description": "API for analyzing Ethereum smart contracts",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/analysis/tx-risk-raw": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Transaction risk: from raw signed tx",
+        "description": "Decode a raw signed transaction, simulate via trace_call, list all touched contracts, and assess risk similarly to other endpoints.",
+        "operationId": "get_tx_risk_from_raw_v1_analysis_tx_risk_raw_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RawTxRiskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          },
+          {
+            "APIKeyQuery": []
+          }
+        ]
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorResponse"
+      },
+      "RawTxRiskRequest": {
+        "properties": {
+          "raw_tx": {
+            "type": "string",
+            "title": "Raw Tx",
+            "description": "0x-hex of the signed transaction"
+          },
+          "sender_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Address",
+            "description": "The 0x-hex address of the sender. Required if 'raw_tx' is an unsigned transaction. Ignored if 'raw_tx' is a signed transaction."
+          },
+          "block_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Tag",
+            "description": "Block tag or number",
+            "default": "latest"
+          },
+          "latest_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Offset",
+            "description": "Limit first-time checks to N latest blocks (performance control)",
+            "default": 100
+          },
+          "from_block": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Block",
+            "description": "Lower bound block for first-time checks"
+          },
+          "to_block": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Block",
+            "description": "Upper bound block for first-time checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raw_tx"
+        ],
+        "title": "RawTxRiskRequest",
+        "description": "Request model for raw signed transaction risk check."
+      },
+      "SimulationResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "DANGEROUS"
+            ],
+            "title": "Status"
+          },
+          "details": {
+            "items": {
+              "$ref": "#/components/schemas/SimulationResultItem"
+            },
+            "type": "array",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "details"
+        ],
+        "title": "SimulationResponse"
+      },
+      "SimulationResultItem": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "first_time": {
+            "type": "boolean",
+            "title": "First Time"
+          },
+          "verification": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verification"
+          },
+          "depth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth"
+          },
+          "types": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Types"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "first_time"
+        ],
+        "title": "SimulationResultItem"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      },
+      "APIKeyQuery": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "api_key"
+      }
+    }
+  }
+}
