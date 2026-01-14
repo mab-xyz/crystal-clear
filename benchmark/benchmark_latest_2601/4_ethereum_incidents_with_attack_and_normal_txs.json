@@ -700,17 +700,6 @@
     ]
   },
   {
-    "date": "20240514",
-    "name": "Sonne Finance",
-    "type": "Precision Loss",
-    "Lost": 20000000.0,
-    "lossType": "USD",
-    "Contract": "src/test/2024-05/Sonne_exp.sol",
-    "chain": "Ethereum",
-    "id": "ETH-051",
-    "attack_tx": "https://etherscan.io/tx/0x45c0ccfd3ca1b4a937feebcb0f5a166c409c9e403070808835d41da40732db96"
-  },
-  {
     "date": "20240510",
     "name": "GFOX",
     "type": "Access Control",
@@ -933,17 +922,6 @@
     "normal_txs": [
       "https://etherscan.io/tx/0x6d56a800d347e9405ffda5bd0c51c60a507666a4b939666e48f6a6942dc66064"
     ]
-  },
-  {
-    "date": "20240223",
-    "name": "BlueberryProtocol",
-    "type": "Logic Flaw",
-    "Lost": 1400000.0,
-    "lossType": "USD",
-    "Contract": "src/test/2024-02/BlueberryProtocol_exp.sol",
-    "chain": "Ethereum",
-    "id": "ETH-068",
-    "attack_tx": "https://etherscan.io/tx/0xf0464b01d962f714eee9d4392b2494524d0e10ce3eb3723873afd1346b8b06e4"
   },
   {
     "date": "20240222",
@@ -1534,17 +1512,6 @@
     ]
   },
   {
-    "date": "20231013",
-    "name": "WiseLending_",
-    "type": "Logic Flaw",
-    "Lost": 260000.0,
-    "lossType": "USD",
-    "Contract": "src/test/2023-10/WiseLending_exp.sol",
-    "chain": "Ethereum",
-    "id": "ETH-113",
-    "attack_tx": "https://etherscan.io/tx/0x7ac4a98599596adbf12fffa2bd23e2a2d2ac7e8989b6ea043fcc412a29126555"
-  },
-  {
     "date": "20231008",
     "name": "pSeudoEth",
     "type": "Price Manipulation",
@@ -1727,17 +1694,6 @@
     ]
   },
   {
-    "date": "20230818",
-    "name": "ExactlyProtocol",
-    "type": "Incorrect Validation",
-    "Lost": 7000000.0,
-    "lossType": "USD",
-    "Contract": "src/test/2023-08/Exactly_exp.sol",
-    "chain": "Ethereum",
-    "id": "ETH-127",
-    "attack_tx": "https://etherscan.io/tx/0x3d6367de5c191204b44b8a5cf975f257472087a9aadc59b5d744ffdef33a520e"
-  },
-  {
     "date": "20230814",
     "name": "ZunamiProtocol",
     "type": "Price Manipulation",
@@ -1848,17 +1804,6 @@
     "normal_txs": [
       "https://etherscan.io/tx/0x872868860418ec5460d7af051274d622e8a6f503ed3f3dcccbad269b0571d147"
     ]
-  },
-  {
-    "date": "20230710",
-    "name": "ArcadiaFi",
-    "type": "Reentrancy Attack",
-    "Lost": 400000.0,
-    "lossType": "USD",
-    "Contract": "src/test/2023-07/ArcadiaFi_exp.sol",
-    "chain": "Ethereum",
-    "id": "ETH-136",
-    "attack_tx": "https://etherscan.io/tx/0xca7c1a0fde444e1a68a8c2b8ae3fb76ec384d1f7ae9a50d26f8bfdd37c7a0afe"
   },
   {
     "date": "20230708",
@@ -2055,17 +2000,6 @@
     "normal_txs": [
       "https://etherscan.io/tx/0x55ca5f79cb86caa1a5472faba04d63fd8975db521987e013f16a10fd074f1ccf"
     ]
-  },
-  {
-    "date": "20230415",
-    "name": "HundredFinance",
-    "type": "Logic Flaw",
-    "Lost": 7000000.0,
-    "lossType": "USD",
-    "Contract": "src/test/2023-04/HundredFinance_2_exp.sol",
-    "chain": "Ethereum",
-    "id": "ETH-154",
-    "attack_tx": "https://etherscan.io/tx/0x6e9ebcdebbabda04fa9f2e3bc21ea8b2e4fb4bf4f4670cb8483e2f0b2604f451"
   },
   {
     "date": "20230413",
