@@ -187,4 +187,15 @@ cython_debug/
 webapp/frontend/additional_data/
 
 # notes
+<<<<<<< Updated upstream
 *.md
+=======
+
+Defihacklabs/
+
+.txt
+
+Archive/
+
+/plan.md
+>>>>>>> Stashed changes

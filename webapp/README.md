@@ -70,12 +70,9 @@ See [frontend/README.md](frontend/README.md) for detailed instructions on settin
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
 
-[Your License Here]
 
 ## Contact
 
 Monica Jin - monicachenjin@gmail.com
 
-Project Link: [repository-url]
