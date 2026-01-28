@@ -1,0 +1,2120 @@
+[
+  {
+    "date": "20250221",
+    "name": "Bybit",
+    "contract": "src/test/2025-02/Bybit_exp.sol",
+    "Lost": 1500000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x46deef0f52e3a983b67abf4714448a41dd7ffd6d32d32da69d62081c68ad7882"
+    ]
+  },
+  {
+    "date": "20180422",
+    "name": "Beauty Chain",
+    "contract": "src/test/2018-04/BEC_exp.sol",
+    "Lost": 900000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f"
+    ]
+  },
+  {
+    "date": "20220329",
+    "name": "Ronin Network",
+    "contract": "src/test/2022-03/Ronin_exp.sol",
+    "Lost": 624000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc28fad5e8d5e0ce6a2eaf67b6687be5d58113e16be590824d6cfa1a94467d0b7",
+      "https://etherscan.io/tx/0xed2c72ef1a552ddaec6dd1f5cddf0b59a8f37f82bdda5257d9c7c37db7bb9b08"
+    ]
+  },
+  {
+    "date": "20210811",
+    "name": "Poly Network",
+    "contract": "src/test/2021-08/PolyNetwork_exp.sol",
+    "Lost": 611000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xb1f70464bd95b774c6ce60fc706eb5f9e35cb5f06e6cfe7c17dcda46ffd59581/advanced",
+      "https://etherscan.io/tx/0xad7a2c70c958fcd3effbf374d0acf3774a9257577625ae4c838e24b0de17602a",
+      "0x0586763c00000000000000000000000000000000000000000000000000000000",
+      "0xe90bfdcf00000000000000000000000000000000000000000000000000000000",
+      "0x41973cd900000000000000000000000000000000000000000000000000000000"
+    ]
+  },
+  {
+    "date": "20230313",
+    "name": "EulerFinance",
+    "contract": "src/test/2023-03/Euler_exp.sol",
+    "Lost": 200000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc310a0affe2169d1f6feec1c63dbc7f7c62a887fa48795d327d4d2da2d6b111d"
+    ]
+  },
+  {
+    "date": "20220416",
+    "name": "BeanstalkFarms",
+    "contract": "src/test/2022-04/Beanstalk_exp.sol",
+    "Lost": 182000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x68cdec0ac76454c3b0f7af0b8a3895db00adf6daaf3b50a99716858c4fa54c6f"
+    ]
+  },
+  {
+    "date": "20220802",
+    "name": "Nomad Bridge",
+    "contract": "src/test/2022-08/NomadBridge_exp.sol",
+    "Lost": 152000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x53fd92771d2084a9bf39a6477015ef53b7f116c79d98a21be723d06d79024cad",
+      "0xed26708a7335116bdb0673f32ace7c2f329fe3cd349e200447210f1721f335f0",
+      "0xa5fe9d044e4f3e5aa5bc4c0709333cd2190cba0f4e7f16bcf73f49f83e4a5460"
+    ]
+  },
+  {
+    "date": "20180424",
+    "name": "SmartMesh",
+    "contract": "src/test/2018-04/SmartMesh_exp.sol",
+    "Lost": 140000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1abab4c8db9a30e703114528e31dee129a3a758f7f8abc3b6494aad3d304e43f"
+    ]
+  },
+  {
+    "date": "20211027",
+    "name": "CreamFinance",
+    "contract": "src/test/2021-10/Cream_2_exp.sol",
+    "Lost": 130000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x0fe2542079644e107cbf13690eb9c2c65963ccb79089ff96bfaf8dced2331c92"
+    ]
+  },
+  {
+    "date": "20250223",
+    "name": "HegicOptions",
+    "contract": "src/test/2025-02/HegicOptions_exp.sol",
+    "Lost": 104000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x260d5eb9151c565efda80466de2e7eee9c6bd4973d54ff68c8e045a26f62ea73",
+      "https://etherscan.io/tx/0x444854ee7e7570f146b64aa8a557ede82f326232e793873f0bbd04275fa7e54c"
+    ]
+  },
+  {
+    "date": "20220624",
+    "name": "Harmony's Horizon Bridge",
+    "contract": "src/test/2022-06/Harmony_multisig_exp.sol",
+    "Lost": 100000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x27981c7289c372e601c9475e5b5466310be18ed10b59d1ac840145f6e7804c97"
+    ]
+  },
+  {
+    "date": "20240130",
+    "name": "MIMSpell_",
+    "contract": "src/test/2024-01/MIMSpell2_exp.sol",
+    "Lost": 65000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x26a83db7e28838dd9fee6fb7314ae58dcc6aee9a20bf224c386ff5e80f7e4cf2"
+    ]
+  },
+  {
+    "date": "20231122",
+    "name": "KyberSwap",
+    "contract": "src/test/2023-11/KyberSwap_exp.eth.1.sol",
+    "Lost": 48000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x485e08dc2b6a4b3aeadcb89c3d18a37666dc7d9424961a2091d6b3696792f0f3"
+    ]
+  },
+  {
+    "date": "20240419",
+    "name": "HedgeyFinance",
+    "contract": "src/test/2024-04/HedgeyFinance_exp.sol",
+    "Lost": 48000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x2606d459a50ca4920722a111745c2eeced1d8a01ff25ee762e22d5d4b1595739"
+    ]
+  },
+  {
+    "date": "20230730",
+    "name": "Curve",
+    "contract": "src/test/2023-07/Curve_exp01.sol",
+    "Lost": 41000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xa84aa065ce61dbb1eb50ab6ae67fc31a9da50dd2c74eefd561661bfce2f1620c"
+    ]
+  },
+  {
+    "date": "20220423",
+    "name": "Akutar NFT",
+    "contract": "src/test/2022-04/AkutarNFT_exp.sol",
+    "Lost": 34000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x62d280abc60f8b604175ab24896c989e6092e496ac01f2f5399b2a62e9feaacf"
+    ]
+  },
+  {
+    "date": "20201121",
+    "name": "Pickle Finance",
+    "contract": "src/test/2020-11/Pickle_exp.sol",
+    "Lost": 20000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xe72d4e7ba9b5af0cf2a8cfb1e30fd9f388df0ab3da79790be842bfbed11087b0"
+    ]
+  },
+  {
+    "date": "20240610",
+    "name": "UwULend",
+    "contract": "src/test/2024-06/UwuLend_First_exp.sol",
+    "Lost": 19300000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x9235e0662e230bdfa94f56f4932fd09a95fea17e4b9b44a4f40a59449e216110"
+    ]
+  },
+  {
+    "date": "20211015",
+    "name": "Indexed Finance",
+    "contract": "src/test/2021-10/IndexedFinance_exp.sol",
+    "Lost": 16000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x44aad3b853866468161735496a5d9cc961ce5aa872924c5d78673076b1cd95aa"
+    ]
+  },
+  {
+    "date": "20231217",
+    "name": "FloorProtocol",
+    "contract": "src/test/2023-12/FloorProtocol_exp.sol",
+    "Lost": 16000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xec8f6d8e114caf8425736e0a3d5be2f93bbea6c01a50a7eeb3d61d2634927b40"
+    ]
+  },
+  {
+    "date": "20221027",
+    "name": "Team Finance",
+    "contract": "src/test/2022-10/TeamFinance_exp.sol",
+    "Lost": 15800000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xb2e3ea72d353da43a2ac9a8f1670fd16463ab370e563b9b5b26119b2601277ce",
+      "https://etherscan.io/tx/0xe8f17ee00906cd0cfb61671937f11bd3d26cdc47c1534fedc43163a7e89edc6f",
+      "https://etherscan.io/tx/0x2972f75d5926f8f948ab6a0cabc517a05f0da5b53e20f670591afbaa501aa436",
+      "https://etherscan.io/tx/0xec75bb553f50af37f8dd8f4b1e2bfe4703b27f586187741b91db770ad9b230cb",
+      "https://etherscan.io/tx/0x79ec728612867b3d82c0e7401e6ee1c533b240720c749b3968dea1464e59b2c4",
+      "https://etherscan.io/tx/0x51185fb580892706500d3b6eebb8698c27d900618021fb9b1797f4a774fffb04"
+    ]
+  },
+  {
+    "date": "20240616",
+    "name": "WIFCOIN_ETH",
+    "contract": "src/test/2024-06/WIFCOIN_ETH_exp.sol",
+    "Lost": 13189920.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xda8f6a4bed7e5689a343d111632d37480c0316f1d20b732803c4bd482823e284",
+      "https://etherscan.io/tx/0x58424115c6576b19cfb78b0b7ff00e0c13daa06d259f2a67210c112731519e09"
+    ]
+  },
+  {
+    "date": "20230413",
+    "name": "yearnFinance",
+    "contract": "src/test/2023-04/YearnFinance_exp.sol",
+    "Lost": 11600000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x055cec4fa4614836e54ea2e5cd3d14247ff3d61b85aa2a41f8cc876d131e0328",
+      "https://etherscan.io/tx/0xd55e43c1602b28d4fd4667ee445d570c8f298f5401cf04e62ec329759ecda95d"
+    ]
+  },
+  {
+    "date": "20220327",
+    "name": "Revest Finance",
+    "contract": "src/test/2022-03/Revest_exp.sol",
+    "Lost": 11200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xe0b0c2672b760bef4e2851e91c69c8c0ad135c6987bbf1f43f5846d89e691428"
+    ]
+  },
+  {
+    "date": "20210204",
+    "name": "Yearn YDai",
+    "contract": "src/test/2021-02/Yearn_ydai_exp.sol",
+    "Lost": 11000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x59faab5a1911618064f1ffa1e4649d85c99cfd9f0d64dcebbc1af7d7630da98b"
+    ]
+  },
+  {
+    "date": "20240329",
+    "name": "PrismaFi",
+    "contract": "src/test/2024-03/Prisma_exp.sol",
+    "Lost": 11000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x00c503b595946bccaea3d58025b5f9b3726177bbdc9674e634244135282116c7"
+    ]
+  },
+  {
+    "date": "20240716",
+    "name": "Lifiprotocol",
+    "contract": "src/test/2024-07/Lifiprotocol_exp.sol",
+    "Lost": 10000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd82fe84e63b1aa52e1ce540582ee0895ba4a71ec5e7a632a3faa1aff3e763873"
+    ]
+  },
+  {
+    "date": "20200912",
+    "name": "bzx",
+    "contract": "src/test/2020-09/bzx_exp.sol",
+    "Lost": 8100000,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x85dc2a433fd9eaadaf56fd8156c956da23fc17e5ef83955c7e2c4c37efa20bb5"
+    ]
+  },
+  {
+    "date": "20220723",
+    "name": "Audius",
+    "contract": "src/test/2022-07/Audius_exp.sol",
+    "Lost": 6000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xfefd829e246002a8fd061eede7501bccb6e244a9aacea0ebceaecef5d877a984",
+      "https://etherscan.io/tx/0x3c09c6306b67737227edc24c663462d870e7c2bf39e9ab66877a980c900dd5d5",
+      "https://etherscan.io/tx/0x4227bca8ed4b8915c7eec0e14ad3748a88c4371d4176e716e8007249b9980dc9",
+      "https://etherscan.io/tx/0x82fc23992c7433fffad0e28a1b8d11211dc4377de83e88088d79f24f4a3f28b3"
+    ]
+  },
+  {
+    "date": "20240228",
+    "name": "Seneca",
+    "contract": "src/test/2024-02/Seneca_exp.sol",
+    "Lost": 6000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x23fcf9d4517f7cc39815b09b0a80c023ab2c8196c826c93b4100f2e26b701286"
+    ]
+  },
+  {
+    "date": "20230224",
+    "name": "EFVault",
+    "contract": "src/test/2023-02/EFVault_exp.sol",
+    "Lost": 5100000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1fe5a53405d00ce2f3e15b214c7486c69cbc5bf165cf9596e86f797f62e81914",
+      "https://etherscan.io/tx/0xab86672eb5335264c4c4b75262630ae1fb8dcf2a68aaafe4bb9fc3232b886712",
+      "https://etherscan.io/tx/0x31565843d565ecab7ab65965d180e45a99d4718fa192c2f2221410f65ea03743"
+    ]
+  },
+  {
+    "date": "20250305",
+    "name": "1inch FusionV1 Settlement",
+    "contract": "src/test/2025-03/OneInchFusionV1SettlementHack.sol_exp.sol",
+    "Lost": 4500000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x62734ce80311e64630a009dd101a967ea0a9c012fabbfce8eac90f0f4ca090d6"
+    ]
+  },
+  {
+    "date": "20210903",
+    "name": "DAO Maker",
+    "contract": "src/test/2021-09/DaoMaker_exp.sol",
+    "Lost": 4000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x96bf6bd14a81cf19939c0b966389daed778c3a9528a6c5dd7a4d980dec966388"
+    ]
+  },
+  {
+    "date": "20221110",
+    "name": "DFXFinance",
+    "contract": "src/test/2022-11/DFX_exp.sol",
+    "Lost": 4000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x6bfd9e286e37061ed279e4f139fbc03c8bd707a2cdd15f7260549052cbba79b7"
+    ]
+  },
+  {
+    "date": "20220626",
+    "name": "XCarnival",
+    "contract": "src/test/2022-06/XCarnival_exp.sol",
+    "Lost": 3870000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x422e7b0a449deba30bfe922b5c34282efbdbf860205ff04b14fd8129c5b91433",
+      "https://etherscan.io/tx/0xabfcfaf3620bbb2d41a3ffea6e31e93b9b5f61c061b9cfc5a53c74ebe890294d",
+      "0x7cd094bc34c6700090f88950ab0095a95eb0d54c8e5012f1f46266c8871027ff"
+    ]
+  },
+  {
+    "date": "20240926",
+    "name": "OnyxDAO",
+    "contract": "src/test/2024-09/OnyxDAO_exp.sol",
+    "Lost": 3800000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x46567c731c4f4f7e27c4ce591f0aebdeb2d9ae1038237a0134de7b13e63d8729"
+    ]
+  },
+  {
+    "date": "20230409",
+    "name": "SushiSwap",
+    "contract": "src/test/2023-04/Sushi_Router_exp.sol",
+    "Lost": 3300000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x04b166e7b4ab5105a8e9c85f08f6346de1c66368687215b0e0b58d6e5002bc32",
+      "0x01514910771af9ca656af840dff83e8264ecf986ca01000001f9a001d5b2c7c5",
+      "0x01514910771af9ca656af840dff83e8264ecf986ca010000017fa9385be102ac"
+    ]
+  },
+  {
+    "date": "20240112",
+    "name": "SocketGateway",
+    "contract": "src/test/2024-01/SocketGateway_exp.sol",
+    "Lost": 3300000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc6c3331fa8c2d30e1ef208424c08c039a89e510df2fb6ae31e5aa40722e28fd6"
+    ]
+  },
+  {
+    "date": "20230721",
+    "name": "Conic Finance",
+    "contract": "src/test/2023-07/Conic_exp.sol",
+    "Lost": 3250000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x8b74995d1d61d3d7547575649136b8765acb22882960f0636941c44ec7bbe146"
+    ]
+  },
+  {
+    "date": "20231110",
+    "name": "Raft_fi",
+    "contract": "src/test/2023-11/Raft_exp.sol",
+    "Lost": 3200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xfeedbf51b4e2338e38171f6e19501327294ab1907ab44cfd2d7e7336c975ace7"
+    ]
+  },
+  {
+    "date": "20210305",
+    "name": "Paid Network",
+    "contract": "src/test/2021-03/PAID_exp.sol",
+    "Lost": 3000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x4bb10927ea7afc2336033574b74ebd6f73ef35ac0db1bb96229627c9d77555a0"
+    ]
+  },
+  {
+    "date": "20231216",
+    "name": "NFTTrader",
+    "contract": "src/test/2023-12/NFTTrader_exp.sol",
+    "Lost": 3000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xec7523660f8b66d9e4a5931d97ad8b30acc679c973b20038ba4c15d4336b393d"
+    ]
+  },
+  {
+    "date": "20230203",
+    "name": "Orion Protocol",
+    "contract": "src/test/2023-02/Orion_exp.sol",
+    "Lost": 3000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xa6f63fcb6bec8818864d96a5b1bb19e8bd85ee37b2cc916412e720988440b2aa",
+      "0xfb153c572e304093023b4f9694ef39135b6ed5b2515453173e81ec02df2e2104"
+    ]
+  },
+  {
+    "date": "20221011",
+    "name": "Templedao",
+    "contract": "src/test/2022-10/Templedao_exp.sol",
+    "Lost": 2300000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x8c3f442fc6d640a6ff3ea0b12be64f1d4609ea94edd2966f42c01cd9bdcf04b5"
+    ]
+  },
+  {
+    "date": "20231216",
+    "name": "GoodDollar",
+    "contract": "src/test/2023-12/GoodDollar_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x726459a46839c915ee2fb3d8de7f986e3c7391c605b7a622112161a84c7384d0"
+    ]
+  },
+  {
+    "date": "20231107",
+    "name": "MEVbot",
+    "contract": "src/test/2023-11/bot_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xbc08860cd0a08289c41033bdc84b2bb2b0c54a51ceae59620ed9904384287a38"
+    ]
+  },
+  {
+    "date": "20231101",
+    "name": "OnyxProtocol",
+    "contract": "src/test/2023-11/OnyxProtocol_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xf7c21600452939a81b599017ee24ee0dfd92aaaccd0a55d02819a7658a6ef635"
+    ]
+  },
+  {
+    "date": "20230827",
+    "name": "Balancer",
+    "contract": "src/test/2023-08/Balancer_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x2a027c8b915c3737942f512fc5d26fd15752d0332353b3059de771a35a606c2d"
+    ]
+  },
+  {
+    "date": "20230814",
+    "name": "ZunamiProtocol",
+    "contract": "src/test/2023-08/Zunami_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x0788ba222970c7c68a738b0e08fb197e669e61f9b226ceec4cab9b85abe8cceb"
+    ]
+  },
+  {
+    "date": "20240926",
+    "name": "Bedrock_DeFi",
+    "contract": "src/test/2024-09/Bedrock_DeFi_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x725f0d65340c859e0f64e72ca8260220c526c3e0ccde530004160809f6177940"
+    ]
+  },
+  {
+    "date": "20240323",
+    "name": "CGT",
+    "contract": "src/test/2024-03/CGT_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x4ff4028b03c3df468197358b99f5160e5709e7fce3884cc8ce818856d058e106"
+    ]
+  },
+  {
+    "date": "20240309",
+    "name": "UnizenIO",
+    "contract": "src/test/2024-03/UnizenIO_exp.sol",
+    "Lost": 2000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x923d1d63a1165ebd3521516f6d22d015f2e1b4b22d5dc954152b6c089c765fcd"
+    ]
+  },
+  {
+    "date": "20240712",
+    "name": "DoughFina",
+    "contract": "src/test/2024-07/DoughFina_exp.sol",
+    "Lost": 1800000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x92cdcc732eebf47200ea56123716e337f6ef7d5ad714a2295794fdc6031ebb2e"
+    ]
+  },
+  {
+    "date": "20221225",
+    "name": "Rubic",
+    "contract": "src/test/2022-12/Rubic_exp.sol",
+    "Lost": 1500000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x9a97d85642f956ad7a6b852cf7bed6f9669e2c2815f3279855acf7f1328e7d46"
+    ]
+  },
+  {
+    "date": "20230217",
+    "name": "Dexible",
+    "contract": "src/test/2023-02/Dexible_exp.sol",
+    "Lost": 1500000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x138daa4cbeaa3db42eefcec26e234fc2c89a4aa17d6b1870fc460b2856fd11a6"
+    ]
+  },
+  {
+    "date": "20220118",
+    "name": "Multichain (Anyswap)",
+    "contract": "src/test/2022-01/Anyswap_exp.sol",
+    "Lost": 1400000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xe50ed602bd916fc304d53c4fed236698b71691a95774ff0aeeb74b699c6227f7"
+    ]
+  },
+  {
+    "date": "20240430",
+    "name": "PikeFinance",
+    "contract": "src/test/2024-04/PikeFinance_exp.sol",
+    "Lost": 1400000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xe2912b8bf34d561983f2ae95f34e33ecc7792a2905a3e317fcc98052bce66431"
+    ]
+  },
+  {
+    "date": "20240223",
+    "name": "BlueberryProtocol",
+    "contract": "src/test/2024-02/BlueberryProtocol_exp.sol",
+    "Lost": 1400000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xf0464b01d962f714eee9d4392b2494524d0e10ce3eb3723873afd1346b8b06e4"
+    ]
+  },
+  {
+    "date": "20220517",
+    "name": "ApeCoin (APE)",
+    "contract": "src/test/2022-05/Bayc_apecoin_exp.sol",
+    "Lost": 1100000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xeb8c3bebed11e2e4fcd30cbfc2fb3c55c4ca166003c7f7d319e78eaab9747098"
+    ]
+  },
+  {
+    "date": "20220305",
+    "name": "Bacon Protocol",
+    "contract": "src/test/2022-03/Bacon_exp.sol",
+    "Lost": 1000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b"
+    ]
+  },
+  {
+    "date": "20240813",
+    "name": "VOW",
+    "contract": "src/test/2024-08/VOW_exp.sol",
+    "Lost": 1000000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x758efef41e60c0f218682e2fa027c54d8b67029d193dd7277d6a881a24b9a561"
+    ]
+  },
+  {
+    "date": "20230722",
+    "name": "Conic Finance 02",
+    "contract": "src/test/2023-07/Conic02_exp.sol",
+    "Lost": 934000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x37acd17a80a5f95728459bfea85cb2e1f64b4c75cf4a4c8dcb61964e26860882"
+    ]
+  },
+  {
+    "date": "20221213",
+    "name": "ElasticSwap",
+    "contract": "src/test/2022-12/ElasticSwap_exp.sol",
+    "Lost": 845000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xb36486f032a450782d5d2fac118ea90a6d3b08cac3409d949c59b43bcd6dbb8f"
+    ]
+  },
+  {
+    "date": "20231018",
+    "name": "Hopelend",
+    "contract": "src/test/2023-10/Hopelend_exp.sol",
+    "Lost": 825000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1a7ee0a7efc70ed7429edef069a1dd001fbff378748d91f17ab1876dc6d10392"
+    ]
+  },
+  {
+    "date": "20230617",
+    "name": "Pawnfi",
+    "contract": "src/test/2023-06/Pawnfi_exp.sol",
+    "Lost": 820000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x8d3036371ccf27579d3cb3d4b4b71e99334cae8d7e8088247517ec640c7a59a5"
+    ]
+  },
+  {
+    "date": "20230612",
+    "name": "Sturdy Finance",
+    "contract": "src/test/2023-06/Sturdy_exp.sol",
+    "Lost": 800000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xeb87ebc0a18aca7d2a9ffcabf61aa69c9e8d3c6efade9e2303f8857717fb9eb7"
+    ]
+  },
+  {
+    "date": "20210308",
+    "name": "DODO",
+    "contract": "src/test/2021-03/dodo_flashloan_exp.sol",
+    "Lost": 700000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f"
+    ]
+  },
+  {
+    "date": "20220320",
+    "name": "Umbrella Network",
+    "contract": "src/test/2022-03/Umbrella_exp.sol",
+    "Lost": 700000,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x33479bcfbc792aa0f8103ab0d7a3784788b5b0e1467c81ffbed1b7682660b4fa",
+      "0x784b68dc7d06ee181f3127d5eb5331850b5e690cc63dd099cd7b8dc863204bf6"
+    ]
+  },
+  {
+    "date": "20241006",
+    "name": "SASHAToken",
+    "contract": "src/test/2024-10/SASHAToken_exp.sol",
+    "Lost": 600000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd9fdc7d03eec28fc2453c5fa68eff82d4c297f436a6a5470c54ca3aecd2db17e"
+    ]
+  },
+  {
+    "date": "20220320",
+    "name": "Li.Fi",
+    "contract": "src/test/2022-03/LiFi_exp.sol",
+    "Lost": 570000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x1438ff9dd1cf9c70002c3b3cbec9c4c1b3f9eb02e29bcac90289ab3ba360e605"
+    ]
+  },
+  {
+    "date": "20200618",
+    "name": "Bancor Protocol",
+    "contract": "src/test/2020-06/Bancor_exp.sol",
+    "Lost": 545000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x4643b63dcbfc385b8ab8c86cbc46da18c2e43d277de3e5bc3b4516d3c0fdeb9f"
+    ]
+  },
+  {
+    "date": "20200628",
+    "name": "Balancer Protocol",
+    "contract": "src/test/2020-06/Balancer_20200628_exp.sol",
+    "Lost": 500000,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x013be97768b702fe8eccef1a40544d5ecb3c1961ad5f87fee4d16fdc08c78106"
+    ]
+  },
+  {
+    "date": "20240112",
+    "name": "WiseLending",
+    "contract": "src/test/2024-01/WiseLending02_exp.sol",
+    "Lost": 464000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x04e16a79ff928db2fa88619cdd045cdfc7979a61d836c9c9e585b3d6f6d8bc31"
+    ]
+  },
+  {
+    "date": "20241114",
+    "name": "vETH",
+    "contract": "src/test/2024-11/vETH_exp.sol",
+    "Lost": 447000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x900891b4540cac8443d6802a08a7a0562b5320444aa6d8eed19705ea6fb9710b",
+      "https://etherscan.io/tx/0x1ae40f26819da4f10bc7c894a2cc507cdb31c29635d31fa90c8f3f240f0327c0",
+      "https://etherscan.io/tx/0x90db330d9e46609c9d3712b60e64e32e3a4a2f31075674a58dd81181122352f8"
+    ]
+  },
+  {
+    "date": "20240223",
+    "name": "CompoundUni",
+    "contract": "src/test/2024-02/CompoundUni_exp.sol",
+    "Lost": 439537.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xaee0f8d1235584a3212f233b655f87b89f22f1d4890782447c4ef742b37af58d"
+    ]
+  },
+  {
+    "date": "20230710",
+    "name": "ArcadiaFi",
+    "contract": "src/test/2023-07/ArcadiaFi_exp.sol",
+    "Lost": 400000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xefc4ac015069fdf9946997be0459db44c0491221159220be782454c32ec2d651"
+    ]
+  },
+  {
+    "date": "20200804",
+    "name": "Opyn Protocol",
+    "contract": "src/test/2020-08/Opyn_exp.sol",
+    "Lost": 370000,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x56de6c4bd906ee0c067a332e64966db8b1e866c7965c044163a503de6ee6552a"
+    ]
+  },
+  {
+    "date": "20250330",
+    "name": "LeverageSIR",
+    "contract": "src/test/2025-03/LeverageSIR_exp.sol",
+    "Lost": 353800.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xa05f047ddfdad9126624c4496b5d4a59f961ee7c091e7b4e38cee86f1335736f"
+    ]
+  },
+  {
+    "date": "20240510",
+    "name": "GFOX",
+    "contract": "src/test/2024-05/GFOX_exp.sol",
+    "Lost": 330000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x12fe79f1de8aed0ba947cec4dce5d33368d649903cb45a5d3e915cc459e751fc"
+    ]
+  },
+  {
+    "date": "20240122",
+    "name": "DAO_SoulMate",
+    "contract": "src/test/2024-01/DAO_SoulMate_exp.sol",
+    "Lost": 319000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1ea0a2e88efceccb2dd93e6e5cb89e5421666caeefb1e6fc41b68168373da342"
+    ]
+  },
+  {
+    "date": "20221021",
+    "name": "OlympusDAO",
+    "contract": "src/test/2022-10/OlympusDao_exp.sol",
+    "Lost": 292000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x3ed75df83d907412af874b7998d911fdf990704da87c2b1a8cf95ca5d21504cf"
+    ]
+  },
+  {
+    "date": "20230809",
+    "name": "EarningFram",
+    "contract": "src/test/2023-08/EarningFram_exp.sol",
+    "Lost": 286000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x6e6e556a5685980317cb2afdb628ed4a845b3cbd1c98bdaffd0561cb2c4790fa"
+    ]
+  },
+  {
+    "date": "20221108",
+    "name": "MEV_0ad8",
+    "contract": "src/test/2022-11/MEV_0ad8_exp.sol",
+    "Lost": 282000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x674f74b30a3d7bdf15fa60a7c29d96a402ea894a055f624164a8009df98386a0"
+    ]
+  },
+  {
+    "date": "20231013",
+    "name": "WiseLending_",
+    "contract": "src/test/2023-10/WiseLending_exp.sol",
+    "Lost": 260000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x7ac4a98599596adbf12fffa2bd23e2a2d2ac7e8989b6ea043fcc412a29126555"
+    ]
+  },
+  {
+    "date": "20221014",
+    "name": "MEVBOTa47b",
+    "contract": "src/test/2022-10/MEVa47b_exp.sol",
+    "Lost": 241000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x35ecf595864400696853c53edf3e3d60096639b6071cadea6076c9c6ceb921c1"
+    ]
+  },
+  {
+    "date": "20241013",
+    "name": "MorphoBlue",
+    "contract": "src/test/2024-10/MorphoBlue_exp.sol",
+    "Lost": 230000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x256979ae169abb7fbbbbc14188742f4b9debf48b48ad5b5207cadcc99ccb493b"
+    ]
+  },
+  {
+    "date": "20200418",
+    "name": "UniSwapV1",
+    "contract": "src/test/2020-04/uniswap-erc777.sol",
+    "Lost": 220000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x32c83905db61047834f29385ff8ce8cb6f3d24f97e24e6101d8301619efee96e"
+    ]
+  },
+  {
+    "date": "20231202",
+    "name": "bZxProtocol",
+    "contract": "src/test/2023-12/bZx_exp.sol",
+    "Lost": 208000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x0fc5c0d41e5506fdb9434fab4815a4ff671afc834e47a533b3bed7182ece73b0",
+      "https://etherscan.io/tx/0xb072f2e88058c147d8ff643694b43a42e36525b7173ce1daf76e6c06170b0e77"
+    ]
+  },
+  {
+    "date": "20221011",
+    "name": "Rabby Wallet SwapRouter",
+    "contract": "src/test/2022-10/RabbyWallet_SwapRouter_exp.sol",
+    "Lost": 200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x914c1ae4f03657064f0b1d5ddc6e06f39e82bce6fb2f726efdca52c092fbfc26",
+      "0xa02c180149ce03d1b6e3d412585000b968b7db59a277717ec51d0899c1a3c017",
+      "0xf1c1066c259672396b8f242311a9f1c83bfa52c27529d713d80a3da93047c37f",
+      "0x53835af1b7df33435188d2380328b81c0e8a22b01353c76e3dac352275895b45",
+      "0x322592750691798488006a26aa042b55ab9d7637f9b0adc42089a4c480e51870",
+      "0xce0935010baf445e300d4d600caac7fc1fecb5ccb092cdbef57904aa7e5408b2",
+      "0x366df0c20e00666749b16ae00475b3c41834dc659ebb29e059aa9bffa892c038",
+      "0x9fac5412eb42aab07dcb2c5fbb03669aaa98d9c57849d44d8291d3156d9f4871",
+      "0xff1f352912666796d5cd51b5dfa3e6319544aeb5938e1e9f310fd5fcb02be6da",
+      "0x84156ea5360b679dfa7cdda80c16aafbfdf1ba20b84bcf76f79666f0c405b86f",
+      "0xc10ec615e2d18c8a7dad2bb2418c422472565d9622ed851298fc848c3a451387",
+      "0x7cefbfd14497b1c577423d94ea521615991eee2590fab980230d9dd1d80ccf1c",
+      "0x8bcac5e570aa695b5e0ce7dd58766eaa5830f44bbef5008aef63c6efb036e717",
+      "0xb3af75f703ddc5d15ff872585b7d970c5204b90399a5859ec39e736a2ffbf375",
+      "0x708ffcf4a76bd159056afb17ce6c5f5adcb5899e465bbf038aae79c3cef666ae",
+      "0xca53e107a9a21d8f431614570a98c4718cca7172415e3fbed8842d426ac3ab54",
+      "0x5bbab18059f8c3fec56a0ddcd15feddf7cda8b8007b254436956db1d9ffe72ec",
+      "0x6899b8caee16dbd75359cabcd24e32b2362c474cdf39ea810cf4386018761beb",
+      "0x07887fffc4488354d813fdcca5da0586dd6f9a3da36d503af768302eacbeec41"
+    ]
+  },
+  {
+    "date": "20231213",
+    "name": "HYPR",
+    "contract": "src/test/2023-12/HYPR_exp.sol",
+    "Lost": 200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x51ce3d9cfc85c1f6a532b908bb2debb16c7569eb8b76effe614016aac6635f65"
+    ]
+  },
+  {
+    "date": "20240801",
+    "name": "Convergence",
+    "contract": "src/test/2024-08/Convergence_exp.sol",
+    "Lost": 200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x636be30e58acce0629b2bf975b5c3133840cd7d41ffc3b903720c528f01c65d9"
+    ]
+  },
+  {
+    "date": "20240705",
+    "name": "DeFiPlaza",
+    "contract": "src/test/2024-07/DeFiPlaza_exp.sol",
+    "Lost": 200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xa245deda8553c6e4c575baff9b50ef35abf4c8f990f8f36897696f896f240e3a"
+    ]
+  },
+  {
+    "date": "20240424",
+    "name": "XBridge",
+    "contract": "src/test/2024-04/XBridge_exp.sol",
+    "Lost": 200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xe09d350d8574ac1728ab5797e3aa46841f6c97239940db010943f23ad4acf7ae",
+      "https://etherscan.io/tx/0x903d88a92cbc0165a7f662305ac1bff97430dbcccaa0fe71e101e18aa9109c92"
+    ]
+  },
+  {
+    "date": "20240210",
+    "name": "FILX DN404",
+    "contract": "src/test/2024-02/DN404_exp.sol",
+    "Lost": 200000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xbeef09ee9d694d2b24f3f367568cc6ba1dad591ea9f969c36e5b181fd301be82"
+    ]
+  },
+  {
+    "date": "20230708",
+    "name": "CIVNFT",
+    "contract": "src/test/2023-07/CIVNFT_exp.sol",
+    "Lost": 180000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x93a033917fcdbd5fe8ae24e9fe22f002949cba2f621a1c43a54f6519479caceb"
+    ]
+  },
+  {
+    "date": "20230620",
+    "name": "MIMSpell",
+    "contract": "src/test/2023-06/MIMSpell_exp.sol",
+    "Lost": 170000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x2c9f87e285026601a2c8903cf5f10e5b3655fbd0264490c41514ce073c42a9c3"
+    ]
+  },
+  {
+    "date": "20240221",
+    "name": "DeezNutz 404",
+    "contract": "src/test/2024-02/DeezNutz404_exp.sol",
+    "Lost": 170000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xbeefd8faba2aa82704afe821fd41b670319203dd9090f7af8affdf6bcfec2d61"
+    ]
+  },
+  {
+    "date": "20230708",
+    "name": "Civfund",
+    "contract": "src/test/2023-07/Civfund_exp.sol",
+    "Lost": 165000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc42fc0e22a0f60cc299be80eb0c0ddce83c21c14a3dddd8430628011c3e20d6b"
+    ]
+  },
+  {
+    "date": "20220816",
+    "name": "Circle_",
+    "contract": "src/test/2022-08/Circle_exp2.sol",
+    "Lost": 151600.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xf1818f62c635e5c80ef16b7857da812c74ce330ebed46682b4d173bffe84c666"
+    ]
+  },
+  {
+    "date": "20231112",
+    "name": "MEVBot_0xa247",
+    "contract": "src/test/2023-11/MEV_0xa247_exp.sol",
+    "Lost": 150000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x53eeab4447db331dbb47f93fd58a95d6faa230d559acde0687f8b5f5829e7a45"
+    ]
+  },
+  {
+    "date": "20240215",
+    "name": "Miner",
+    "contract": "src/test/2024-02/Miner_exp.sol",
+    "Lost": 150000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x75e3aeb00df69882a1b15d424e5e642650326ca3b923d7fd1922d57c51bc2c78"
+    ]
+  },
+  {
+    "date": "20240128",
+    "name": "BarleyFinance",
+    "contract": "src/test/2024-01/BarleyFinance_exp.sol",
+    "Lost": 130000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x995e880635f4a7462a420a58527023f946710167ea4c6c093d7d193062a33b01"
+    ]
+  },
+  {
+    "date": "20230207",
+    "name": "CowSwap",
+    "contract": "src/test/2023-02/CowSwap_exp.sol",
+    "Lost": 120000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x90b468608fbcc7faef46502b198471311baca3baab49242a4a85b73d4924379b",
+      "https://etherscan.io/tx/0x92f906bce94bab417cccc87ae046448d7fb8c2c0350b7ed911545577acb3bfc1"
+    ]
+  },
+  {
+    "date": "20240222",
+    "name": "SwarmMarkets",
+    "contract": "src/test/2024-02/SwarmMarkets_exp.sol",
+    "Lost": 120000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc0be8c3792a5b1ba7d653dc681ff611a5b79a75fe51c359cf1aac633e9441574"
+    ]
+  },
+  {
+    "date": "20240117",
+    "name": "BmiZapper",
+    "contract": "src/test/2024-01/BmiZapper_exp.sol",
+    "Lost": 114000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x97201900198d0054a2f7a914f5625591feb6a18e7fc6bb4f0c964b967a6c15f6"
+    ]
+  },
+  {
+    "date": "20230531",
+    "name": "ERC20TokenBank",
+    "contract": "src/test/2023-05/ERC20TokenBank_exp.sol",
+    "Lost": 111000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x578a195e05f04b19fd8af6358dc6407aa1add87c3167f053beb990d6b4735f26",
+      "https://etherscan.io/tx/0xcd8fe2efb197bc80b8d42eec21a4b1dbaf3b83ba51f62b36cd3d6b5de0f301e1"
+    ]
+  },
+  {
+    "date": "20221108",
+    "name": "Kashi",
+    "contract": "src/test/2022-11/Kashi_exp.sol",
+    "Lost": 110000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x3d163bfbec5686d428a6d43e45e2626a220cc4fcfac7620c620b82c1f2537c78"
+    ]
+  },
+  {
+    "date": "20230615",
+    "name": "DEPUSDT_LEVUSDC",
+    "contract": "src/test/2023-06/DEPUSDT_LEVUSDC_exp.sol",
+    "Lost": 105000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xf0a13b445674094c455de9e947a25bade75cac9f5176695fca418898ea25742f",
+      "https://etherscan.io/tx/0x800a5b3178f680feebb81af69bd3dff791b886d4ce31615e601f2bb1f543bb2e"
+    ]
+  },
+  {
+    "date": "20250328",
+    "name": "Alkimiya_IO",
+    "contract": "src/test/2025-03/Alkimiya_io_exp.sol",
+    "Lost": 95500.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x9b9a6dd05526a8a4b40e5e1a74a25df6ecccae6ee7bf045911ad89a1dd3f0814"
+    ]
+  },
+  {
+    "date": "20220928",
+    "name": "MEVBOT_0xbaDc0dE",
+    "contract": "src/test/2022-09/MEVbadc0de_exp.sol",
+    "Lost": 94304.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "0x0000000000000000000000000000000000000000000000000000000000000003",
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "0x00000000000000000000000000000000000000000000000000000000000000e0",
+      "0x000000000000000000000000000000000000000000000beff1ceef246ef7bd1f",
+      "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "0x0000000000000000000000000000000000000000000000000000000000000020",
+      "0x00000000000000000000000000000000000000000000000000000000000000a0",
+      "0x0000000000000000000000000000000000000000000000000000000000000040",
+      "0x0000000000000000000000000000000000000000000000000000000000000004",
+      "0x4798ce5b00000000000000000000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000002"
+    ]
+  },
+  {
+    "date": "20231222",
+    "name": "PineProtocol",
+    "contract": "src/test/2023-12/PineProtocol_exp.sol",
+    "Lost": 90000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xec7523660f8b66d9e4a5931d97ad8b30acc679c973b20038ba4c15d4336b393d",
+      "https://etherscan.io/tx/0x2f328016764ecf1f57fda0f5490087a5ddba83706b51cf518bdbd7e65ae2383b",
+      "https://etherscan.io/tx/0xf4f254c3c6b64ded778b5af292c6ab6ed886c1bdd8988510bdc0ca0cf7f9857e"
+    ]
+  },
+  {
+    "date": "20221109",
+    "name": "BrahTOPG",
+    "contract": "src/test/2022-11/BrahTOPG_exp.sol",
+    "Lost": 89000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xeaef2831d4d6bca04e4e9035613be637ae3b0034977673c1c2f10903926f29c0"
+    ]
+  },
+  {
+    "date": "20240201",
+    "name": "AffineDeFi",
+    "contract": "src/test/2024-02/AffineDeFi_exp.sol",
+    "Lost": 88000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x03543ef96c26d6c79ff6c24219c686ae6d0eb5453b322e54d3b6a5ce456385e5"
+    ]
+  },
+  {
+    "date": "20231031",
+    "name": "UniBotRouter",
+    "contract": "src/test/2023-10/UniBot_exp.sol",
+    "Lost": 83944.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xcbe521aea28911fe9983030748028e12541e347b8b6b974d026fa5065c22f0cf"
+    ]
+  },
+  {
+    "date": "20230111",
+    "name": "RoeFinance",
+    "contract": "src/test/2023-01/RoeFinance_exp.sol",
+    "Lost": 80000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x927b784148b60d5233e57287671cdf67d38e3e69e5b6d0ecacc7c1aeaa98985b"
+    ]
+  },
+  {
+    "date": "20240724",
+    "name": "Spectra_finance",
+    "contract": "src/test/2024-07/Spectra_finance_exp.sol",
+    "Lost": 73000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x491cf8b2a5753fdbf3096b42e0a16bc109b957dc112d6537b1ed306e483d0744"
+    ]
+  },
+  {
+    "date": "20230703",
+    "name": "AzukiDAO",
+    "contract": "src/test/2023-07/AzukiDAO_exp.sol",
+    "Lost": 69000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x6233c9315dd3b6a6fcc7d653f4dca6c263e684a76b4ad3d93595e3b8e8714d34"
+    ]
+  },
+  {
+    "date": "20220204",
+    "name": "TecraSpace",
+    "contract": "src/test/2022-02/TecraSpace_exp.sol",
+    "Lost": 63000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x81e9918e248d14d78ff7b697355fd9f456c6d7881486ed14fdfb69db16631154"
+    ]
+  },
+  {
+    "date": "20230911",
+    "name": "0x0DEX",
+    "contract": "src/test/2023-09/0x0DEX_exp.sol",
+    "Lost": 61000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x00b375f8e90fc54c1345b33c686977ebec26877e2c8cac165429927a6c9bdbec"
+    ]
+  },
+  {
+    "date": "20240307",
+    "name": "GHT",
+    "contract": "src/test/2024-03/GHT_exp.sol",
+    "Lost": 57000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd17266bcdf30cbcbd7d0b5a006f43141981aeee2e1f860f68c9a1805ecacbc68"
+    ]
+  },
+  {
+    "date": "20240828",
+    "name": "AAVE",
+    "contract": "src/test/2024-08/AAVE_Repay_Adapter.sol",
+    "Lost": 52000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc27c3ec61c61309c9af35af062a834e0d6914f9352113617400577c0f2b0e9de"
+    ]
+  },
+  {
+    "date": "20220813",
+    "name": "Circle",
+    "contract": "src/test/2022-08/Circle_exp1.sol",
+    "Lost": 50500.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xa4e650772f6e6b7ecc0964fe4c3854850669d1467570a2fa2b6edfa0f112c4b7"
+    ]
+  },
+  {
+    "date": "20240216",
+    "name": "ParticleTrade",
+    "contract": "src/test/2024-02/ParticleTrade_exp.sol",
+    "Lost": 50000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd9b3e229acc755881890394cc76fde0d7b83b1abd4d046b0f69c1fd9fd495ff6"
+    ]
+  },
+  {
+    "date": "20230704",
+    "name": "BaoCommunity",
+    "contract": "src/test/2023-07/Bao_exp.sol",
+    "Lost": 46000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xdd7dd68cd879d07cfc2cb74606baa2a5bf18df0e3bda9f6b43f904f4f7bbdfc1"
+    ]
+  },
+  {
+    "date": "20250101",
+    "name": "LAURAToken",
+    "contract": "src/test/2025-01/LAURAToken_exp.sol",
+    "Lost": 41200.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xef34f4fdf03e403e3c94e96539354fb4fe0b79a5ec927eacc63bc04108dbf420"
+    ]
+  },
+  {
+    "date": "20250104",
+    "name": "SorStaking",
+    "contract": "src/test/2025-01/sorraStaking.sol",
+    "Lost": 41000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x72a252277e30ea6a37d2dc9905c280f3bc389b87f72b81a59aa8f50baebd8eaa",
+      "https://etherscan.io/tx/0x6439d63cc57fb68a32ea8ffd8f02496e8abad67292be94904c0b47a4d14ce90d"
+    ]
+  },
+  {
+    "date": "20230802",
+    "name": "CurveBurner",
+    "contract": "src/test/2023-08/CurveBurner_exp.sol",
+    "Lost": 36000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd493c73397952049644c531309df3dd4134bf3db1e64eb6f0b68b016ee0bffde"
+    ]
+  },
+  {
+    "date": "20230921",
+    "name": "CEXISWAP",
+    "contract": "src/test/2023-09/CEXISWAP_exp.sol",
+    "Lost": 30000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xede72a74d8398875b42d92c550539d72c830d3c3271a7641ee1843dc105de59e"
+    ]
+  },
+  {
+    "date": "20230218",
+    "name": "RevertFinance",
+    "contract": "src/test/2023-02/RevertFinance_exp.sol",
+    "Lost": 30000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xdaccbc437cb07427394704fbcc8366589ffccf974ec6524f3483844b043f31d5"
+    ]
+  },
+  {
+    "date": "20221026",
+    "name": "N00d Token",
+    "contract": "src/test/2022-10/N00d_exp.sol",
+    "Lost": 29000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x8037b3dc0bf9d5d396c10506824096afb8125ea96ada011d35faa89fa3893aea",
+      "0x29ddb589b1fb5fc7cf394961c1adf5f8c6454761adf795e67fe149f658abe895"
+    ]
+  },
+  {
+    "date": "20230607",
+    "name": "CompounderFinance",
+    "contract": "src/test/2023-06/CompounderFinance_exp.sol",
+    "Lost": 27174.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xcff84cc137c92e427f720ca1f2b36fbad793f34ec5117eed127060686e6797b1"
+    ]
+  },
+  {
+    "date": "20240913",
+    "name": "OTSeaStaking",
+    "contract": "src/test/2024-09/OTSeaStaking_exp.sol",
+    "Lost": 26000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x90b4fcf583444d44efb8625e6f253cfcb786d2f4eda7198bdab67a54108cd5f4"
+    ]
+  },
+  {
+    "date": "20200419",
+    "name": "LendfMe",
+    "contract": "src/test/2020-04/LendfMe_exp.sol",
+    "Lost": 25000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xae7d664bdfcc54220df4f18d339005c6faf6e62c9ca79c56387bc0389274363b",
+      "0x29ddb589b1fb5fc7cf394961c1adf5f8c6454761adf795e67fe149f658abe895"
+    ]
+  },
+  {
+    "date": "20240320",
+    "name": "Paraswap",
+    "contract": "src/test/2024-03/Paraswap_exp.sol",
+    "Lost": 24000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x35a73969f582872c25c96c48d8bb31c23eab8a49c19282c67509b96186734e60"
+    ]
+  },
+  {
+    "date": "20240816",
+    "name": "Zenterest",
+    "contract": "src/test/2024-08/Zenterest_exp.sol",
+    "Lost": 21000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xfe8bc757d87e97a5471378c90d390df47e1b29bb9fca918b94acd8ecfaadc598"
+    ]
+  },
+  {
+    "date": "20230715",
+    "name": "USDTStakingContract28",
+    "contract": "src/test/2023-07/USDTStakingContract28_exp.sol",
+    "Lost": 20999.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xfc872bf5ca8f04b18b82041ec563e4abf2e31e1fc27d1ea5dee39bc8a79d2d06"
+    ]
+  },
+  {
+    "date": "20231111",
+    "name": "MahaLend",
+    "contract": "src/test/2023-11/MahaLend_exp.sol",
+    "Lost": 20000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x2881e839d4d562fad5356183e4f6a9d427ba6f475614ce8ef64dbfe557a4a2cc"
+    ]
+  },
+  {
+    "date": "20230619",
+    "name": "Contract_0x7657",
+    "contract": "src/test/2023-06/Contract_0x7657_exp.sol",
+    "Lost": 20000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x74279a131dccd6479378b3454ea189a6ce350cce51de47d81a0ef23db1b134d5"
+    ]
+  },
+  {
+    "date": "20241001",
+    "name": "FireToken",
+    "contract": "src/test/2024-10/FireToken_exp.sol",
+    "Lost": 20000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd20b3b31a682322eb0698ecd67a6d8a040ccea653ba429ec73e3584fa176ff2b"
+    ]
+  },
+  {
+    "date": "20231125",
+    "name": "TheNFTV2",
+    "contract": "src/test/2023-11/TheNFTV2_exp.sol",
+    "Lost": 19000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd5b4d68432cbbd912130bbb5b93399031ddbb400d8f723c78050574de7533106"
+    ]
+  },
+  {
+    "date": "20240723",
+    "name": "MEVbot_0xdd7c",
+    "contract": "src/test/2024-07/MEVbot_0xdd7c_exp.sol",
+    "Lost": 18000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x53334c36502bd022bd332f2aa493862fd8f722138d1989132a46efddcc6b04d4"
+    ]
+  },
+  {
+    "date": "20240208",
+    "name": "Pandora",
+    "contract": "src/test/2024-02/PANDORA_exp.sol",
+    "Lost": 17000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x7c5a909b45014e35ddb89697f6be38d08eff30e7c3d3d553033a6efc3b444fdd"
+    ]
+  },
+  {
+    "date": "20230902",
+    "name": "DAppSocial",
+    "contract": "src/test/2023-09/DAppSocial_exp.sol",
+    "Lost": 16000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xbd72bccec6dd824f8cac5d9a3a2364794c9272d7f7348d074b580e3c6e44312e"
+    ]
+  },
+  {
+    "date": "20230821",
+    "name": "EHIVE",
+    "contract": "src/test/2023-08/EHIVE_exp.sol",
+    "Lost": 15000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xad818ec910def08c70ac519ab0fffa084b4178014a91cd8aa2f882d972a511c1"
+    ]
+  },
+  {
+    "date": "20241022",
+    "name": "Erc20transfer",
+    "contract": "src/test/2024-10/Erc20transfer_exp.sol",
+    "Lost": 14773.35,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x7f2540af4a1f7b0172a46f5539ebf943dd5418422e4faa8150d3ae5337e92172"
+    ]
+  },
+  {
+    "date": "20221123",
+    "name": "NUM",
+    "contract": "src/test/2022-11/NUM_exp.sol",
+    "Lost": 13000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x8a8145ab28b5d2a2e61d74c02c12350731f479b3175893de2014124f998bff32",
+      "0x3078000000000000000000000000000000000000000000000000000000000000"
+    ]
+  },
+  {
+    "date": "20231211",
+    "name": "GoodCompound",
+    "contract": "src/test/2023-12/GoodCompound_exp.sol",
+    "Lost": 13000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1106418384414ed56cd7cbb9fedc66a02d39b663d580abc618f2d387348354ab"
+    ]
+  },
+  {
+    "date": "20240903",
+    "name": "Penpiexyz_io",
+    "contract": "src/test/2024-09/Penpiexyzio_exp.sol",
+    "Lost": 11113.6,
+    "lossType": "ETH",
+    "attack_txs": [
+      "0x7e7f9548f301d3dd863eac94e6190cb742ab6aa9d7730549ff743bf84cbd21d1",
+      "0x42b2ec27c732100dd9037c76da415e10329ea41598de453bb0c0c9ea7ce0d8e5",
+      "https://etherscan.io/tx/0x67c5400da117b906f8c0fc5f5149e4ea10ed6358cd9ea2ec0ed8f559d757b7df",
+      "https://etherscan.io/tx/0x56e09abb35ff12271fdb38ff8a23e4d4a7396844426a94c4d3af2e8b7a0a2813",
+      "https://etherscan.io/tx/0x42b2ec27c732100dd9037c76da415e10329ea41598de453bb0c0c9ea7ce0d8e5",
+      "https://etherscan.io/tx/0x663b55a1ee992603f7636ef23ff5cf19d3b261ab81494d06e218c86482df5342"
+    ],
+    "LostUSD": 38897600.0
+  },
+  {
+    "date": "20240219",
+    "name": "RuggedArt",
+    "contract": "src/test/2024-02/RuggedArt_exp.sol",
+    "Lost": 10000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x5a63da39b5b83fccdd825fed0226f330f802e995b8e49e19fbdd246876c67e1f"
+    ]
+  },
+  {
+    "date": "20231019",
+    "name": "kTAF",
+    "contract": "src/test/2023-10/kTAF_exp.sol",
+    "Lost": 8000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x325999373f1aae98db2d89662ff1afbe0c842736f7564d16a7b52bf5c777d3a4"
+    ]
+  },
+  {
+    "date": "20230606",
+    "name": "VINU",
+    "contract": "src/test/2023-06/VINU_exp.sol",
+    "Lost": 6000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xaf46a42fe1ed7193b25c523723dc047c7500e50a00ecb7bbb822d665adb3e1f3"
+    ]
+  },
+  {
+    "date": "20240814",
+    "name": "NoName",
+    "contract": "src/test/2024-08/YodlRouter_exp.sol",
+    "Lost": 5000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x54f659773dae6e01f83184d4b6d717c7f1bb71c0aa59e8c8f4a57c25271424b3"
+    ]
+  },
+  {
+    "date": "20231125",
+    "name": "MetaLend",
+    "contract": "src/test/2023-11/MetaLend_exp.sol",
+    "Lost": 4000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x4c684fb2618c29743531dec9253ede1b757bda0b323dc2f305e3b50ab1773da7"
+    ]
+  },
+  {
+    "date": "20231129",
+    "name": "Burntbubba",
+    "contract": "src/test/2023-11/Burntbubba_exp.sol",
+    "Lost": 3000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x2b6d0af0dc513a15e325703405739057f9de6ef3f99934b957653b8a3fade4c6"
+    ]
+  },
+  {
+    "date": "20221017",
+    "name": "Uerii Token",
+    "contract": "src/test/2022-10/Uerii_exp.sol",
+    "Lost": 2400.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xf4a3d0e01bbca6c114954d4a49503fc94dfdbc864bded5530b51a207640d86b5"
+    ]
+  },
+  {
+    "date": "20231008",
+    "name": "pSeudoEth",
+    "contract": "src/test/2023-10/pSeudoEth_exp.sol",
+    "Lost": 2300.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x4ab68b21799828a57ea99c1288036889b39bf85785240576e697ebff524b3930"
+    ]
+  },
+  {
+    "date": "20221211",
+    "name": "MEVbot_0x28d9",
+    "contract": "src/test/2022-12/MEVbot_0x28d9_exp.sol",
+    "Lost": 2000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x313d23bdd9277717e3088f32c976479c09d4b8a94d5d94deb835d157fd0850ce"
+    ]
+  },
+  {
+    "date": "20230529",
+    "name": "NOON (NO)",
+    "contract": "src/test/2023-05/NOON_exp.sol",
+    "Lost": 2000.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x23fb7f093e827ed061aafb574cfd420eab879621c7f78cb341292e106a3a88c0"
+    ]
+  },
+  {
+    "date": "20240129",
+    "name": "PeapodsFinance",
+    "contract": "src/test/2024-01/PeapodsFinance_exp.sol",
+    "Lost": 1000.0,
+    "lossType": "DAI",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x95c1604789c93f41940a7fd9eca11276975a9a65d250b89a247736287dbd2b7e"
+    ]
+  },
+  {
+    "date": "20231005",
+    "name": "DePayRouter",
+    "contract": "src/test/2023-10/DePayRouter_exp.sol",
+    "Lost": 827.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x9a036058afb58169bfa91a826f5fcf4c0a376e650960669361d61bef99205f35"
+    ]
+  },
+  {
+    "date": "20221014",
+    "name": "EFLeverVault",
+    "contract": "src/test/2022-10/EFLeverVault_exp.sol",
+    "Lost": 750.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1f1aba5bef04b7026ae3cb1cb77987071a8aff9592e785dd99860566ccad83d1",
+      "https://etherscan.io/tx/0x160c5950a01b88953648ba90ec0a29b0c5383e055d35a7835d905c53a3dda01e"
+    ],
+    "LostUSD": 2625000.0
+  },
+  {
+    "date": "20221009",
+    "name": "Xave Finance",
+    "contract": "src/test/2022-10/XaveFinance_exp.sol",
+    "Lost": 700.0,
+    "lossType": "USD",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc18ec2eb7d41638d9982281e766945d0428aaeda6211b4ccb6626ea7cff31f4a"
+    ]
+  },
+  {
+    "date": "20220902",
+    "name": "Bad Guys by RPF",
+    "contract": "src/test/2022-09/BadGuysbyRPF_exp.sol",
+    "Lost": 400.0,
+    "lossType": "RPF",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xb613c68b00c532fe9b28a50a91c021d61a98d907d0217ab9b44cd8d6ae441d9f",
+      "0xa3299324d1c59598e0dfa68de8d8c03d7492d88f6068cdd633a74eb9212e19e5",
+      "0x5dcd197f362a82daaf56545974db26aabfe335be4c7eef015d3d74ccea4bf511",
+      "0x18d716ad7f5113fe53b24a30288c6989dd04e6ad881be58b482d8d58f71c42da",
+      "0x97a98e092a76c15cef3709df2776cf974e2519231e79c9ad97c15a1835c5c4be",
+      "0x171696d6231b4a201927b35fe2dae4b91cefb62bef849a143560ebbb49cee5df",
+      "0xe89305151bbec931414ab9693bf886cf3b96dba00ca338b1c0aaae911b6dff35",
+      "0x69691b91227fa34a7a9a691d355fd6c466370928ddf3d50a347e894970f10079",
+      "0x78299a273b7d50bcb1d75df1694be463b9cc66c6520026b785615c4594dbb1ba",
+      "0xb297db4d926f0ebc26e098afcefa63d1d86d2e047ecbc36357192ef5240ea0ea",
+      "0xb875ced562ca82ce114152c899bbd085d230a17be452243fda43bf995774243e",
+      "0xd284a1831379548ff6bb0b5ad75ce8d0d1fea1cdc7b40b5f8d2e2307c9eda32c",
+      "0x7eff30a405cfce9989fe9d71e346d7b3616fa69b8251782898226268818f63fb",
+      "0x651ec4246f6e842692770a6ebd63396b4d62b52a3406522a02f182b8a16ba48c",
+      "0xee17656e8a839ac096dd5905744ada01278fc49b978260e9e3ddd92223cc18d7",
+      "0xce5c61c22a5d840c02b32aaebf73c9bc3c3d71c49f22b22c4f3cae4aa1fd557b"
+    ]
+  },
+  {
+    "date": "20231024",
+    "name": "MaestroRouter2",
+    "contract": "src/test/2023-10/MaestroRouter2_exp.sol",
+    "Lost": 280.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc087fbd68b9349b71838982e789e204454bfd00eebf9c8e101574376eb990d92",
+      "https://etherscan.io/tx/0xede874f9a4333a26e97d3be9d1951e6a3c2a8861e4e301787093cfb1293d4756",
+      "https://etherscan.io/tx/0xe60c5a3154094828065049121e244dfd362606c2a5390d40715ba54699ba9da6",
+      "https://etherscan.io/tx/0xf4ae22177c3abbb0f21defe51dd14eff68eb1b0c52ac4104186220138e8e5bb2",
+      "https://etherscan.io/tx/0x6cba3a67d6b8de664d860b096c8c558a1d65e5fa9735c657ddc98f67969561a2",
+      "https://etherscan.io/tx/0xddd1048fe3f2df1fb98e534a97173b32a9fca662dbd257a72725482431d3f25e",
+      "https://etherscan.io/tx/0xffb4bd29825bdd41adf344028f759692021cbadc2d4cb5b587e68fd8285c5eb1",
+      "https://etherscan.io/tx/0xa9948c8f0500a867091a090d12125f88868ac29e52af6391569094e82d416904",
+      "https://etherscan.io/tx/0xc49499325cb5ad3bf4391ae95855ce2ee2b0222f9282c524daa1c4586a8fcd8b",
+      "https://etherscan.io/tx/0xcfe1d2b333e1b9da5e2d5f1d7697b628c818cc41f9f3020187d4ce2c2610a05c",
+      "https://etherscan.io/tx/0x33f6adf410bbd0ae08b0cd44410de1e5b28e516434567113982fcac36ed9e1a4",
+      "https://etherscan.io/tx/0x4f4d6909a442b4d86f79a9044dcada6a128ddd9f62c26f410134a72d2fc31389"
+    ],
+    "LostUSD": 980000.0
+  },
+  {
+    "date": "20230802",
+    "name": "Uwerx",
+    "contract": "src/test/2023-08/Uwerx_exp.sol",
+    "Lost": 176.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x3b19e152943f31fe0830b67315ddc89be9a066dc89174256e17bc8c2d35b5af8"
+    ],
+    "LostUSD": 616000.0
+  },
+  {
+    "date": "20181007",
+    "name": "SpankChain",
+    "contract": "src/test/2018-10/SpankChain_exp.sol",
+    "Lost": 155.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x21e9d20b57f6ae60dac23466c8395d47f42dc24628e5a31f224567a2b4effa88"
+    ],
+    "LostUSD": 542500.0
+  },
+  {
+    "date": "20231028",
+    "name": "AstridProtocol",
+    "contract": "src/test/2023-10/Astrid_exp.sol",
+    "Lost": 127.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x8af9b5fb3e2e3df8659ffb2e0f0c1f4c90d5a80f4f6fccef143b823ce673fb60"
+    ],
+    "LostUSD": 444500.0
+  },
+  {
+    "date": "20231206",
+    "name": "TIME",
+    "contract": "src/test/2023-12/TIME_exp.sol",
+    "Lost": 84.59,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xecdd111a60debfadc6533de30fb7f55dc5ceed01dfadd30e4a7ebdb416d2f6b6"
+    ],
+    "LostUSD": 296065.0
+  },
+  {
+    "date": "20210125",
+    "name": "Sushi Badger Digg",
+    "contract": "src/test/2021-01/Sushi_Badger_Digg_exp.sol",
+    "Lost": 81.68,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x0af5a6d2d8b49f68dcfd4599a0e767450e76e08a5aeba9b3d534a604d308e60b"
+    ],
+    "LostUSD": 285880.0
+  },
+  {
+    "date": "20240529",
+    "name": "SCROLL",
+    "contract": "src/test/2024-05/SCROLL_exp.sol",
+    "Lost": 76.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x661505c39efe1174da44e0548158db95e8e71ce867d5b7190b9eabc9f314fe91"
+    ],
+    "LostUSD": 266000.0
+  },
+  {
+    "date": "20240309",
+    "name": "Juice",
+    "contract": "src/test/2024-03/Juice_exp.sol",
+    "Lost": 54.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc9b2cbc1437bbcd8c328b6d7cdbdae33d7d2a9ef07eca18b4922aac0430991e7"
+    ],
+    "LostUSD": 189000.0
+  },
+  {
+    "date": "20230905",
+    "name": "FloorDAO",
+    "contract": "src/test/2023-09/FloorDAO_exp.sol",
+    "Lost": 40.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1274b32d4dfacd2703ad032e8bd669a83f012dde9d27ed92e4e7da0387adafe4"
+    ],
+    "LostUSD": 140000.0
+  },
+  {
+    "date": "20240703",
+    "name": "UnverifiedContr_0x452E25",
+    "contract": "src/test/2024-07/UnverifiedContr_0x452E25_exp.sol",
+    "Lost": 27.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x1194e1d6085885ce054a7ff8cd3cd0c3fa308ec87e4ccde8dd0549842fef4f1b"
+    ],
+    "LostUSD": 94500.0
+  },
+  {
+    "date": "20231110",
+    "name": "grok",
+    "contract": "src/test/2023-11/grok_exp.sol",
+    "Lost": 26.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x3e9bcee951cdad84805e0c82d2a1e982e71f2ec301a1cbd344c832e0acaee813"
+    ],
+    "LostUSD": 91000.0
+  },
+  {
+    "date": "20230126",
+    "name": "TINU",
+    "contract": "src/test/2023-01/TINU_exp.sol",
+    "Lost": 22.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x6200bf5c43c214caa1177c3676293442059b4f39eb5dbae6cfd4e6ad16305668"
+    ],
+    "LostUSD": 77000.0
+  },
+  {
+    "date": "20230118",
+    "name": "UPSToken",
+    "contract": "src/test/2023-01/Upswing_exp.sol",
+    "Lost": 22.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x4b3df6e9c68ae482c71a02832f7f599ff58ff877ec05fed0abd95b31d2d7d912"
+    ],
+    "LostUSD": 77000.0
+  },
+  {
+    "date": "20240211",
+    "name": "Game",
+    "contract": "src/test/2024-02/Game_exp.sol",
+    "Lost": 20.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x0eb8f8d148508e752d9643ccf49ac4cb0c21cbad346b5bbcf2d06974d31bd5c4"
+    ],
+    "LostUSD": 70000.0
+  },
+  {
+    "date": "20240202",
+    "name": "ADC",
+    "contract": "src/test/2024-02/ADC_exp.sol",
+    "Lost": 20.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xcf834aff4de9992f5da9c443600dad9c6277a8a00de5007842fece51564992db"
+    ],
+    "LostUSD": 70000.0
+  },
+  {
+    "date": "20230819",
+    "name": "BTC20",
+    "contract": "src/test/2023-08/BTC20_exp.sol",
+    "Lost": 18.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xcdd93e37ba2991ce02d8ca07bf6563bf5cd5ae801cbbce3dd0babb22e30b2dbe"
+    ],
+    "LostUSD": 63000.0
+  },
+  {
+    "date": "20240417",
+    "name": "UnverifiedContr_0x00C409",
+    "contract": "src/test/2024-04/UnverifiedContr_0x00C409_exp.sol",
+    "Lost": 18.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x998f1da472d927e74405b0aa1bbf5c1dbc50d74b39977bed3307ea2ada1f1d3f"
+    ],
+    "LostUSD": 63000.0
+  },
+  {
+    "date": "20231107",
+    "name": "RBalancer",
+    "contract": "src/test/2023-11/RBalancer_exp.sol",
+    "Lost": 17.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xbf5b2d22fa88965ddfc6e6d685fc7cfc683340c49e126386759ed9e4027b1415"
+    ],
+    "LostUSD": 59500.0
+  },
+  {
+    "date": "20221229",
+    "name": "JAY",
+    "contract": "src/test/2022-12/JAY_exp.sol",
+    "Lost": 15.32,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd4fafa1261f6e4f9c8543228a67caf9d02811e4ad3058a2714323964a8db61f6"
+    ],
+    "LostUSD": 53620.0
+  },
+  {
+    "date": "20240223",
+    "name": "Zoomer",
+    "contract": "src/test/2024-02/Zoomer_exp.sol",
+    "Lost": 14.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x06d7e7436414c658a33452d28400799f3637e83930dcec39b3bd065dabc6ef04"
+    ],
+    "LostUSD": 49000.0
+  },
+  {
+    "date": "20230509",
+    "name": "MCC",
+    "contract": "src/test/2023-05/MultiChainCapital_exp.sol",
+    "Lost": 10.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xf72f1d10fc6923f87279ce6c0aef46e372c6652a696f280b0465a301a92f2e26"
+    ],
+    "LostUSD": 35000.0
+  },
+  {
+    "date": "20240611",
+    "name": "JokInTheBox",
+    "contract": "src/test/2024-06/JokInTheBox_exp.sol",
+    "Lost": 9.2,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xe8277ef6ba8611bd12dc5a6e7ca4b984423bc0b3828159f83b466fdcf4fe054f"
+    ],
+    "LostUSD": 32199.999999999996
+  },
+  {
+    "date": "20240627",
+    "name": "APEMAGA",
+    "contract": "src/test/2024-06/APEMAGA_exp.sol",
+    "Lost": 9.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x6beb21b53f5b205c088570333ec875b720e333b49657f7026b01ed72b026851e?line=19"
+    ],
+    "LostUSD": 31500.0
+  },
+  {
+    "date": "20230905",
+    "name": "HeavensGate",
+    "contract": "src/test/2023-09/HeavensGate_exp.sol",
+    "Lost": 8.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xe28ca1f43036f4768776805fb50906f8172f75eba3bf1d9866bcd64361fda834",
+      "https://etherscan.io/tx/0x8e1b0ab098c4cc5f632e00b0842b5f825bbd15ded796d4a59880bb724f6c5372"
+    ],
+    "LostUSD": 28000.0
+  },
+  {
+    "date": "20240221",
+    "name": "GAIN",
+    "contract": "src/test/2024-02/GAIN_exp.sol",
+    "Lost": 6.4,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x7acc896b8d82874c67127ff3359d7437a15fdb4229ed83da00da1f4d8370764e"
+    ],
+    "LostUSD": 22400.0
+  },
+  {
+    "date": "20240312",
+    "name": "BBT",
+    "contract": "src/test/2024-03/BBT_exp.sol",
+    "Lost": 5.06,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x4019890fe5a5bd527cd3b9f7ee6d94e55b331709b703317860d028745e33a8ca"
+    ],
+    "LostUSD": 17710.0
+  },
+  {
+    "date": "20240816",
+    "name": "OMPx Contract",
+    "contract": "src/test/2024-08/OMPxContract_exp.sol",
+    "Lost": 4.37,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xd927843e30c6b2bf43103d83bca6abead648eac3cad0d05b1b0eb84cd87de9b6"
+    ],
+    "LostUSD": 15295.0
+  },
+  {
+    "date": "20230119",
+    "name": "SHOCO",
+    "contract": "src/test/2023-01/SHOCO_exp.sol",
+    "Lost": 4.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x2e832f044b4a0a0b8d38166fe4d781ab330b05b9efa9e72a7a0895f1b984084b"
+    ],
+    "LostUSD": 14000.0
+  },
+  {
+    "date": "20230905",
+    "name": "JumpFarm",
+    "contract": "src/test/2023-09/JumpFarm_exp.sol",
+    "Lost": 2.4,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x6189ad07894507d15c5dff83f547294e72f18561dc5662a8113f7eb932a5b079"
+    ],
+    "LostUSD": 8400.0
+  },
+  {
+    "date": "20230509",
+    "name": "HODL",
+    "contract": "src/test/2023-05/HODLCapital_exp.sol",
+    "Lost": 2.3,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xedc214a62ff6fd764200ddaa8ceae54f842279eadab80900be5f29d0b75212df"
+    ],
+    "LostUSD": 8049.999999999999
+  },
+  {
+    "date": "20230118",
+    "name": "QTNToken",
+    "contract": "src/test/2023-01/QTN_exp.sol",
+    "Lost": 2.0,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x37cb8626e45f0749296ef080acb218e5ccc7efb2ae4d39c952566dc378ca1c4c",
+      "https://etherscan.io/tx/0xfde10ad92566f369b23ed5135289630b7a6453887c77088794552c2a3d1ce8b7"
+    ],
+    "LostUSD": 7000.0
+  },
+  {
+    "date": "20240522",
+    "name": "Burner",
+    "contract": "src/test/2024-05/Burner_exp.sol",
+    "Lost": 1.7,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x3bba4fb6de00dd38df3ad68e51c19fe575a95a296e0632028f101c5199b6f714"
+    ],
+    "LostUSD": 5950.0
+  },
+  {
+    "date": "20230916",
+    "name": "uniclyNFT",
+    "contract": "src/test/2023-09/uniclyNFT_exp.sol",
+    "Lost": 0.8,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xc42fe1ce2516e125a386d198703b2422aa0190b25ef6a7b0a1d3c6f5d199ffad"
+    ],
+    "LostUSD": 2800.0
+  },
+  {
+    "date": "20230905",
+    "name": "QuantumWN",
+    "contract": "src/test/2023-09/QuantumWN_exp.sol",
+    "Lost": 0.5,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0xa4659632a983b3bfd1b6248fd52d8f247a9fcdc1915f7d38f01008cff285d0bf"
+    ],
+    "LostUSD": 1750.0
+  },
+  {
+    "date": "20240402",
+    "name": "HoppyFrogERC",
+    "contract": "src/test/2024-04/HoppyFrogERC_exp.sol",
+    "Lost": 0.3,
+    "lossType": "ETH",
+    "attack_txs": [
+      "https://etherscan.io/tx/0x6fb7f8e9eb09d6ae17dbe82b2b42f46f64fb9c3197438b68ecf03e832d5fc791"
+    ],
+    "LostUSD": 1050.0
+  }
+]
