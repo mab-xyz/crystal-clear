@@ -6,17 +6,23 @@ from crystal_clear import CrystalClear
 from src.api.core.config import settings
 from src.api.schemas.analysis import RiskAnalysis
 from src.api.integrations.risk_engine import RiskEngine
+from src.api.services.first_time_cache import FirstInteractionCache
+from src.api.services.verification_cache import ContractVerificationCache
 
 
 class CrystalClearRiskEngine(RiskEngine):
     """Concrete adapter that delegates to the Crystal Clear SDK."""
 
     def __init__(self) -> None:
+        self._verification_cache = ContractVerificationCache()
+        self._first_time_cache = FirstInteractionCache()
         self._client = CrystalClear(
             url=settings.eth_node_url,
             allium_api_key=settings.allium_api_key,
             etherscan_api_key=settings.etherscan_api_key,
             log_level=settings.log_level,
+            verification_cache=self._verification_cache,
+            first_time_cache=self._first_time_cache,
         )
 
     def get_risk_factors(

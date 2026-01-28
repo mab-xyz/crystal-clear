@@ -52,31 +52,44 @@ class TraceCollector:
             raise ConnectionError("Failed to connect to the Ethereum node.")
         self.w3.middleware_onion.add(RateLimitRetryMiddleware)
         self.logger.info("Connected to the Ethereum node.")
+        # Local memo cache to avoid repeating expensive eth_getCode calls
+        self._validation_cache: Dict[tuple[str, str], bool] = {}
 
     def _validate_contract(self, address: str, block: str) -> bool:
         """
         Validates contract address, checks if it's different from x0 and not a precompile address.
         """
         try:
+            addr_norm = (address or "").strip().lower()
+            block_norm = (block or "latest").strip().lower()
+            cache_key = (addr_norm, block_norm)
+            if cache_key in self._validation_cache:
+                return self._validation_cache[cache_key]
             if address.startswith("0x000000000000000000000000000000000000000"):
                 self.logger.info(f"Address is a precompile address: {address}")
+                self._validation_cache[cache_key] = False
                 return False
             address = Web3.to_checksum_address(address)
             if not Web3.is_address(address):
                 self.logger.info(f"Invalid contract address format: {address}")
+                self._validation_cache[cache_key] = False
                 return False
             code = self.w3.eth.get_code(address, block_identifier=block)
             if len(code) == 0:
                 self.logger.info(f"No code at address: {address}")
+                self._validation_cache[cache_key] = False
                 return False
 
             if code.hex() == "x0":
                 self.logger.info(f"Contract at {address} matches x0 contract")
+                self._validation_cache[cache_key] = False
                 return False
 
+            self._validation_cache[cache_key] = True
             return True
         except Exception as e:
             self.logger.error(f"Error validating contract: {e}")
+            self._validation_cache[cache_key] = False
             return False
 
     def _filter_txs_from(
