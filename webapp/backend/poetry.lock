@@ -1522,15 +1522,15 @@ test = ["pytest"]
 
 [[package]]
 name = "mab-crystal-clear"
-version = "1.0.9"
+version = "1.0.10"
 description = "Crystal-Clear CLI: Smart Contract Supply Chain Tool"
 optional = false
 python-versions = "<4,>3.12.0"
 groups = ["main"]
 markers = "implementation_name == \"cpython\" or implementation_name == \"pypy\""
 files = [
-    {file = "mab_crystal_clear-1.0.9-py3-none-any.whl", hash = "sha256:707c582659d8a62b35f86d6ae83c026e0e1dbed5f93d0b05f31f3843612ab2a8"},
-    {file = "mab_crystal_clear-1.0.9.tar.gz", hash = "sha256:67b801f56609c31075753372ea9da42a62ba081d7f50213acc82f35113a9d038"},
+    {file = "mab_crystal_clear-1.0.10-py3-none-any.whl", hash = "sha256:835cf76ba9237759bbf0d86afbbc0f853579b45be39f501bf9e288b4c99daea3"},
+    {file = "mab_crystal_clear-1.0.10.tar.gz", hash = "sha256:a1b68bdf93d491877b267757b84b4434fe7321cdf1a72c999bc2a2c4ae07d605"},
 ]
 
 [package.dependencies]
@@ -3335,4 +3335,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12.1,<4"
-content-hash = "bdd422ab8b2a6a1e00466b5d81bf7d468b5f45adb89245a29e47573dccd8e49f"
+content-hash = "53ad5df75e30ea0ce25ad7f7a22b7ff30b1a95055906da90446b75fb0e0510ba"
