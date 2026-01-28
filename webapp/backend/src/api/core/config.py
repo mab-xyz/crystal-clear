@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     # Etherscan API Key
     etherscan_api_key: str = Field(..., alias="ETHERSCAN_API_KEY")
 
+    # Verification cache
+    verification_cache_ttl_seconds: int = Field(
+        60 * 60 * 24 * 90, alias="VERIFICATION_CACHE_TTL_SECONDS"
+    )
+
+    # First-time interaction cache
+    first_time_cache_ttl_seconds: int = Field(
+        60 * 60 * 24 * 180, alias="FIRST_TIME_CACHE_TTL_SECONDS"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
