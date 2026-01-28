@@ -1,0 +1,840 @@
+{
+  "input": "results/mab_tx_risk_results_200_offset.json",
+  "overall": {
+    "tp": 193,
+    "tn": 143,
+    "fp": 64,
+    "fn": 12,
+    "skipped": 2
+  },
+  "by_incident": {
+    "ETH-001": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-002": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-003": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-004": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-005": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-006": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-007": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-008": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-009": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-010": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-011": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-012": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-013": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-014": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-015": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-016": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-017": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-018": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-019": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-020": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-021": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-022": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-023": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-024": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-025": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-026": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-027": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-028": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-029": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-030": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-031": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-032": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-033": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-034": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-035": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-036": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-037": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-038": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-039": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-040": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-041": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-042": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-043": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-044": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-045": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-046": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-047": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-048": {
+      "attack": "n/a",
+      "normal": "fp"
+    },
+    "ETH-049": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-050": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-052": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-053": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-054": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-055": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-056": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-057": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-058": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-059": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-060": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-061": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-062": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-063": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-064": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-065": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-066": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-067": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-069": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-070": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-071": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-073": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-074": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-075": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-076": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-077": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-078": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-079": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-080": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-081": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-082": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-083": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-084": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-085": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-086": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-087": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-089": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-090": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-091": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-092": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-093": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-094": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-095": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-096": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-097": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-098": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-099": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-100": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-101": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-102": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-103": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-104": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-105": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-106": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-107": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-108": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-109": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-110": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-111": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-112": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-114": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-115": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-116": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-117": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-118": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-119": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-120": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-121": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-122": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-123": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-124": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-125": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-126": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-128": {
+      "attack": "n/a",
+      "normal": "tn"
+    },
+    "ETH-129": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-130": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-131": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-132": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-133": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-134": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-135": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-137": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-138": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-139": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-140": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-141": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-142": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-143": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-144": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-145": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-146": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-147": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-148": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-150": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-151": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-155": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-156": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-157": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-158": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-159": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-160": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-161": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-162": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-163": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-164": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-165": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-166": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-167": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-168": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-169": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-170": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-171": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-172": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-173": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-174": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-175": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-176": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-177": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-178": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-179": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-180": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-181": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-182": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-183": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-184": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-185": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-186": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-188": {
+      "attack": "fn",
+      "normal": "fp"
+    },
+    "ETH-189": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-190": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-191": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-192": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-193": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-194": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-198": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-199": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-203": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-206": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-207": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-214": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-218": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-220": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-223": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-224": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-228": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-230": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-232": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-234": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-235": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-236": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-238": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-240": {
+      "attack": "fn",
+      "normal": "tn"
+    },
+    "ETH-242": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-243": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-244": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-245": {
+      "attack": "tp",
+      "normal": "tn"
+    },
+    "ETH-246": {
+      "attack": "tp",
+      "normal": "fp"
+    },
+    "ETH-247": {
+      "attack": "fn",
+      "normal": "fp"
+    },
+    "ETH-248": {
+      "attack": "fn",
+      "normal": "tn"
+    }
+  }
+}
