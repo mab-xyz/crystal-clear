@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     docker.io
 
-# Install Node.js 23.x
-RUN curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
+# Install Node.js 24.x
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x -o nodesource_setup.sh && \
     bash nodesource_setup.sh && \
     apt-get update && \
     apt-get install -y nodejs && \
