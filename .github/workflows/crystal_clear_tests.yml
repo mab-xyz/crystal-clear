@@ -3,12 +3,8 @@ name: Crystal Clear Tests
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'webapp/backend/crystal-clear/**'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'webapp/backend/crystal-clear/**'
 
 jobs:
   test:
