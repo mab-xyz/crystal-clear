@@ -35,7 +35,7 @@
     "react-router": "^7.6.0",
     "styled-components": "^6.1.18",
     "tailwind-merge": "^3.2.0",
-    "tar": "^7.5.7",
+    "tar": "^7.5.9",
     "yarn": "^1.22.22"
   },
   "devDependencies": {
