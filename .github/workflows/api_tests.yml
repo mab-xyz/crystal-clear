@@ -5,12 +5,24 @@ on:
     branches:
       - main
     paths:
-      - 'webapp/backend/api/**'
+      - "webapp/backend/src/api/**"
+      - "webapp/backend/tests/**"
+      - "webapp/backend/pyproject.toml"
+      - "webapp/backend/poetry.lock"
+      - ".github/workflows/api_tests.yml"
   pull_request:
     branches:
       - main
     paths:
-      - 'webapp/backend/api/**'
+      - "webapp/backend/src/api/**"
+      - "webapp/backend/tests/**"
+      - "webapp/backend/pyproject.toml"
+      - "webapp/backend/poetry.lock"
+      - ".github/workflows/api_tests.yml"
+
+concurrency:
+  group: api-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -52,10 +64,12 @@ jobs:
     - name: Copy .env.example to .env
       run: cp .env.example .env
 
-    - name: Run tests
-      run: |
-        poetry run pytest
+    - name: Lint
+      run: poetry run ruff check .
 
-    - name: Check if tests passed
-      if: failure()
-      run: exit 1
+    - name: Format check
+      run: poetry run ruff format --check .
+
+    - name: Run tests with coverage gate
+      run: |
+        poetry run pytest -q tests --cov=src/api --cov-report=term-missing --cov-fail-under=90
