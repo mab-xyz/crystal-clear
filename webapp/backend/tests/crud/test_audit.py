@@ -1,13 +1,13 @@
 from sqlmodel import Session
 
-from api.crud.audit import (
+from src.api.crud.audit import (
     create_audit,
     delete_audit,
     get_audit,
     get_audits,
     update_audit,
 )
-from api.models.audit import AuditCreate, AuditUpdate
+from src.api.models.audit import AuditCreate, AuditUpdate
 
 
 def test_create_and_get_audit(session: Session):

@@ -24,7 +24,9 @@ class RiskFactors(BaseModel):
         if self.permissioned:
             str_parts.append("Contract has permissioned functions.")
 
-        return " ".join(str_parts) if str_parts else "No risk factors identified."
+        return (
+            " ".join(str_parts) if str_parts else "No risk factors identified."
+        )
 
 
 class CallEdge(BaseModel):
@@ -60,7 +62,9 @@ class CallGraph(BaseModel):
     from_block: int = Field(..., description="Starting block number")
     to_block: int = Field(..., description="Ending block number")
     n_nodes: int = Field(..., description="Number of unique nodes")
-    nodes: Dict[str, str] = Field(..., description="Node metadata mapped by address")
+    nodes: Dict[str, str] = Field(
+        ..., description="Node metadata mapped by address"
+    )
     edges: List[CallEdge] = Field(..., description="Call edges between nodes")
     dependency_depths: Dict[str, int] = Field(
         ..., description="Depth of each dependency from the root contract"
@@ -264,6 +268,21 @@ class SimulationRequest(BaseModel):
     to_block: Optional[str] = Field(
         None, description="Upper bound block for first-time checks"
     )
+    interaction_types: Optional[
+        List[
+            Literal[
+                "sender_direct",
+                "sender_transitive",
+                "contract_direct",
+                "contract_transitive",
+            ]
+        ]
+    ] = Field(
+        None,
+        description=(
+            "Interaction types to evaluate. If omitted, all applicable types are used."
+        ),
+    )
 
 
 class SimulationResultItem(BaseModel):
@@ -272,11 +291,24 @@ class SimulationResultItem(BaseModel):
     verification: dict | None = None
     depth: int | None = None
     types: Dict[str, int] | None = None
+    interaction_first_time: Dict[str, bool] | None = None
+    interaction_state: Dict[str, Literal["FOUND", "MISSING"]] | None = None
 
 
 class SimulationResponse(BaseModel):
     status: Literal["OK", "DANGEROUS"]
+    interaction_status: Dict[
+        Literal[
+            "sender_direct",
+            "sender_transitive",
+            "contract_direct",
+            "contract_transitive",
+        ],
+        Literal["dangerous", "ok", "not_checked"],
+    ] | None = None
     details: List[SimulationResultItem]
+    dangerous_interaction_types: List[str] | None = None
+    danger_reason: Optional[Literal["FIRST_TIME_INTERACTION"]] = None
 
 
 class RawTxRiskRequest(BaseModel):
@@ -303,4 +335,17 @@ class RawTxRiskRequest(BaseModel):
     )
     to_block: Optional[str] = Field(
         None, description="Upper bound block for first-time checks"
+    )
+    interaction_type: Optional[
+        Literal[
+            "sender_direct",
+            "sender_transitive",
+            "contract_direct",
+            "contract_transitive",
+        ]
+    ] = Field(
+        None,
+        description=(
+            "Specific interaction type to evaluate. If omitted, all applicable types are used."
+        ),
     )

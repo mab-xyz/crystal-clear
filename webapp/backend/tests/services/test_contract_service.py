@@ -2,9 +2,9 @@ import pytest
 import pytest_asyncio
 from fastapi import HTTPException
 
-from api.crud.contract import create_contract
-from api.models.contract import ContractCreate, ContractUpdate
-from api.services.contract_service import ContractService
+from src.api.crud.contract import create_contract
+from src.api.models.contract import ContractCreate, ContractUpdate
+from src.api.services.contract_service import ContractService
 
 
 @pytest_asyncio.fixture

@@ -1,11 +1,11 @@
-from api.crud.contract import (
+from src.api.crud.contract import (
     create_contract,
     delete_contract,
     get_contract,
     get_contracts,
     update_contract,
 )
-from api.models.contract import ContractCreate, ContractUpdate
+from src.api.models.contract import ContractCreate, ContractUpdate
 
 
 def test_create_and_get_contract(session):
