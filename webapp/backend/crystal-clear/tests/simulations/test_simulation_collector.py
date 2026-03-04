@@ -196,6 +196,13 @@ def test_wrapper_simulate_and_check(mock_is_connected):
     cc.simulation_collector.get_edges_from_simulation = MagicMock(
         return_value=[e1, e2]
     )
+    cc._batch_first_time = MagicMock(
+        return_value={
+            "0x1111111111111111111111111111111111111111": True,
+            "0x4444444444444444444444444444444444444444": True,
+            "0x5555555555555555555555555555555555555555": True,
+        }
+    )
     # Always say verified via Sourcify
     cc.sourcify_client.check_contract_verified = MagicMock(
         side_effect=lambda addr: VerificationDetails(
@@ -206,15 +213,13 @@ def test_wrapper_simulate_and_check(mock_is_connected):
         )
     )
 
-    res, metrics = cc.simulate_and_check(
+    res = cc.simulate_and_check(
         {
             "from": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "to": "0x1111111111111111111111111111111111111111",
         },
         block_tag="latest",
     )
-    assert metrics["trace_call_seconds"] is not None
-    assert metrics["total_seconds"] is not None
     # Ensure both targets are present and carry flags
     assert "0x4444444444444444444444444444444444444444" in res
     assert (

@@ -50,13 +50,16 @@ class CrystalClearRiskEngine(RiskEngine):
         to_block: str | int | None = None,
         latest_offset: int | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        return self._client.simulate_and_check(
+        out = self._client.simulate_and_check(
             dict(call_object),
             block_tag=block_tag,
             from_block=from_block,
             to_block=to_block,
             latest_offset=latest_offset,
         )
+        if isinstance(out, tuple) and len(out) == 2:
+            return out
+        return out, {}
 
     def simulate_from_tx(
         self,

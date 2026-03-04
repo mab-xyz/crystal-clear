@@ -49,8 +49,7 @@ class RiskAnalysis(BaseModel):
 class VerificationCache(Protocol):
     """Minimal protocol for pluggable verification caches."""
 
-    def get(self, address: str) -> Optional[dict]:
-        ...
+    def get(self, address: str) -> Optional[dict]: ...
 
 
 class FirstTimeCache(Protocol):
@@ -63,8 +62,7 @@ class FirstTimeCache(Protocol):
         from_block: int,
         to_block: int,
         latest_offset: Optional[int],
-    ) -> Optional[bool]:
-        ...
+    ) -> Optional[bool]: ...
 
     def set(
         self,
@@ -75,13 +73,11 @@ class FirstTimeCache(Protocol):
         latest_offset: Optional[int],
         is_first_time: bool,
         ttl_seconds: Optional[int] = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def set(
         self, address: str, payload: dict, ttl_seconds: Optional[int] = None
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class CrystalClear:
@@ -257,7 +253,9 @@ class CrystalClear:
     def _refresh_verification_details(
         self, address: str, normalized: Optional[str] = None
     ) -> dict:
-        target = normalized or self._normalize_address(address) or address.lower()
+        target = (
+            normalized or self._normalize_address(address) or address.lower()
+        )
         response = self.sourcify_client.check_contract_verified(target)
         if (
             hasattr(response, "verification")
@@ -271,10 +269,14 @@ class CrystalClear:
             if hasattr(response, "model_dump")
             else dict(response)
         )
-        self._store_cached_verification(address, payload, normalized=normalized)
+        self._store_cached_verification(
+            address, payload, normalized=normalized
+        )
         return payload
 
-    def _batch_verification_details(self, addresses: Set[str]) -> dict[str, dict]:
+    def _batch_verification_details(
+        self, addresses: Set[str]
+    ) -> dict[str, dict]:
         if not addresses:
             return {}
         normalized_map: dict[str, str] = {}
@@ -289,7 +291,9 @@ class CrystalClear:
         cached: dict[str, dict] = {}
         if self.verification_cache:
             try:
-                cached = self.verification_cache.get_many(normalized_map.keys())
+                cached = self.verification_cache.get_many(
+                    normalized_map.keys()
+                )
             except Exception as exc:
                 self.logger.debug(
                     "Verification cache batch fetch failed: %s", exc
@@ -447,11 +451,7 @@ class CrystalClear:
         from_num, to_num, from_block_hex, to_block_hex = (
             self._resolve_block_bounds(from_block, to_block, latest_offset)
         )
-        offset_val = (
-            int(latest_offset)
-            if latest_offset is not None
-            else None
-        )
+        offset_val = int(latest_offset) if latest_offset is not None else None
 
         cached: dict[tuple, bool] = {}
         if self.first_time_cache:
@@ -560,7 +560,6 @@ class CrystalClear:
             raise ValueError(
                 "SimulationCollector is not initialized. Please provide a url."
             )
-
         edges = self.simulation_collector.get_edges_from_simulation(
             call_object, block_tag=block_tag
         )
@@ -594,6 +593,7 @@ class CrystalClear:
             target_addresses.add(e.target)
 
         verification_map = self._batch_verification_details(target_addresses)
+
         first_time_map = self._batch_first_time(
             from_addr,
             target_addresses,
