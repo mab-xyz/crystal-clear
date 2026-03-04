@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 import time
 from collections import deque
@@ -20,19 +21,40 @@ class RateLimitRetryMiddleware(Web3Middleware):
 
     def wrap_make_request(self, make_request):
         def middleware(method, params):
+            last_error = None
             for attempt in range(self.max_retries):
                 try:
                     response: RPCResponse = make_request(method, params)
                     return response  # success or non-429 error
                 except Exception as e:
+                    last_error = e
                     self.logger.warning(
                         f"Request failed attempt {attempt + 1}: {e}. Retrying in {2**attempt} seconds..."
                     )
                     wait_time = (2**attempt) + random.random()
                     time.sleep(wait_time)
                     continue
-            self.logger.warning("Max retries(5) reached. Giving up.")
-            return response  # give up after max_retries
+            self.logger.warning(
+                "Max retries(%s) reached. Giving up.",
+                self.max_retries,
+            )
+            w3_obj = getattr(self, "_w3", None) or getattr(self, "w3", None)
+            switcher = getattr(w3_obj, "_cc_switch_rpc", None)
+            if callable(switcher):
+                try:
+                    switched = bool(switcher())
+                    if switched:
+                        self.logger.warning(
+                            "Switched RPC endpoint after retry exhaustion."
+                        )
+                except Exception as switch_exc:
+                    self.logger.warning(
+                        "RPC endpoint switch failed after retry exhaustion: %s",
+                        switch_exc,
+                    )
+            if last_error is not None:
+                raise last_error
+            raise RuntimeError("RPC request failed without explicit exception")
 
         return middleware
 
@@ -41,19 +63,106 @@ class TraceCollector:
     # Hard cap to prevent excessive processing when trace_filter returns many results
     TRACE_FILTER_TX_LIMIT = 10
 
-    def __init__(self, url: str, log_level: str = "INFO"):
+    def __init__(
+        self,
+        url: str,
+        log_level: str = "INFO",
+        rpc_timeout_seconds: int | None = None,
+    ):
         """
         Initializes the TraceCollector with a URL and log level.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(getattr(logging, log_level.upper()))
-        self.w3 = Web3(Web3.HTTPProvider(url))
-        if not self.w3.is_connected():
-            raise ConnectionError("Failed to connect to the Ethereum node.")
-        self.w3.middleware_onion.add(RateLimitRetryMiddleware)
-        self.logger.info("Connected to the Ethereum node.")
+        self._timeout = (
+            int(rpc_timeout_seconds)
+            if rpc_timeout_seconds is not None
+            else int(os.getenv("ETH_RPC_TIMEOUT_SECONDS", "120"))
+        )
+        self._timeout = max(1, self._timeout)
+        self._rpc_urls = self._resolve_rpc_urls(url)
+        self._rpc_index = -1
+        self.w3 = self._connect_first_available()
         # Local memo cache to avoid repeating expensive eth_getCode calls
         self._validation_cache: Dict[tuple[str, str], bool] = {}
+
+    @staticmethod
+    def _split_urls(value: str | None) -> list[str]:
+        if not value:
+            return []
+        parts = [p.strip() for p in value.split(",")]
+        return [p for p in parts if p]
+
+    def _resolve_rpc_urls(self, primary_url: str | None) -> list[str]:
+        urls: list[str] = []
+        env_urls = self._split_urls(os.getenv("ETH_NODE_URLS"))
+        if env_urls:
+            urls.extend(env_urls)
+        if primary_url:
+            urls.append(primary_url.strip())
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for rpc_url in urls:
+            if not rpc_url or rpc_url in seen:
+                continue
+            deduped.append(rpc_url)
+            seen.add(rpc_url)
+        return deduped
+
+    def _create_w3(self, rpc_url: str) -> Web3:
+        w3 = Web3(
+            Web3.HTTPProvider(
+                rpc_url,
+                request_kwargs={"timeout": self._timeout},
+            )
+        )
+        if not w3.is_connected():
+            raise ConnectionError(f"Failed to connect to RPC endpoint: {rpc_url}")
+        w3.middleware_onion.add(RateLimitRetryMiddleware)
+        setattr(w3, "_cc_rpc_url", rpc_url)
+        return w3
+
+    def _connect_first_available(self) -> Web3:
+        errors: list[str] = []
+        for idx, rpc_url in enumerate(self._rpc_urls):
+            try:
+                w3 = self._create_w3(rpc_url)
+                self._rpc_index = idx
+                setattr(w3, "_cc_switch_rpc", self.switch_to_next_rpc_endpoint)
+                self.logger.info(
+                    "Connected to Ethereum RPC endpoint %s",
+                    rpc_url,
+                    extra={"rpc_timeout_seconds": self._timeout},
+                )
+                return w3
+            except Exception as exc:
+                errors.append(f"{rpc_url}: {exc}")
+        raise ConnectionError(
+            "Failed to connect to any Ethereum RPC endpoint. "
+            + "; ".join(errors)
+        )
+
+    def switch_to_next_rpc_endpoint(self) -> bool:
+        if len(self._rpc_urls) <= 1:
+            return False
+        start_idx = self._rpc_index
+        for offset in range(1, len(self._rpc_urls) + 1):
+            idx = (start_idx + offset) % len(self._rpc_urls)
+            rpc_url = self._rpc_urls[idx]
+            try:
+                self.w3 = self._create_w3(rpc_url)
+                self._rpc_index = idx
+                setattr(self.w3, "_cc_switch_rpc", self.switch_to_next_rpc_endpoint)
+                self._validation_cache.clear()
+                self.logger.warning("Switched RPC endpoint to %s", rpc_url)
+                return True
+            except Exception as exc:
+                self.logger.warning(
+                    "Failed switching RPC endpoint to %s: %s",
+                    rpc_url,
+                    exc,
+                )
+        return False
 
     def _validate_contract(self, address: str, block: str) -> bool:
         """

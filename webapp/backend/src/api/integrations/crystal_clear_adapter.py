@@ -49,7 +49,7 @@ class CrystalClearRiskEngine(RiskEngine):
         from_block: str | int | None = None,
         to_block: str | int | None = None,
         latest_offset: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         return self._client.simulate_and_check(
             dict(call_object),
             block_tag=block_tag,
