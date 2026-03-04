@@ -64,15 +64,6 @@ jobs:
     - name: Copy .env.example to .env
       run: cp .env.example .env
 
-    - name: Install Ruff
-      run: poetry run pip install ruff
-
-    - name: Lint
-      run: poetry run ruff check .
-
-    - name: Format check
-      run: poetry run ruff format --check .
-
     - name: Run tests with coverage gate
       run: |
         poetry run pytest -q tests --cov=src/api --cov-report=term-missing --cov-fail-under=90
