@@ -206,13 +206,15 @@ def test_wrapper_simulate_and_check(mock_is_connected):
         )
     )
 
-    res = cc.simulate_and_check(
+    res, metrics = cc.simulate_and_check(
         {
             "from": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "to": "0x1111111111111111111111111111111111111111",
         },
         block_tag="latest",
     )
+    assert metrics["trace_call_seconds"] is not None
+    assert metrics["total_seconds"] is not None
     # Ensure both targets are present and carry flags
     assert "0x4444444444444444444444444444444444444444" in res
     assert (
