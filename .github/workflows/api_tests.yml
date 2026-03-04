@@ -64,6 +64,9 @@ jobs:
     - name: Copy .env.example to .env
       run: cp .env.example .env
 
+    - name: Install Ruff
+      run: poetry run pip install ruff
+
     - name: Lint
       run: poetry run ruff check .
 
