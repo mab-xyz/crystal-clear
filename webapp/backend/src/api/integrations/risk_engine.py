@@ -23,8 +23,8 @@ class RiskEngine(Protocol):
         from_block: str | int | None = None,
         to_block: str | int | None = None,
         latest_offset: int | None = None,
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Simulate calldata and return (results, metrics)."""
+    ) -> dict[str, Any]:
+        """Simulate calldata and return touched-contract results."""
 
     def simulate_from_tx(
         self,

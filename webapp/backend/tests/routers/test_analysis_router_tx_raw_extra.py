@@ -7,14 +7,13 @@ from src.api.schemas.analysis import RawTxRiskRequest, SimulationRequest
 
 
 class _CaptureEngine:
-    def __init__(self, result, metrics=None):
+    def __init__(self, result):
         self.result = result
-        self.metrics = metrics or {}
         self.calls = []
 
     def simulate_and_check(self, call_object, **kwargs):
         self.calls.append((call_object, kwargs))
-        return self.result, self.metrics
+        return self.result
 
 
 def _patch_interaction_helpers(monkeypatch, dangerous_types=None):
@@ -42,8 +41,7 @@ async def test_simulate_transaction_sets_all_optional_fields(monkeypatch):
                 "depth": 1,
                 "types": {"CALL": 1},
             }
-        },
-        metrics={"total_seconds": 0.12},
+        }
     )
     body = SimulationRequest(
         from_addr="0x1111111111111111111111111111111111111111",

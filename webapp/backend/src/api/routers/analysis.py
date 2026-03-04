@@ -12,7 +12,6 @@ from src.api.schemas.analysis import (
     ContractRiskRequest,
     SimulationRequest,
     SimulationResponse,
-    SimulationMetrics,
     RiskAnalysisResponse,
     RawTxRiskRequest,
 )
@@ -302,7 +301,7 @@ async def simulate_transaction(
         else None
     )
 
-    results, metrics = risk_engine.simulate_and_check(
+    results = risk_engine.simulate_and_check(
         call_object,
         block_tag=body.block_tag or "latest",
         from_block=fb,
@@ -374,13 +373,10 @@ async def simulate_transaction(
         dangerous_types,
     )
 
-    metrics_payload = SimulationMetrics(**metrics) if metrics else None
-
     return SimulationResponse(
         status=status,
         interaction_status=interaction_status,
         details=items,
-        metrics=metrics_payload,
         dangerous_interaction_types=dangerous_types,
         danger_reason=danger_reason,
     )
@@ -685,7 +681,7 @@ async def get_tx_risk_from_raw(
     )
 
     # Simulation step
-    results, metrics = risk_engine.simulate_and_check(
+    results = risk_engine.simulate_and_check(
         call_object,
         block_tag=body.block_tag or "latest",
         from_block=fb,
@@ -748,12 +744,10 @@ async def get_tx_risk_from_raw(
         checked_interaction_types,
         dangerous_types,
     )
-    metrics_payload = SimulationMetrics(**metrics) if metrics else None
     resp = SimulationResponse(
         status=status_val,
         interaction_status=interaction_status,
         details=items,
-        metrics=metrics_payload,
         dangerous_interaction_types=dangerous_types,
         danger_reason=danger_reason,
     )

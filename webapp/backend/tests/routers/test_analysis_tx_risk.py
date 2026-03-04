@@ -8,16 +8,13 @@ from src.api.routers import analysis
 
 class _FakeRiskEngine:
     def simulate_and_check(self, *_args, **_kwargs):
-        return (
-            {
-                "0x3333333333333333333333333333333333333333": {
-                    "verification": {"verification": "verified"},
-                    "depth": 1,
-                    "types": {"CALL": 1},
-                }
-            },
-            {"total_seconds": 0.01},
-        )
+        return {
+            "0x3333333333333333333333333333333333333333": {
+                "verification": {"verification": "verified"},
+                "depth": 1,
+                "types": {"CALL": 1},
+            }
+        }
 
     def simulate_from_tx(self, *_args, **_kwargs):
         return {

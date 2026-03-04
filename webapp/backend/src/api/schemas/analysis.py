@@ -295,15 +295,6 @@ class SimulationResultItem(BaseModel):
     interaction_state: Dict[str, Literal["FOUND", "MISSING"]] | None = None
 
 
-class SimulationMetrics(BaseModel):
-    trace_call_seconds: float | None = None
-    verification_seconds: float | None = None
-    first_time_seconds: float | None = None
-    total_seconds: float | None = None
-    verification_targets: int | None = None
-    first_time_targets: int | None = None
-
-
 class SimulationResponse(BaseModel):
     status: Literal["OK", "DANGEROUS"]
     interaction_status: Dict[
@@ -316,7 +307,6 @@ class SimulationResponse(BaseModel):
         Literal["dangerous", "ok", "not_checked"],
     ] | None = None
     details: List[SimulationResultItem]
-    metrics: SimulationMetrics | None = None
     dangerous_interaction_types: List[str] | None = None
     danger_reason: Optional[Literal["FIRST_TIME_INTERACTION"]] = None
 
