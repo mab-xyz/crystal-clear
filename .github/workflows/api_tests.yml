@@ -64,6 +64,9 @@ jobs:
     - name: Copy .env.example to .env
       run: cp .env.example .env
 
+    - name: Install pytest-cov
+      run: poetry run pip install pytest-cov
+
     - name: Run tests with coverage gate
       run: |
         poetry run pytest -q tests --cov=src/api --cov-report=term-missing --cov-fail-under=90
