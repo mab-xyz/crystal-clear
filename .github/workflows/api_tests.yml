@@ -64,8 +64,8 @@ jobs:
     - name: Copy .env.example to .env
       run: cp .env.example .env
 
-    - name: Install pytest-cov
-      run: poetry run pip install pytest-cov
+    - name: Install test extras
+      run: poetry run pip install pytest-cov httpx
 
     - name: Run tests with coverage gate
       run: |
