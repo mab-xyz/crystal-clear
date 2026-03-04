@@ -1,5 +1,5 @@
-from api.crud.deployment import create_deployment, get_deployment
-from api.models.deployment import DeploymentCreate
+from src.api.crud.deployment import create_deployment, get_deployment
+from src.api.models.deployment import DeploymentCreate
 
 
 def test_create_and_get_deployment(session):
