@@ -107,6 +107,7 @@ async def test_simulate_transaction_marks_sender_dangerous_in_status(monkeypatch
         from_addr="0x1111111111111111111111111111111111111111",
         to_addr="0x2222222222222222222222222222222222222222",
         data="0x",
+        interaction_types=["sender_direct"],
     )
 
     response = await analysis.simulate_transaction(
@@ -512,7 +513,7 @@ async def test_seed_failures_are_swallowed_in_both_endpoints(monkeypatch):
     monkeypatch.setattr(
         analysis,
         "_evaluate_interaction_scan_risk",
-        lambda **_k: ({}, {}, []),
+        lambda **_k: ({}, {}, [], []),
     )
 
     engine = _CaptureEngine(
