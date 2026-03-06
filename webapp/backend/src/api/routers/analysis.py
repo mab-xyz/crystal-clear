@@ -43,6 +43,11 @@ ALL_INTERACTION_TYPES = [
     "contract_direct",
     "contract_transitive",
 ]
+DANGEROUS_INTERACTION_TYPES = {"contract_direct", "contract_transitive"}
+DEFAULT_INTERACTION_TYPES = [
+    "contract_direct",
+    "contract_transitive",
+]
 
 
 def _normalize_address(value: str | None) -> str | None:
@@ -58,7 +63,10 @@ def _resolve_checked_interaction_types(
     requested_types: list[str] | None,
     root_contract: str | None,
 ) -> list[str]:
-    requested = requested_types or ALL_INTERACTION_TYPES
+    if requested_types:
+        requested = requested_types
+    else:
+        requested = DEFAULT_INTERACTION_TYPES
     unique: list[str] = []
     seen: set[str] = set()
     for interaction_type in requested:
@@ -79,7 +87,12 @@ def _evaluate_interaction_scan_risk(
     root_contract: str | None,
     touched_addresses: list[str],
     checked_interaction_types: list[str],
-) -> tuple[dict[str, dict[str, bool]], dict[str, dict[str, str]], list[str]]:
+) -> tuple[
+    dict[str, dict[str, bool]],
+    dict[str, dict[str, str]],
+    list[str],
+    list[str],
+]:
     sender_norm = _normalize_address(sender_address)
     root_norm = _normalize_address(root_contract)
     normalized_targets: list[str] = []
@@ -92,7 +105,7 @@ def _evaluate_interaction_scan_risk(
         seen_targets.add(addr)
 
     if not sender_norm or not normalized_targets or not checked_interaction_types:
-        return {}, {}, []
+        return {}, {}, [], []
 
     from_candidates = {sender_norm}
     if root_norm:
@@ -112,7 +125,8 @@ def _evaluate_interaction_scan_risk(
 
     first_time_map: dict[str, dict[str, bool]] = {}
     state_map: dict[str, dict[str, str]] = {}
-    dangerous_types: list[str] = []
+    contract_dangerous_types: list[str] = []
+    sender_dangerous_types: list[str] = []
 
     for target in normalized_targets:
         first_time_map[target] = {}
@@ -135,10 +149,24 @@ def _evaluate_interaction_scan_risk(
 
             first_time_map[target][interaction_type] = first_time_val
             state_map[target][interaction_type] = state_val
-            if first_time_val and interaction_type not in dangerous_types:
-                dangerous_types.append(interaction_type)
+            if not first_time_val:
+                continue
+            if (
+                interaction_type in DANGEROUS_INTERACTION_TYPES
+                and interaction_type not in contract_dangerous_types
+            ):
+                contract_dangerous_types.append(interaction_type)
+            elif interaction_type.startswith("sender_") and (
+                interaction_type not in sender_dangerous_types
+            ):
+                sender_dangerous_types.append(interaction_type)
 
-    return first_time_map, state_map, dangerous_types
+    return (
+        first_time_map,
+        state_map,
+        contract_dangerous_types,
+        sender_dangerous_types,
+    )
 
 
 def _build_interaction_status(
@@ -332,7 +360,12 @@ async def simulate_transaction(
             exc,
         )
 
-    interaction_first_time, interaction_state, dangerous_types = (
+    (
+        interaction_first_time,
+        interaction_state,
+        contract_dangerous_types,
+        sender_dangerous_types,
+    ) = (
         _evaluate_interaction_scan_risk(
             session=session,
             sender_address=body.from_addr,
@@ -366,18 +399,20 @@ async def simulate_transaction(
         for addr, info in results.items()
     ]
 
-    status = "DANGEROUS" if dangerous_types else "OK"
-    danger_reason = "FIRST_TIME_INTERACTION" if dangerous_types else None
+    status = "DANGEROUS" if contract_dangerous_types else "OK"
+    danger_reason = (
+        "FIRST_TIME_INTERACTION" if contract_dangerous_types else None
+    )
     interaction_status = _build_interaction_status(
         checked_interaction_types,
-        dangerous_types,
+        contract_dangerous_types + sender_dangerous_types,
     )
 
     return SimulationResponse(
         status=status,
         interaction_status=interaction_status,
         details=items,
-        dangerous_interaction_types=dangerous_types,
+        dangerous_interaction_types=contract_dangerous_types,
         danger_reason=danger_reason,
     )
 
@@ -722,7 +757,12 @@ async def get_tx_risk_from_raw(
             exc,
         )
 
-    interaction_first_time, interaction_state, dangerous_types = (
+    (
+        interaction_first_time,
+        interaction_state,
+        contract_dangerous_types,
+        sender_dangerous_types,
+    ) = (
         _evaluate_interaction_scan_risk(
             session=session,
             sender_address=sender,
@@ -738,17 +778,19 @@ async def get_tx_risk_from_raw(
         item["interaction_state"] = interaction_state.get(normalized, {})
         item["first_time"] = any(first_time_by_type.values())
 
-    status_val = "DANGEROUS" if dangerous_types else "OK"
-    danger_reason = "FIRST_TIME_INTERACTION" if dangerous_types else None
+    status_val = "DANGEROUS" if contract_dangerous_types else "OK"
+    danger_reason = (
+        "FIRST_TIME_INTERACTION" if contract_dangerous_types else None
+    )
     interaction_status = _build_interaction_status(
         checked_interaction_types,
-        dangerous_types,
+        contract_dangerous_types + sender_dangerous_types,
     )
     resp = SimulationResponse(
         status=status_val,
         interaction_status=interaction_status,
         details=items,
-        dangerous_interaction_types=dangerous_types,
+        dangerous_interaction_types=contract_dangerous_types,
         danger_reason=danger_reason,
     )
     return resp

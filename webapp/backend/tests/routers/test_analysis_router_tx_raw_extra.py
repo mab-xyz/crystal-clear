@@ -16,7 +16,11 @@ class _CaptureEngine:
         return self.result
 
 
-def _patch_interaction_helpers(monkeypatch, dangerous_types=None):
+def _patch_interaction_helpers(
+    monkeypatch,
+    contract_dangerous_types=None,
+    sender_dangerous_types=None,
+):
     monkeypatch.setattr(
         analysis,
         "seed_interaction_scan_state_from_tx",
@@ -25,14 +29,22 @@ def _patch_interaction_helpers(monkeypatch, dangerous_types=None):
     monkeypatch.setattr(
         analysis,
         "_evaluate_interaction_scan_risk",
-        lambda **_k: ({}, {}, dangerous_types or []),
+        lambda **_k: (
+            {},
+            {},
+            contract_dangerous_types or [],
+            sender_dangerous_types or [],
+        ),
     )
 
 
 @pytest.mark.asyncio
 # Verifies optional tx fields are forwarded and dangerous status derives from interaction scan.
 async def test_simulate_transaction_sets_all_optional_fields(monkeypatch):
-    _patch_interaction_helpers(monkeypatch, dangerous_types=["sender_direct"])
+    _patch_interaction_helpers(
+        monkeypatch,
+        contract_dangerous_types=["contract_direct"],
+    )
     engine = _CaptureEngine(
         {
             "0x3333333333333333333333333333333333333333": {
@@ -72,6 +84,40 @@ async def test_simulate_transaction_sets_all_optional_fields(monkeypatch):
     assert call_object["type"] == "0x2"
     assert kwargs["from_block"] == " 100 "
     assert kwargs["to_block"] == "200"
+
+
+@pytest.mark.asyncio
+# Sender-side first-time interactions should mark interaction_status as dangerous without flipping overall status.
+async def test_simulate_transaction_marks_sender_dangerous_in_status(monkeypatch):
+    _patch_interaction_helpers(
+        monkeypatch,
+        sender_dangerous_types=["sender_direct"],
+    )
+    engine = _CaptureEngine(
+        {
+            "0x3333333333333333333333333333333333333333": {
+                "first_time": False,
+                "verification": {"verification": "verified"},
+                "depth": 0,
+                "types": {"CALL": 1},
+            }
+        }
+    )
+    body = SimulationRequest(
+        from_addr="0x1111111111111111111111111111111111111111",
+        to_addr="0x2222222222222222222222222222222222222222",
+        data="0x",
+    )
+
+    response = await analysis.simulate_transaction(
+        body,
+        risk_engine=engine,
+        session=object(),
+    )
+
+    assert response.status == "OK"
+    assert response.interaction_status["sender_direct"] == "dangerous"
+    assert response.interaction_status["contract_direct"] == "not_checked"
 
 
 @pytest.mark.asyncio
