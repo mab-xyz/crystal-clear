@@ -97,7 +97,7 @@ def _count_direct_interactions(
 ) -> tuple[int, bool]:
     try:
         from_checksum = Web3.to_checksum_address(from_address)
-        Web3.to_checksum_address(to_address)
+        to_checksum = Web3.to_checksum_address(to_address)
     except Exception:
         return 0, False
 
@@ -106,6 +106,7 @@ def _count_direct_interactions(
     pages = 0
     seen_pages: set[tuple] = set()
     complete = True
+    use_intersection = True
     while True:
         if pages >= MAX_TRACE_PAGES_PER_CALL:
             print(
@@ -122,9 +123,16 @@ def _count_direct_interactions(
             "count": max(1, int(page_size)),
             "after": after,
         }
+        if use_intersection:
+            params["toAddress"] = [to_checksum]
+            params["mode"] = "intersection"
         try:
             traces = _trace_filter(w3, params, mode_name)
         except Exception:
+            # Fallback for providers that do not support intersection mode.
+            if use_intersection:
+                use_intersection = False
+                continue
             complete = False
             break
 
@@ -289,4 +297,3 @@ def _count_transitive_interactions(
         if isinstance(tree, dict) and _trace_touches_target(tree, target_norm):
             total += 1
     return total
-
