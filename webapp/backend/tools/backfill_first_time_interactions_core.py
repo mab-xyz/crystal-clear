@@ -1139,95 +1139,95 @@ def main() -> None:
                     scan_end = min(target_block, scan_start + chunk_size - 1)
                     chunk_started = time.perf_counter()
 
-                if normalized_type in TRANSITIVE_INTERACTION_TYPES:
-                    hits = _count_transitive_interactions(
-                        trace_collector.w3,
-                        row.from_address,
-                        row.to_address,
-                        scan_start,
-                        scan_end,
-                        page_size,
-                    )
-                    chunk_complete = True
-                elif normalized_type == "sender_direct":
-                    hits, chunk_complete = _count_direct_interactions(
-                        trace_collector.w3,
-                        row.from_address,
-                        row.to_address,
-                        scan_start,
-                        scan_end,
-                        page_size,
-                        root_only=True,
-                        mode_name="sender_direct",
-                    )
-                else:
-                    hits, chunk_complete = _count_direct_interactions(
-                        trace_collector.w3,
-                        row.from_address,
-                        row.to_address,
-                        scan_start,
-                        scan_end,
-                        page_size,
-                        root_only=False,
-                        mode_name="contract_direct",
+                    if normalized_type in TRANSITIVE_INTERACTION_TYPES:
+                        hits = _count_transitive_interactions(
+                            trace_collector.w3,
+                            row.from_address,
+                            row.to_address,
+                            scan_start,
+                            scan_end,
+                            page_size,
+                        )
+                        chunk_complete = True
+                    elif normalized_type == "sender_direct":
+                        hits, chunk_complete = _count_direct_interactions(
+                            trace_collector.w3,
+                            row.from_address,
+                            row.to_address,
+                            scan_start,
+                            scan_end,
+                            page_size,
+                            root_only=True,
+                            mode_name="sender_direct",
+                        )
+                    else:
+                        hits, chunk_complete = _count_direct_interactions(
+                            trace_collector.w3,
+                            row.from_address,
+                            row.to_address,
+                            scan_start,
+                            scan_end,
+                            page_size,
+                            root_only=False,
+                            mode_name="contract_direct",
+                        )
+
+                    if not chunk_complete:
+                        print(
+                            f"[warn] incomplete chunk id={row.id} type={normalized_type} "
+                            f"{row.from_address}->{row.to_address} scan={scan_start}-{scan_end}; "
+                            "not advancing checkpoint"
+                        )
+                        break
+
+                    new_total = max(0, int(row.how_many_times)) + int(hits)
+                    discovered = hits > 0
+                    chunk_duration_ms = int(
+                        (time.perf_counter() - chunk_started) * 1000
                     )
 
-                if not chunk_complete:
                     print(
-                        f"[warn] incomplete chunk id={row.id} type={normalized_type} "
-                        f"{row.from_address}->{row.to_address} scan={scan_start}-{scan_end}; "
-                        "not advancing checkpoint"
-                    )
-                    break
-
-                new_total = max(0, int(row.how_many_times)) + int(hits)
-                discovered = hits > 0
-                chunk_duration_ms = int(
-                    (time.perf_counter() - chunk_started) * 1000
-                )
-
-                print(
-                    f"[{processed}] id={row.id} type={row.interaction_type} "
-                    f"{row.from_address}->{row.to_address} "
-                    f"to_lb={row.from_block} to_source={to_source} "
-                    f"from_lb={from_lower_bound} from_source={from_source} "
-                    f"scan={scan_start}-{scan_end} hits={hits} "
-                    f"new_hits={discovered} total={new_total} "
-                    f"duration_ms={chunk_duration_ms}"
-                )
-
-                if chunk_duration_ms > int(args.hot_threshold_seconds) * 1000:
-                    hot_marked += 1
-                    _mark_hot_pair(
-                        session,
-                        row.from_address,
-                        row.to_address,
-                        normalized_type,
-                        reason="slow_chunk",
-                        duration_ms=chunk_duration_ms,
-                        cooldown_seconds=args.hot_cooldown_seconds,
-                    )
-                    print(
-                        f"[mark-hot] id={row.id} type={normalized_type} "
+                        f"[{processed}] id={row.id} type={row.interaction_type} "
                         f"{row.from_address}->{row.to_address} "
-                        f"duration_ms={chunk_duration_ms} "
-                        f"cooldown_seconds={args.hot_cooldown_seconds}"
+                        f"to_lb={row.from_block} to_source={to_source} "
+                        f"from_lb={from_lower_bound} from_source={from_source} "
+                        f"scan={scan_start}-{scan_end} hits={hits} "
+                        f"new_hits={discovered} total={new_total} "
+                        f"duration_ms={chunk_duration_ms}"
                     )
+
+                    if chunk_duration_ms > int(args.hot_threshold_seconds) * 1000:
+                        hot_marked += 1
+                        _mark_hot_pair(
+                            session,
+                            row.from_address,
+                            row.to_address,
+                            normalized_type,
+                            reason="slow_chunk",
+                            duration_ms=chunk_duration_ms,
+                            cooldown_seconds=args.hot_cooldown_seconds,
+                        )
+                        print(
+                            f"[mark-hot] id={row.id} type={normalized_type} "
+                            f"{row.from_address}->{row.to_address} "
+                            f"duration_ms={chunk_duration_ms} "
+                            f"cooldown_seconds={args.hot_cooldown_seconds}"
+                        )
+                        if not args.dry_run:
+                            session.commit()
+
+                    scanned_chunks += 1
+                    total_hits += hits
+
+                    row.how_many_times = new_total
+                    row.first_time_interact = _is_first_time_interact(new_total)
+                    row.last_analyzed_block = scan_end
+                    row.checked_at = datetime.utcnow()
+
                     if not args.dry_run:
+                        session.add(row)
                         session.commit()
-
-                scanned_chunks += 1
-                total_hits += hits
-
-                row.how_many_times = new_total
-                row.first_time_interact = _is_first_time_interact(new_total)
-                row.last_analyzed_block = scan_end
-                row.checked_at = datetime.utcnow()
-
-                if not args.dry_run:
-                    session.add(row)
-                    session.commit()
-                    updated += 1
+                        updated += 1
 
                     chunks_done += 1
 
