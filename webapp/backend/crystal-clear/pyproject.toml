@@ -24,7 +24,7 @@ pytest = ">=8.4.2,<9.0.0"
 uschunter = "0.0.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
+black = ">=25.1,<27.0"
 isort = "^6.0.0"
 ruff = "^0.9.4"
 pre-commit = "^4.1.0"
