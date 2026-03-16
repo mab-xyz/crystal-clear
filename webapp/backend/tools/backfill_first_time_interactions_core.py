@@ -1133,6 +1133,13 @@ def main() -> None:
                         persist_deployment=not args.dry_run,
                     )
                 )
+                if from_lower_bound > latest_block:
+                    print(
+                        f"[warn] suspicious sender lower bound address={row.from_address} "
+                        f"lower_bound={from_lower_bound} latest={latest_block} source={from_source}"
+                    )
+                    from_lower_bound = latest_block
+                    from_needs_retry = True
                 if from_needs_retry:
                     creation_failures += 1
 
@@ -1187,6 +1194,12 @@ def main() -> None:
                         scan_start = row.from_block
 
                     if scan_start > target_block:
+                        round_remaining -= 1
+                        round_skipped_done += 1
+                        print(
+                            f"[skip] scan start beyond target id={row.id} type={normalized_type} "
+                            f"scan_start={scan_start} target={target_block}"
+                        )
                         break
 
                     scan_end = min(target_block, scan_start + chunk_size - 1)
@@ -1249,14 +1262,10 @@ def main() -> None:
                         f"duration_ms={chunk_duration_ms}"
                     )
 
-<<<<<<< Updated upstream
-                    if chunk_duration_ms > int(args.hot_threshold_seconds) * 1000:
-=======
                     if (
                         chunk_duration_ms
                         > int(args.hot_threshold_seconds) * 1000
                     ):
->>>>>>> Stashed changes
                         hot_marked += 1
                         _mark_hot_pair(
                             session,
@@ -1280,13 +1289,9 @@ def main() -> None:
                     total_hits += hits
 
                     row.how_many_times = new_total
-<<<<<<< Updated upstream
-                    row.first_time_interact = _is_first_time_interact(new_total)
-=======
                     row.first_time_interact = _is_first_time_interact(
                         new_total
                     )
->>>>>>> Stashed changes
                     row.last_analyzed_block = scan_end
                     row.checked_at = datetime.utcnow()
 
