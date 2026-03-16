@@ -148,7 +148,9 @@ def _iter_scan_rows(
 ):
     stmt = select(InteractionScanState)
     if interaction_types:
-        stmt = stmt.where(InteractionScanState.interaction_type.in_(interaction_types))
+        stmt = stmt.where(
+            InteractionScanState.interaction_type.in_(interaction_types)
+        )
     if only_retry:
         stmt = stmt.where(InteractionScanState.needs_creation_retry.is_(True))
     if from_filter:
@@ -160,7 +162,9 @@ def _iter_scan_rows(
         yield row
 
 
-def _has_code_at_block(w3: Web3, checksum_address: str, block_number: int) -> bool:
+def _has_code_at_block(
+    w3: Web3, checksum_address: str, block_number: int
+) -> bool:
     try:
         code = w3.eth.get_code(checksum_address, block_identifier=block_number)
     except Exception:
@@ -250,10 +254,18 @@ def _resolve_creation_block(
     ):
         block = int(metadata.creation_block)
         cache[normalized] = block
-        return block, bool(metadata.needs_retry), metadata.source or "address_metadata"
+        return (
+            block,
+            bool(metadata.needs_retry),
+            metadata.source or "address_metadata",
+        )
 
     record = session.get(Deployment, normalized)
-    if record and isinstance(record.block_number, int) and record.block_number >= 0:
+    if (
+        record
+        and isinstance(record.block_number, int)
+        and record.block_number >= 0
+    ):
         block = int(record.block_number)
         _upsert_address_metadata(
             session,
@@ -353,7 +365,9 @@ def _has_sender_activity_in_range(
     return False
 
 
-def _find_first_sender_tx_block(w3: Web3, sender_address: str) -> Optional[int]:
+def _find_first_sender_tx_block(
+    w3: Web3, sender_address: str
+) -> Optional[int]:
     try:
         latest = int(w3.eth.block_number)
     except Exception:
@@ -400,7 +414,9 @@ def _find_first_sender_tx_block_etherscan(
         "apikey": etherscan_api_key,
     }
     if DEBUG_LOG_ENABLED:
-        print(f"[etherscan] query first-tx address={normalized} params={params}")
+        print(
+            f"[etherscan] query first-tx address={normalized} params={params}"
+        )
     try:
         response = requests.get(
             "https://api.etherscan.io/v2/api",
@@ -461,14 +477,28 @@ def _resolve_address_lower_bound(
 
     metadata = session.get(AddressMetadata, normalized)
     if metadata:
-        if metadata.address_type == "contract" and metadata.creation_block is not None:
+        if (
+            metadata.address_type == "contract"
+            and metadata.creation_block is not None
+        ):
             block = max(0, int(metadata.creation_block))
             cache[normalized] = block
-            return block, bool(metadata.needs_retry), metadata.source or "address_metadata"
-        if metadata.address_type == "eoa" and metadata.first_tx_block is not None:
+            return (
+                block,
+                bool(metadata.needs_retry),
+                metadata.source or "address_metadata",
+            )
+        if (
+            metadata.address_type == "eoa"
+            and metadata.first_tx_block is not None
+        ):
             block = max(0, int(metadata.first_tx_block))
             cache[normalized] = block
-            return block, bool(metadata.needs_retry), metadata.source or "address_metadata"
+            return (
+                block,
+                bool(metadata.needs_retry),
+                metadata.source or "address_metadata",
+            )
 
     try:
         checksum = Web3.to_checksum_address(normalized)
@@ -641,7 +671,9 @@ def _resolve_scan_start(
     last_analyzed_block: Optional[int],
     override_start: Optional[int],
 ) -> int:
-    last_plus_one = (last_analyzed_block + 1) if last_analyzed_block is not None else 0
+    last_plus_one = (
+        (last_analyzed_block + 1) if last_analyzed_block is not None else 0
+    )
     candidates = [
         max(0, int(from_block)),
         max(0, int(sender_lower_bound)),
@@ -671,7 +703,9 @@ def _get_hot_record(
     ).first()
 
 
-def _is_hot_active(record: Optional[InteractionScanHot], now: datetime) -> bool:
+def _is_hot_active(
+    record: Optional[InteractionScanHot], now: datetime
+) -> bool:
     return bool(record and record.hot_until and record.hot_until > now)
 
 
@@ -771,7 +805,9 @@ def _mark_hot_pair(
 ) -> None:
     now = datetime.utcnow()
     hot_until = now + timedelta(seconds=max(1, int(cooldown_seconds)))
-    record = _get_hot_record(session, from_address, to_address, interaction_type)
+    record = _get_hot_record(
+        session, from_address, to_address, interaction_type
+    )
     if record is None:
         record = InteractionScanHot(
             from_address=from_address,
@@ -938,16 +974,24 @@ def main() -> None:
     selected_types = _interaction_types_for_run(args.interaction_type)
 
     _ensure_state_table()
-    trace_collector = TraceCollector(settings.eth_node_url, log_level=settings.log_level)
+    trace_collector = TraceCollector(
+        settings.eth_node_url, log_level=settings.log_level
+    )
     allium_client = (
-        AlliumClient(settings.allium_api_key) if settings.allium_api_key else None
+        AlliumClient(settings.allium_api_key)
+        if settings.allium_api_key
+        else None
     )
 
-    from_filter = _normalize_address(args.from_address) if args.from_address else None
+    from_filter = (
+        _normalize_address(args.from_address) if args.from_address else None
+    )
     if args.from_address and not from_filter:
         raise SystemExit(f"Invalid --from-address value: {args.from_address}")
 
-    to_filter = _normalize_address(args.to_address) if args.to_address else None
+    to_filter = (
+        _normalize_address(args.to_address) if args.to_address else None
+    )
     if args.to_address and not to_filter:
         raise SystemExit(f"Invalid --to-address value: {args.to_address}")
 
@@ -999,25 +1043,26 @@ def main() -> None:
             round_remaining = 0
             round_skipped_done = 0
             round_skipped_retry = 0
-            processing_rows, fast_lane_rows, hot_lane_rows = _collect_processing_rows(
-                session,
-                interaction_types=selected_types,
-                only_retry=args.only_retry,
-                from_filter=from_filter,
-                to_filter=to_filter,
-                include_hot=args.include_hot,
-                fast_per_cycle=args.fast_per_cycle,
-                hot_per_cycle=args.hot_per_cycle,
-                limit=args.limit,
+            processing_rows, fast_lane_rows, hot_lane_rows = (
+                _collect_processing_rows(
+                    session,
+                    interaction_types=selected_types,
+                    only_retry=args.only_retry,
+                    from_filter=from_filter,
+                    to_filter=to_filter,
+                    include_hot=args.include_hot,
+                    fast_per_cycle=args.fast_per_cycle,
+                    hot_per_cycle=args.hot_per_cycle,
+                    limit=args.limit,
+                )
             )
             if not processing_rows:
                 break
 
             for row in processing_rows:
-                if (
-                    row.last_analyzed_block is not None
-                    and int(row.last_analyzed_block) >= int(target_block)
-                ):
+                if row.last_analyzed_block is not None and int(
+                    row.last_analyzed_block
+                ) >= int(target_block):
                     round_skipped_done += 1
                     continue
                 round_remaining += 1
@@ -1025,14 +1070,16 @@ def main() -> None:
 
                 before_last_analyzed = row.last_analyzed_block
 
-                to_lower_bound, to_needs_retry, to_source = _resolve_address_lower_bound(
-                    session,
-                    trace_collector.w3,
-                    row.to_address,
-                    address_bound_cache,
-                    allium_client=allium_client,
-                    etherscan_api_key=settings.etherscan_api_key,
-                    persist_deployment=not args.dry_run,
+                to_lower_bound, to_needs_retry, to_source = (
+                    _resolve_address_lower_bound(
+                        session,
+                        trace_collector.w3,
+                        row.to_address,
+                        address_bound_cache,
+                        allium_client=allium_client,
+                        etherscan_api_key=settings.etherscan_api_key,
+                        persist_deployment=not args.dry_run,
+                    )
                 )
                 if to_lower_bound > latest_block:
                     print(
@@ -1071,16 +1118,20 @@ def main() -> None:
                     row.last_analyzed_block = row.from_block - 1
 
                 chunks_done = 0
-                normalized_type = _normalize_interaction_type(row.interaction_type)
+                normalized_type = _normalize_interaction_type(
+                    row.interaction_type
+                )
 
-                from_lower_bound, from_needs_retry, from_source = _resolve_address_lower_bound(
-                    session,
-                    trace_collector.w3,
-                    row.from_address,
-                    address_bound_cache,
-                    allium_client=allium_client,
-                    etherscan_api_key=settings.etherscan_api_key,
-                    persist_deployment=not args.dry_run,
+                from_lower_bound, from_needs_retry, from_source = (
+                    _resolve_address_lower_bound(
+                        session,
+                        trace_collector.w3,
+                        row.from_address,
+                        address_bound_cache,
+                        allium_client=allium_client,
+                        etherscan_api_key=settings.etherscan_api_key,
+                        persist_deployment=not args.dry_run,
+                    )
                 )
                 if from_needs_retry:
                     creation_failures += 1
@@ -1088,7 +1139,9 @@ def main() -> None:
                 effective_start = max(
                     max(0, int(to_lower_bound)),
                     max(0, int(from_lower_bound)),
-                    max(0, int(args.override_start)) if args.override_start is not None else 0,
+                    max(0, int(args.override_start))
+                    if args.override_start is not None
+                    else 0,
                 )
 
                 # from_block stores the first effective analyzed block for this pair.
@@ -1196,7 +1249,14 @@ def main() -> None:
                         f"duration_ms={chunk_duration_ms}"
                     )
 
+<<<<<<< Updated upstream
                     if chunk_duration_ms > int(args.hot_threshold_seconds) * 1000:
+=======
+                    if (
+                        chunk_duration_ms
+                        > int(args.hot_threshold_seconds) * 1000
+                    ):
+>>>>>>> Stashed changes
                         hot_marked += 1
                         _mark_hot_pair(
                             session,
@@ -1220,7 +1280,13 @@ def main() -> None:
                     total_hits += hits
 
                     row.how_many_times = new_total
+<<<<<<< Updated upstream
                     row.first_time_interact = _is_first_time_interact(new_total)
+=======
+                    row.first_time_interact = _is_first_time_interact(
+                        new_total
+                    )
+>>>>>>> Stashed changes
                     row.last_analyzed_block = scan_end
                     row.checked_at = datetime.utcnow()
 
