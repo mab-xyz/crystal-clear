@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Callable, Optional
 
 from hexbytes import HexBytes
@@ -66,7 +67,7 @@ def _trace_from_to(trace: dict) -> tuple[Optional[str], Optional[str]]:
         return from_addr, to_addr
 
     action = trace.get("action")
-    if isinstance(action, dict):
+    if isinstance(action, Mapping):
         return _normalize_address(action.get("from")), _normalize_address(
             action.get("to")
         )
@@ -215,7 +216,7 @@ def _trace_touches_target(call_node: dict, target_norm: str) -> bool:
     if not isinstance(calls, list):
         return False
     for child in calls:
-        if isinstance(child, dict) and _trace_touches_target(child, target_norm):
+        if isinstance(child, Mapping) and _trace_touches_target(child, target_norm):
             return True
     return False
 
@@ -227,19 +228,20 @@ def _count_transitive_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> int:
+) -> tuple[int, bool]:
     try:
         from_checksum = Web3.to_checksum_address(from_address)
     except Exception:
-        return 0
+        return 0, False
     target_norm = _normalize_address(to_address)
     if not target_norm:
-        return 0
+        return 0, False
 
     tx_hashes: list[str] = []
     seen: set[str] = set()
     after = 0
     pages = 0
+    complete = True
     seen_pages: set[tuple] = set()
     while True:
         if pages >= MAX_TRACE_PAGES_PER_CALL:
@@ -247,6 +249,7 @@ def _count_transitive_interactions(
                 "[warn] reached max pages in transitive scan; stopping early "
                 f"from={from_address} to={to_address} after={after}"
             )
+            complete = False
             break
         pages += 1
         params = {
@@ -259,6 +262,7 @@ def _count_transitive_interactions(
         try:
             traces = _trace_filter(w3, params, "transitive")
         except Exception:
+            complete = False
             break
 
         if not isinstance(traces, list) or not traces:
@@ -269,6 +273,7 @@ def _count_transitive_interactions(
                 "[warn] repeated trace_filter page detected in transitive; "
                 "stopping early"
             )
+            complete = False
             break
         seen_pages.add(fp)
 
@@ -293,7 +298,8 @@ def _count_transitive_interactions(
                 {"tracer": "callTracer"},
             )
         except Exception:
+            complete = False
             continue
-        if isinstance(tree, dict) and _trace_touches_target(tree, target_norm):
+        if isinstance(tree, Mapping) and _trace_touches_target(tree, target_norm):
             total += 1
-    return total
+    return total, complete

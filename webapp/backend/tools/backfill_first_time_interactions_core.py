@@ -653,7 +653,7 @@ def _count_transitive_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> int:
+) -> tuple[int, bool]:
     _sync_interaction_check_settings()
     return interaction_checks._count_transitive_interactions(
         w3,
@@ -965,8 +965,13 @@ def _interaction_types_for_run(selected: Optional[str]) -> list[str]:
         if normalized == "transitive":
             return ["contract_transitive", "sender_transitive"]
         return [normalized]
-    # Default mode: only direct types
-    return ["contract_direct", "sender_direct"]
+    # Default mode: process all interaction types.
+    return [
+        "contract_direct",
+        "sender_direct",
+        "contract_transitive",
+        "sender_transitive",
+    ]
 
 
 def main() -> None:
@@ -1036,9 +1041,11 @@ def main() -> None:
                 )
             print(f"seeded_scan_rows={seeded}")
 
-        address_bound_cache: dict[str, int] = {}
         while True:
             rounds += 1
+            # Rebuild lower-bound cache every round so transient lookup failures
+            # can recover without restarting the worker process.
+            address_bound_cache: dict[str, int] = {}
             round_advanced = 0
             round_remaining = 0
             round_skipped_done = 0
@@ -1206,7 +1213,7 @@ def main() -> None:
                     chunk_started = time.perf_counter()
 
                     if normalized_type in TRANSITIVE_INTERACTION_TYPES:
-                        hits = _count_transitive_interactions(
+                        hits, chunk_complete = _count_transitive_interactions(
                             trace_collector.w3,
                             row.from_address,
                             row.to_address,
@@ -1214,7 +1221,6 @@ def main() -> None:
                             scan_end,
                             page_size,
                         )
-                        chunk_complete = True
                     elif normalized_type == "sender_direct":
                         hits, chunk_complete = _count_direct_interactions(
                             trace_collector.w3,
@@ -1255,7 +1261,7 @@ def main() -> None:
                     print(
                         f"[{processed}] id={row.id} type={row.interaction_type} "
                         f"{row.from_address}->{row.to_address} "
-                        f"to_lb={row.from_block} to_source={to_source} "
+                        f"to_lb={to_lower_bound} to_source={to_source} "
                         f"from_lb={from_lower_bound} from_source={from_source} "
                         f"scan={scan_start}-{scan_end} hits={hits} "
                         f"new_hits={discovered} total={new_total} "
