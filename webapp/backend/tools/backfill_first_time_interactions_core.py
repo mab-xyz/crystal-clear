@@ -57,6 +57,7 @@ from src.api.models.address_metadata import AddressMetadata
 from src.api.models.deployment import Deployment, DeploymentCreate
 from src.api.models.first_interaction import FirstInteraction
 from src.api.models.interaction_scan_hot import InteractionScanHot
+from src.api.models.interaction_scan_skipped_range import InteractionScanSkippedRange
 from src.api.models.interaction_scan_state import InteractionScanState
 import backfill_interaction_checks as interaction_checks
 
@@ -85,6 +86,7 @@ def _ensure_state_table() -> None:
             InteractionScanState.__table__,
             AddressMetadata.__table__,
             InteractionScanHot.__table__,
+            InteractionScanSkippedRange.__table__,
         ],
     )
 
@@ -590,7 +592,7 @@ def _count_direct_interactions(
     *,
     root_only: bool,
     mode_name: str,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_direct_interactions(
         w3,
@@ -611,7 +613,7 @@ def _count_contract_direct_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_contract_direct_interactions(
         w3,
@@ -630,7 +632,7 @@ def _count_sender_direct_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_sender_direct_interactions(
         w3,
@@ -653,7 +655,7 @@ def _count_transitive_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_transitive_interactions(
         w3,
@@ -1213,7 +1215,7 @@ def main() -> None:
                     chunk_started = time.perf_counter()
 
                     if normalized_type in TRANSITIVE_INTERACTION_TYPES:
-                        hits, chunk_complete = _count_transitive_interactions(
+                        hits, chunk_skipped = _count_transitive_interactions(
                             trace_collector.w3,
                             row.from_address,
                             row.to_address,
@@ -1222,7 +1224,7 @@ def main() -> None:
                             page_size,
                         )
                     elif normalized_type == "sender_direct":
-                        hits, chunk_complete = _count_direct_interactions(
+                        hits, chunk_skipped = _count_direct_interactions(
                             trace_collector.w3,
                             row.from_address,
                             row.to_address,
@@ -1233,7 +1235,7 @@ def main() -> None:
                             mode_name="sender_direct",
                         )
                     else:
-                        hits, chunk_complete = _count_direct_interactions(
+                        hits, chunk_skipped = _count_direct_interactions(
                             trace_collector.w3,
                             row.from_address,
                             row.to_address,
@@ -1244,13 +1246,23 @@ def main() -> None:
                             mode_name="contract_direct",
                         )
 
-                    if not chunk_complete:
+                    if chunk_skipped and not args.dry_run:
+                        for range_start, range_end in chunk_skipped:
+                            session.add(
+                                InteractionScanSkippedRange(
+                                    from_address=row.from_address,
+                                    to_address=row.to_address,
+                                    interaction_type=normalized_type,
+                                    range_start=range_start,
+                                    range_end=range_end,
+                                    reason="bisect_exhausted",
+                                )
+                            )
                         print(
-                            f"[warn] incomplete chunk id={row.id} type={normalized_type} "
-                            f"{row.from_address}->{row.to_address} scan={scan_start}-{scan_end}; "
-                            "not advancing checkpoint"
+                            f"[skip] recorded {len(chunk_skipped)} skipped range(s) "
+                            f"id={row.id} type={normalized_type} "
+                            f"{row.from_address}->{row.to_address}"
                         )
-                        break
 
                     new_total = max(0, int(row.how_many_times)) + int(hits)
                     discovered = hits > 0
