@@ -14,6 +14,16 @@ from web3.types import CallTrace, RPCResponse
 from .models import CallEdge, CallGraph
 
 
+def _is_json_decode_error(e: BaseException) -> bool:
+    """Return True if e or any chained cause is a JSONDecodeError."""
+    if isinstance(e, json.JSONDecodeError):
+        return True
+    cause = getattr(e, "__cause__", None) or getattr(e, "__context__", None)
+    if cause is not None and cause is not e:
+        return _is_json_decode_error(cause)
+    return False
+
+
 class RateLimitRetryMiddleware(Web3Middleware):
     def __init__(self, w3: Web3, max_retries: int = 5):
         super().__init__(w3)
@@ -28,7 +38,7 @@ class RateLimitRetryMiddleware(Web3Middleware):
                     response: RPCResponse = make_request(method, params)
                     return response  # success or non-429 error
                 except Exception as e:
-                    if isinstance(e, json.JSONDecodeError):
+                    if _is_json_decode_error(e):
                         raise
                     last_error = e
                     self.logger.warning(
