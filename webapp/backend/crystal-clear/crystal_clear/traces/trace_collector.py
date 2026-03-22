@@ -38,6 +38,10 @@ class RateLimitRetryMiddleware(Web3Middleware):
                     response: RPCResponse = make_request(method, params)
                     return response  # success or non-429 error
                 except Exception as e:
+                    self.logger.warning(
+                        f"Exception type: {type(e).__name__} mro: {[c.__name__ for c in type(e).__mro__]} "
+                        f"cause: {type(getattr(e, '__cause__', None)).__name__}"
+                    )
                     if _is_json_decode_error(e):
                         raise
                     last_error = e
