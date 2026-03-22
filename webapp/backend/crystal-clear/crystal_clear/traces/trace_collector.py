@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -27,6 +28,8 @@ class RateLimitRetryMiddleware(Web3Middleware):
                     response: RPCResponse = make_request(method, params)
                     return response  # success or non-429 error
                 except Exception as e:
+                    if isinstance(e, json.JSONDecodeError):
+                        raise
                     last_error = e
                     self.logger.warning(
                         f"Request failed attempt {attempt + 1}: {e}. Retrying in {2**attempt} seconds..."
