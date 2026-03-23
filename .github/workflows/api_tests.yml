@@ -4,21 +4,10 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "webapp/backend/src/api/**"
-      - "webapp/backend/tests/**"
-      - "webapp/backend/pyproject.toml"
-      - "webapp/backend/poetry.lock"
-      - ".github/workflows/api_tests.yml"
+
   pull_request:
     branches:
       - main
-    paths:
-      - "webapp/backend/src/api/**"
-      - "webapp/backend/tests/**"
-      - "webapp/backend/pyproject.toml"
-      - "webapp/backend/poetry.lock"
-      - ".github/workflows/api_tests.yml"
 
 concurrency:
   group: api-tests-${{ github.ref }}
@@ -36,37 +25,37 @@ jobs:
         python-version: ["3.12"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install Poetry
-      run: |
+      - name: Install Poetry
+        run: |
           python -m pip install poetry==2.0.1
 
-    - name: Configure Poetry to create venv in project
-      run: poetry config virtualenvs.in-project true
+      - name: Configure Poetry to create venv in project
+        run: poetry config virtualenvs.in-project true
 
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v3
-      with:
-        path: webapp/backend/.venv
-        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('webapp/backend/poetry.lock') }}
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: webapp/backend/.venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('webapp/backend/poetry.lock') }}
 
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --with dev
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --with dev
 
-    - name: Copy .env.example to .env
-      run: cp .env.example .env
+      - name: Copy .env.example to .env
+        run: cp .env.example .env
 
-    - name: Install test extras
-      run: poetry run pip install pytest-cov httpx
+      - name: Install test extras
+        run: poetry run pip install pytest-cov httpx
 
-    - name: Run tests with coverage gate
-      run: |
-        poetry run pytest -q tests --cov=src/api --cov-report=term-missing --cov-fail-under=90
+      - name: Run tests with coverage gate
+        run: |
+          poetry run pytest -q tests --cov=src/api --cov-report=term-missing --cov-fail-under=90
