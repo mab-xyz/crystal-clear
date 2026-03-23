@@ -16,7 +16,7 @@ jobs:
 
       - name: Create or update PR to production
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           # Check if a PR from main to production already exists
           existing=$(gh pr list --base production --head main --json number --jq '.[0].number')
