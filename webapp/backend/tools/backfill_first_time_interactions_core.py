@@ -721,8 +721,8 @@ def _build_processing_order(
     i = 0
     j = 0
     fast_step = max(1, int(fast_per_cycle))
-    hot_step = max(1, int(hot_per_cycle))
-    while i < len(fast_rows) or j < len(hot_rows):
+    hot_step = max(0, int(hot_per_cycle))
+    while i < len(fast_rows) or (hot_step > 0 and j < len(hot_rows)):
         for _ in range(fast_step):
             if i >= len(fast_rows):
                 break
@@ -734,7 +734,8 @@ def _build_processing_order(
             ordered.append(hot_rows[j])
             j += 1
         if i >= len(fast_rows) and j < len(hot_rows):
-            ordered.extend(hot_rows[j:])
+            if hot_step > 0:
+                ordered.extend(hot_rows[j:])
             break
         if j >= len(hot_rows) and i < len(fast_rows):
             ordered.extend(fast_rows[i:])

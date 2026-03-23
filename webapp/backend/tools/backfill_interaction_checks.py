@@ -7,6 +7,19 @@ from typing import Callable, Optional  # noqa: F401
 from hexbytes import HexBytes
 from web3 import Web3
 
+try:
+    from requests.exceptions import ChunkedEncodingError as _ChunkedEncodingError
+except ImportError:
+    _ChunkedEncodingError = None
+
+
+def _is_bisectable_error(e: BaseException) -> bool:
+    if isinstance(e, json.JSONDecodeError):
+        return True
+    if _ChunkedEncodingError is not None and isinstance(e, _ChunkedEncodingError):
+        return True
+    return False
+
 
 ALLOWED_TRACE_TYPES = {"call", "delegatecall", "staticcall", "callcode"}
 MAX_TRACE_PAGES_PER_CALL = 2_000
@@ -92,9 +105,9 @@ def _try_trace_filter(
     """Returns (traces, error_type). error_type: None | 'decode' | 'other'"""
     try:
         return _trace_filter(w3, params, mode_name), None
-    except json.JSONDecodeError:
-        return None, "decode"
-    except Exception:
+    except Exception as e:
+        if _is_bisectable_error(e):
+            return None, "decode"
         return None, "other"
 
 
@@ -196,7 +209,7 @@ def _bisect_direct_range(
     use_intersection: list[bool],
 ) -> tuple[set[str], list[tuple[int, int]]]:
     """
-    Scan [scan_start, scan_end] with bisect on JSONDecodeError.
+    Scan [scan_start, scan_end], skipping entire range on any error.
     Returns (tx_hashes, skipped_ranges).
     """
     tx_hashes, error_type = _scan_direct_range(
@@ -216,43 +229,11 @@ def _bisect_direct_range(
     if error_type is None:
         return tx_hashes, []
 
-    if error_type == "other" or scan_start == scan_end:
-        print(
-            f"[bisect] skipping range={scan_start}-{scan_end} "
-            f"from={from_address} to={to_address} error={error_type}"
-        )
-        return set(), [(scan_start, scan_end)]
-
-    # decode error on a multi-block range — bisect
-    mid = (scan_start + scan_end) // 2
-    left_hashes, left_skipped = _bisect_direct_range(
-        w3,
-        from_checksum,
-        to_checksum,
-        from_address,
-        to_address,
-        scan_start,
-        mid,
-        page_size,
-        root_only=root_only,
-        mode_name=mode_name,
-        use_intersection=use_intersection,
+    print(
+        f"[skip] range={scan_start}-{scan_end} "
+        f"from={from_address} to={to_address} error={error_type}"
     )
-    right_hashes, right_skipped = _bisect_direct_range(
-        w3,
-        from_checksum,
-        to_checksum,
-        from_address,
-        to_address,
-        mid + 1,
-        scan_end,
-        page_size,
-        root_only=root_only,
-        mode_name=mode_name,
-        use_intersection=use_intersection,
-    )
-
-    return left_hashes | right_hashes, left_skipped + right_skipped
+    return set(), [(scan_start, scan_end)]
 
 
 def _count_direct_interactions(
@@ -414,7 +395,7 @@ def _bisect_transitive_range(
     page_size: int,
 ) -> tuple[list[str], list[tuple[int, int]]]:
     """
-    Collect tx_hashes for transitive scan with bisect on JSONDecodeError.
+    Collect tx_hashes for transitive scan, skipping entire range on any error.
     Returns (tx_hashes, skipped_ranges).
     """
     tx_hashes, error_type = _scan_transitive_range(
@@ -424,29 +405,11 @@ def _bisect_transitive_range(
     if error_type is None:
         return tx_hashes, []
 
-    if error_type == "other" or scan_start == scan_end:
-        print(
-            f"[bisect] skipping transitive range={scan_start}-{scan_end} "
-            f"from={from_address} error={error_type}"
-        )
-        return [], [(scan_start, scan_end)]
-
-    mid = (scan_start + scan_end) // 2
-    left_hashes, left_skipped = _bisect_transitive_range(
-        w3, from_checksum, from_address, scan_start, mid, page_size
+    print(
+        f"[skip] transitive range={scan_start}-{scan_end} "
+        f"from={from_address} error={error_type}"
     )
-    right_hashes, right_skipped = _bisect_transitive_range(
-        w3, from_checksum, from_address, mid + 1, scan_end, page_size
-    )
-
-    seen: set[str] = set()
-    merged: list[str] = []
-    for tx_hash in left_hashes + right_hashes:
-        if tx_hash not in seen:
-            seen.add(tx_hash)
-            merged.append(tx_hash)
-
-    return merged, left_skipped + right_skipped
+    return [], [(scan_start, scan_end)]
 
 
 def _count_transitive_interactions(
