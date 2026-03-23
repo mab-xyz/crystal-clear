@@ -1,7 +1,8 @@
 import pytest
 
-from api.core.exceptions import InputValidationError, InternalServerError
-from api.services.analysis_service import (
+from src.api.core.exceptions import InputValidationError, InternalServerError
+from src.api.models.label import LabelCreate
+from src.api.services.analysis_service import (
     _process_node_labels,
     _validate_block_range,
     analyze_contract_dependencies,
@@ -9,13 +10,26 @@ from api.services.analysis_service import (
 )
 
 
-class DummyCallGraph:
-    def __init__(self, nodes):
-        self.nodes = {addr: {} for addr in nodes}
+class _FakeClient:
+    def __init__(self, labels=None, network_latest=None, network_range=None):
+        self._labels = labels or {}
+        self._network_latest = network_latest
+        self._network_range = network_range
+
+    def get_labels(self, _addresses):
+        return self._labels
+
+    def get_contract_dependencies_latest(self, address, block_range):
+        _ = (address, block_range)
+        return self._network_latest
+
+    def get_contract_dependencies(self, address, from_block, to_block):
+        _ = (address, from_block, to_block)
+        return self._network_range
 
 
 def test_validate_block_range_valid():
-    _validate_block_range("10", "20")  # should not raise
+    _validate_block_range("10", "20")
 
 
 def test_validate_block_range_invalid_range():
@@ -27,89 +41,87 @@ def test_validate_block_range_invalid_range():
 def test_validate_block_range_non_integer():
     with pytest.raises(ValueError) as exc:
         _validate_block_range("foo", "bar")
-    assert "invalid literal for int()" in str(exc.value)
+    assert "Invalid block number" in str(exc.value)
 
 
 def test_process_node_labels_with_existing_labels(session):
-    # Insert label into DB
     label_crud.create_label(
-        session, label_crud.LabelCreate(address="0xAAA", label="KnownLabel")
+        session, LabelCreate(address="0xAAA", label="KnownLabel")
     )
+    network = {"nodes": ["0xAAA"]}
 
-    cg = DummyCallGraph(["0xAAA"])
-    result = _process_node_labels(session, cg)
+    result = _process_node_labels(
+        session=session,
+        client=_FakeClient(labels={}),
+        network=network,
+    )
 
     assert result == {"0xAAA": "KnownLabel"}
 
 
-def test_process_node_labels_with_missing_labels(session, monkeypatch):
-    # No label in DB for 0xBBB
-    monkeypatch.setattr(
-        "api.services.analysis_service.cc.allium_client.get_labels",
-        lambda addrs: {"0xbbb": "NewLabel"},
+def test_process_node_labels_with_missing_labels(session):
+    network = {"nodes": ["0xBBB"]}
+    result = _process_node_labels(
+        session=session,
+        client=_FakeClient(labels={"0xbbb": "NewLabel"}),
+        network=network,
     )
 
-    cg = DummyCallGraph(["0xBBB"])
-    result = _process_node_labels(session, cg)
-
-    # Label should now be stored in DB
+    assert result == {"0xBBB": "NewLabel"}
     stored = label_crud.get_label(session, "0xBBB")
     assert stored is not None
     assert stored.label == "NewLabel"
 
-    assert result == {"0xBBB": "NewLabel"}
 
-
-def test_process_node_labels_missing_labels_not_found(session, monkeypatch):
-    monkeypatch.setattr(
-        "api.services.analysis_service.cc.allium_client.get_labels",
-        lambda addrs: {},
+def test_process_node_labels_missing_labels_not_found(session):
+    network = {"nodes": ["0xCCC"]}
+    result = _process_node_labels(
+        session=session,
+        client=_FakeClient(labels={}),
+        network=network,
     )
 
-    cg = DummyCallGraph(["0xCCC"])
-    result = _process_node_labels(session, cg)
-
-    # Fallback: address used as label
-    stored = label_crud.get_label(session, "0xCCC")
-    assert stored is None  # nothing stored
     assert result == {"0xCCC": "0xCCC"}
+    assert label_crud.get_label(session, "0xCCC") is None
 
 
-def test_analyze_contract_dependencies_success(session, monkeypatch):
-    dummy_cg = DummyCallGraph(["0xAAA"])
-    monkeypatch.setattr(
-        "api.services.analysis_service.cc.get_dependencies_full",
-        lambda **kw: dummy_cg,
-    )
-    monkeypatch.setattr(
-        "api.services.analysis_service.cc.allium_client.get_labels",
-        lambda addrs: {"0xaaa": "Labelled"},
-    )
-
-    result = analyze_contract_dependencies(session, "0xAAA")
-    assert isinstance(result, DummyCallGraph)
-    assert result.nodes == {"0xAAA": "Labelled"}
-
-
-def test_analyze_contract_dependencies_value_error(session, monkeypatch):
-    def bad_call(**kw):
-        raise ValueError("bad range")
+def test_analyze_contract_dependencies_success_with_range(session, monkeypatch):
+    fake_network = {
+        "nodes": ["0xAAA", "0xBBB"],
+        "edges": [{"source": "0xAAA", "target": "0xBBB", "types": {"CALL": 1}}],
+    }
 
     monkeypatch.setattr(
-        "api.services.analysis_service.cc.get_dependencies_full", bad_call
+        "src.api.services.analysis_service.AlliumClient",
+        lambda _api_key: _FakeClient(network_range=fake_network),
     )
 
+    result = analyze_contract_dependencies(
+        session,
+        "0xAAA",
+        from_block="1",
+        to_block="10",
+    )
+
+    assert result["nodes"]["0xAAA"] == "0xAAA"
+    assert result["edges"][0]["risk"] == "Low"
+
+
+def test_analyze_contract_dependencies_value_error(session):
     with pytest.raises(InputValidationError):
-        analyze_contract_dependencies(session, "0xAAA")
+        analyze_contract_dependencies(session, "0xAAA", from_block="0", to_block="1000")
 
 
-def test_analyze_contract_dependencies_internal_error(session, monkeypatch):
-    def bad_call(**kw):
-        raise RuntimeError("boom")
-
+def test_analyze_contract_dependencies_internal_error_on_empty_network(session, monkeypatch):
     monkeypatch.setattr(
-        "api.services.analysis_service.cc.get_dependencies_full", bad_call
+        "src.api.services.analysis_service.AlliumClient",
+        lambda _api_key: _FakeClient(network_range=None),
     )
 
     with pytest.raises(InternalServerError):
-        analyze_contract_dependencies(session, "0xAAA")
+        analyze_contract_dependencies(
+            session,
+            "0xAAA",
+            from_block="1",
+            to_block="10",
+        )

@@ -3,12 +3,12 @@ name: Crystal Clear Tests
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'webapp/backend/crystal-clear/**'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'webapp/backend/crystal-clear/**'
+
+concurrency:
+  group: crystal-clear-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -39,16 +39,12 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v3
         with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          path: webapp/backend/crystal-clear/.venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('webapp/backend/crystal-clear/poetry.lock') }}
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        # if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --with dev
 
       - name: Run tests
         run: poetry run pytest
-
-      - name: Check if tests passed
-        if: failure()
-        run: exit 1

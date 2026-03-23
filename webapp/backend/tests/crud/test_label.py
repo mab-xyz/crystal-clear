@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from api.crud.label import (
+from src.api.crud.label import (
     create_label,
     get_all_labels,
     get_label,
     get_labels,
     update_label,
 )
-from api.models.label import AddressList, LabelCreate, LabelUpdate
+from src.api.models.label import AddressList, LabelCreate, LabelUpdate
 
 
 def test_create_and_get_label(session):

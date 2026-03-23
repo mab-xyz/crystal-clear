@@ -24,7 +24,7 @@ class RiskEngine(Protocol):
         to_block: str | int | None = None,
         latest_offset: int | None = None,
     ) -> dict[str, Any]:
-        """Simulate arbitrary calldata and return per-contract risk flags."""
+        """Simulate calldata and return touched-contract results."""
 
     def simulate_from_tx(
         self,

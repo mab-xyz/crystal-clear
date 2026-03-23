@@ -10,6 +10,10 @@ on:
       - production
   workflow_dispatch:
 
+concurrency:
+  group: production-cc-api-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,7 +38,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-        
+
+      - name: Run backend tests before deploy
+        run: |
+          python -m pytest -q tests
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4

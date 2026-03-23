@@ -514,13 +514,17 @@ def simulate_call(
             etherscan_api_key=etherscan_api_key,
             log_level=log_level,
         )
-        results = cc.simulate_and_check(
+        sim_results = cc.simulate_and_check(
             call_object,
             block_tag=block_tag,
             from_block=from_block,
             to_block=to_block,
             latest_offset=latest_offset,
         )
+        if isinstance(sim_results, tuple):
+            results, _metrics = sim_results
+        else:
+            results = sim_results
 
         # Render results
         table = Table(

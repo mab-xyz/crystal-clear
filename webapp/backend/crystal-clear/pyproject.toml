@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mab-crystal-clear"
-version = "1.0.10"
+version = "1.0.13"
 description = "Crystal-Clear CLI: Smart Contract Supply Chain Tool"
 authors = [
     "Monica Jin <monicachenjin@gmail.com>",
@@ -24,7 +24,7 @@ pytest = ">=8.4.2,<9.0.0"
 uschunter = "0.0.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
+black = ">=25.1,<27.0"
 isort = "^6.0.0"
 ruff = "^0.9.4"
 pre-commit = "^4.1.0"
@@ -46,5 +46,7 @@ line_length = 79
 
 [tool.ruff]
 line-length = 79
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "B"]
 ignore = ["E203", "E266", "E501"]
