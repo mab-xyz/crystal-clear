@@ -14,8 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  api-test:
     runs-on: ubuntu-latest
+    name: API-Tests
     defaults:
       run:
         working-directory: webapp/backend
