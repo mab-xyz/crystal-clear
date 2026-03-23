@@ -159,7 +159,10 @@ def _iter_scan_rows(
         stmt = stmt.where(InteractionScanState.from_address == from_filter)
     if to_filter:
         stmt = stmt.where(InteractionScanState.to_address == to_filter)
-    stmt = stmt.order_by(InteractionScanState.id)
+    stmt = stmt.order_by(
+        InteractionScanState.last_requested_at.desc().nulls_last(),
+        InteractionScanState.id,
+    )
     for row in session.exec(stmt):
         yield row
 
@@ -1256,7 +1259,7 @@ def main() -> None:
                                     interaction_type=normalized_type,
                                     range_start=range_start,
                                     range_end=range_end,
-                                    reason="bisect_exhausted",
+                                    reason="scan_error",
                                 )
                             )
                         print(
