@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Optional
 
 from sqlmodel import Session, select
@@ -67,6 +68,7 @@ def seed_interaction_scan_state_from_tx(
     if not candidates:
         return 0
 
+    now = datetime.utcnow()
     inserted = 0
     for from_address, to_address, interaction_type in candidates:
         existing = session.exec(
@@ -77,6 +79,8 @@ def seed_interaction_scan_state_from_tx(
             )
         ).first()
         if existing:
+            existing.last_requested_at = now
+            session.add(existing)
             continue
 
         session.add(
@@ -89,11 +93,11 @@ def seed_interaction_scan_state_from_tx(
                 how_many_times=0,
                 first_time_interact=True,
                 needs_creation_retry=False,
+                last_requested_at=now,
             )
         )
         inserted += 1
 
-    if inserted:
-        session.commit()
+    session.commit()
     return inserted
 

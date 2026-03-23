@@ -40,6 +40,10 @@ class InteractionScanState(SQLModel, table=True):
         description="True when creation block fallback failed",
     )
     checked_at: datetime = Field(default_factory=datetime.utcnow)
+    last_requested_at: Optional[datetime] = Field(
+        default=None,
+        description="Last time this pair was seen in a tx-risk endpoint request",
+    )
 
 
 __all__ = ["InteractionScanState"]
