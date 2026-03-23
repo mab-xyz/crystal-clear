@@ -18,6 +18,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    name: Export-OpenAPI
     permissions:
       contents: write
     defaults:
@@ -29,54 +30,54 @@ jobs:
         python-version: ["3.12"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install Poetry
-      run: |
+      - name: Install Poetry
+        run: |
           python -m pip install poetry==2.0.1
 
-    - name: Configure Poetry to create venv in project
-      run: poetry config virtualenvs.in-project true
+      - name: Configure Poetry to create venv in project
+        run: poetry config virtualenvs.in-project true
 
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v3
-      with:
-        path: webapp/backend/.venv
-        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('webapp/backend/poetry.lock') }}
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: webapp/backend/.venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('webapp/backend/poetry.lock') }}
 
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
 
-    - name: Copy .env.example to .env
-      run: cp .env.example .env
-    
-    - name: Generate OpenAPI spec
-      run: |
-        poetry run python export_openapi.py
+      - name: Copy .env.example to .env
+        run: cp .env.example .env
 
-    - name: Detect OpenAPI changes
-      id: openapi_changes
-      run: |
-        if git diff --quiet -- openapi.yaml; then
-          echo "changed=false" >> "$GITHUB_OUTPUT"
-        else
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-        fi
+      - name: Generate OpenAPI spec
+        run: |
+          poetry run python export_openapi.py
 
-    - name: Commit and push OpenAPI spec
-      if: steps.openapi_changes.outputs.changed == 'true'
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add openapi.yaml
-        git commit -m "chore: update openapi.yaml [skip ci]"
-        git push origin main
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Detect OpenAPI changes
+        id: openapi_changes
+        run: |
+          if git diff --quiet -- openapi.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push OpenAPI spec
+        if: steps.openapi_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add openapi.yaml
+          git commit -m "chore: update openapi.yaml [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

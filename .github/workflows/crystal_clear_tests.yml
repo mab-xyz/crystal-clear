@@ -2,17 +2,18 @@ name: Crystal Clear Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: crystal-clear-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  cc-test:
     runs-on: ubuntu-latest
+    name: Crystal-Clear-Tests
     defaults:
       run:
         working-directory: webapp/backend/crystal-clear
