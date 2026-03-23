@@ -1,0 +1,37 @@
+name: Promote main to production
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+jobs:
+  open-production-pr:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create or update PR to production
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if a PR from main to production already exists
+          existing=$(gh pr list --base production --head main --json number --jq '.[0].number')
+
+          if [ -n "$existing" ]; then
+            echo "PR #$existing already exists, auto-merge already enabled"
+          else
+            pr_url=$(gh pr create \
+              --base production \
+              --head main \
+              --title "chore: promote main to production" \
+              --body "Automatically created after PR #${{ github.event.pull_request.number }} was merged into main.")
+            echo "Created PR: $pr_url"
+
+            pr_number=$(echo "$pr_url" | grep -o '[0-9]*$')
+            gh pr merge "$pr_number" --auto --merge
+            echo "Auto-merge enabled on PR #$pr_number"
+          fi
