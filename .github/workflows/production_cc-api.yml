@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    name: build-backend
     permissions:
       contents: read #This is required for actions/checkout
     defaults:
@@ -28,13 +29,13 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
-      
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
@@ -54,19 +55,18 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: python-app
-      
-      - name: 'Deploy to Azure Web App'
+
+      - name: "Deploy to Azure Web App"
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'cc-api'
-          slot-name: 'Production'
+          app-name: "cc-api"
+          slot-name: "Production"
           package: webapp/backend
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E2EE509066C443CA93AC9F77931EF3F7 }}
-

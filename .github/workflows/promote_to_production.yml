@@ -27,7 +27,7 @@ jobs:
             pr_url=$(gh pr create \
               --base production \
               --head main \
-              --title "chore: promote main to production" \
+              --title "chore: promote to production (via PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }})" \
               --body "Automatically created after PR #${{ github.event.pull_request.number }} was merged into main.")
             echo "Created PR: $pr_url"
 
