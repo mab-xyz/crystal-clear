@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import backfill_first_time_interactions_core as _core
+
 
 TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-import backfill_first_time_interactions_core as _core
 
 # Keep monkeypatch compatibility for tests that mutate this module constant.
 MAX_TRACE_PAGES_PER_CALL = _core.MAX_TRACE_PAGES_PER_CALL

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -11,6 +12,23 @@ from web3.middleware import Web3Middleware
 from web3.types import CallTrace, RPCResponse
 
 from .models import CallEdge, CallGraph
+
+try:
+    from requests.exceptions import ChunkedEncodingError as _ChunkedEncodingError
+except ImportError:
+    _ChunkedEncodingError = None
+
+
+def _is_oversized_response_error(e: BaseException) -> bool:
+    """Return True if e indicates an oversized RPC response that won't be fixed by retrying."""
+    if isinstance(e, json.JSONDecodeError):
+        return True
+    if _ChunkedEncodingError is not None and isinstance(e, _ChunkedEncodingError):
+        return True
+    cause = getattr(e, "__cause__", None) or getattr(e, "__context__", None)
+    if cause is not None and cause is not e:
+        return _is_oversized_response_error(cause)
+    return False
 
 
 class RateLimitRetryMiddleware(Web3Middleware):
@@ -27,6 +45,12 @@ class RateLimitRetryMiddleware(Web3Middleware):
                     response: RPCResponse = make_request(method, params)
                     return response  # success or non-429 error
                 except Exception as e:
+                    self.logger.warning(
+                        f"Exception type: {type(e).__name__} mro: {[c.__name__ for c in type(e).__mro__]} "
+                        f"cause: {type(getattr(e, '__cause__', None)).__name__}"
+                    )
+                    if _is_oversized_response_error(e):
+                        raise
                     last_error = e
                     self.logger.warning(
                         f"Request failed attempt {attempt + 1}: {e}. Retrying in {2**attempt} seconds..."
@@ -117,7 +141,9 @@ class TraceCollector:
             )
         )
         if not w3.is_connected():
-            raise ConnectionError(f"Failed to connect to RPC endpoint: {rpc_url}")
+            raise ConnectionError(
+                f"Failed to connect to RPC endpoint: {rpc_url}"
+            )
         w3.middleware_onion.add(RateLimitRetryMiddleware)
         setattr(w3, "_cc_rpc_url", rpc_url)
         return w3
@@ -152,7 +178,9 @@ class TraceCollector:
             try:
                 self.w3 = self._create_w3(rpc_url)
                 self._rpc_index = idx
-                setattr(self.w3, "_cc_switch_rpc", self.switch_to_next_rpc_endpoint)
+                setattr(
+                    self.w3, "_cc_switch_rpc", self.switch_to_next_rpc_endpoint
+                )
                 self._validation_cache.clear()
                 self.logger.warning("Switched RPC endpoint to %s", rpc_url)
                 return True

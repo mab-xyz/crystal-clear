@@ -1,9 +1,24 @@
 from __future__ import annotations
 
-from typing import Callable, Optional
+import json
+from collections.abc import Mapping
+from typing import Callable, Optional  # noqa: F401
 
 from hexbytes import HexBytes
 from web3 import Web3
+
+try:
+    from requests.exceptions import ChunkedEncodingError as _ChunkedEncodingError
+except ImportError:
+    _ChunkedEncodingError = None
+
+
+def _is_bisectable_error(e: BaseException) -> bool:
+    if isinstance(e, json.JSONDecodeError):
+        return True
+    if _ChunkedEncodingError is not None and isinstance(e, _ChunkedEncodingError):
+        return True
+    return False
 
 
 ALLOWED_TRACE_TYPES = {"call", "delegatecall", "staticcall", "callcode"}
@@ -66,7 +81,7 @@ def _trace_from_to(trace: dict) -> tuple[Optional[str], Optional[str]]:
         return from_addr, to_addr
 
     action = trace.get("action")
-    if isinstance(action, dict):
+    if isinstance(action, Mapping):
         return _normalize_address(action.get("from")), _normalize_address(
             action.get("to")
         )
@@ -84,8 +99,22 @@ def _is_exact_from_to_trace(
     )
 
 
-def _count_direct_interactions(
+def _try_trace_filter(
+    w3: Web3, params: dict, mode_name: str
+) -> tuple[list | None, str | None]:
+    """Returns (traces, error_type). error_type: None | 'decode' | 'other'"""
+    try:
+        return _trace_filter(w3, params, mode_name), None
+    except Exception as e:
+        if _is_bisectable_error(e):
+            return None, "decode"
+        return None, "other"
+
+
+def _scan_direct_range(
     w3: Web3,
+    from_checksum: str,
+    to_checksum: str,
     from_address: str,
     to_address: str,
     scan_start: int,
@@ -94,26 +123,25 @@ def _count_direct_interactions(
     *,
     root_only: bool,
     mode_name: str,
-) -> tuple[int, bool]:
-    try:
-        from_checksum = Web3.to_checksum_address(from_address)
-        Web3.to_checksum_address(to_address)
-    except Exception:
-        return 0, False
-
+    use_intersection: list[bool],
+) -> tuple[set[str], str | None]:
+    """
+    Scan [scan_start, scan_end] with pagination (no bisect).
+    Returns (tx_hashes, error_type): error_type is None on success, 'decode' or 'other' on failure.
+    use_intersection is a one-element list so the fallback state is shared across bisect calls.
+    """
     tx_hashes: set[str] = set()
     after = 0
     pages = 0
     seen_pages: set[tuple] = set()
-    complete = True
+
     while True:
         if pages >= MAX_TRACE_PAGES_PER_CALL:
             print(
                 f"[warn] reached max pages in {mode_name} scan; stopping early "
                 f"from={from_address} to={to_address} after={after}"
             )
-            complete = False
-            break
+            return tx_hashes, "other"
         pages += 1
         params = {
             "fromBlock": _to_hex_block(scan_start),
@@ -122,22 +150,30 @@ def _count_direct_interactions(
             "count": max(1, int(page_size)),
             "after": after,
         }
-        try:
-            traces = _trace_filter(w3, params, mode_name)
-        except Exception:
-            complete = False
-            break
+        if use_intersection[0]:
+            params["toAddress"] = [to_checksum]
+            params["mode"] = "intersection"
+
+        traces, error_type = _try_trace_filter(w3, params, mode_name)
+
+        if error_type is not None:
+            if error_type == "other" and use_intersection[0]:
+                # Provider does not support intersection — fall back for all future calls.
+                use_intersection[0] = False
+                continue
+            # On decode error discard partial results so bisect can retry sub-ranges cleanly.
+            return set(), error_type
 
         if not isinstance(traces, list) or not traces:
             break
+
         fp = _page_fingerprint(traces)
         if fp in seen_pages:
             print(
                 f"[warn] repeated trace_filter page detected in {mode_name}; "
                 "stopping early"
             )
-            complete = False
-            break
+            return tx_hashes, "other"
         seen_pages.add(fp)
 
         for trace in traces:
@@ -155,7 +191,82 @@ def _count_direct_interactions(
             break
         after += len(traces)
 
-    return len(tx_hashes), complete
+    return tx_hashes, None
+
+
+def _bisect_direct_range(
+    w3: Web3,
+    from_checksum: str,
+    to_checksum: str,
+    from_address: str,
+    to_address: str,
+    scan_start: int,
+    scan_end: int,
+    page_size: int,
+    *,
+    root_only: bool,
+    mode_name: str,
+    use_intersection: list[bool],
+) -> tuple[set[str], list[tuple[int, int]]]:
+    """
+    Scan [scan_start, scan_end], skipping entire range on any error.
+    Returns (tx_hashes, skipped_ranges).
+    """
+    tx_hashes, error_type = _scan_direct_range(
+        w3,
+        from_checksum,
+        to_checksum,
+        from_address,
+        to_address,
+        scan_start,
+        scan_end,
+        page_size,
+        root_only=root_only,
+        mode_name=mode_name,
+        use_intersection=use_intersection,
+    )
+
+    if error_type is None:
+        return tx_hashes, []
+
+    print(
+        f"[skip] range={scan_start}-{scan_end} "
+        f"from={from_address} to={to_address} error={error_type}"
+    )
+    return set(), [(scan_start, scan_end)]
+
+
+def _count_direct_interactions(
+    w3: Web3,
+    from_address: str,
+    to_address: str,
+    scan_start: int,
+    scan_end: int,
+    page_size: int,
+    *,
+    root_only: bool,
+    mode_name: str,
+) -> tuple[int, list[tuple[int, int]]]:
+    try:
+        from_checksum = Web3.to_checksum_address(from_address)
+        to_checksum = Web3.to_checksum_address(to_address)
+    except Exception:
+        return 0, [(scan_start, scan_end)]
+
+    tx_hashes, skipped = _bisect_direct_range(
+        w3,
+        from_checksum,
+        to_checksum,
+        from_address,
+        to_address,
+        scan_start,
+        scan_end,
+        page_size,
+        root_only=root_only,
+        mode_name=mode_name,
+        use_intersection=[True],
+    )
+    return len(tx_hashes), skipped
 
 
 def _count_contract_direct_interactions(
@@ -165,7 +276,7 @@ def _count_contract_direct_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     return _count_direct_interactions(
         w3,
         from_address,
@@ -185,7 +296,7 @@ def _count_sender_direct_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     return _count_direct_interactions(
         w3,
         sender_address,
@@ -207,39 +318,35 @@ def _trace_touches_target(call_node: dict, target_norm: str) -> bool:
     if not isinstance(calls, list):
         return False
     for child in calls:
-        if isinstance(child, dict) and _trace_touches_target(child, target_norm):
+        if isinstance(child, Mapping) and _trace_touches_target(child, target_norm):
             return True
     return False
 
 
-def _count_transitive_interactions(
+def _scan_transitive_range(
     w3: Web3,
-    from_address: str,
-    to_address: str,
+    from_checksum: str,
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> int:
-    try:
-        from_checksum = Web3.to_checksum_address(from_address)
-    except Exception:
-        return 0
-    target_norm = _normalize_address(to_address)
-    if not target_norm:
-        return 0
-
+) -> tuple[list[str], str | None]:
+    """
+    Collect tx_hashes via trace_filter for transitive scan.
+    Returns (tx_hashes, error_type).
+    """
     tx_hashes: list[str] = []
     seen: set[str] = set()
     after = 0
     pages = 0
     seen_pages: set[tuple] = set()
+
     while True:
         if pages >= MAX_TRACE_PAGES_PER_CALL:
             print(
                 "[warn] reached max pages in transitive scan; stopping early "
-                f"from={from_address} to={to_address} after={after}"
+                f"after={after}"
             )
-            break
+            return tx_hashes, "other"
         pages += 1
         params = {
             "fromBlock": _to_hex_block(scan_start),
@@ -248,20 +355,19 @@ def _count_transitive_interactions(
             "count": max(1, int(page_size)),
             "after": after,
         }
-        try:
-            traces = _trace_filter(w3, params, "transitive")
-        except Exception:
-            break
+
+        traces, error_type = _try_trace_filter(w3, params, "transitive")
+
+        if error_type is not None:
+            return [], error_type
 
         if not isinstance(traces, list) or not traces:
             break
+
         fp = _page_fingerprint(traces)
         if fp in seen_pages:
-            print(
-                "[warn] repeated trace_filter page detected in transitive; "
-                "stopping early"
-            )
-            break
+            print("[warn] repeated trace_filter page detected in transitive; stopping early")
+            return tx_hashes, "other"
         seen_pages.add(fp)
 
         for trace in traces:
@@ -277,6 +383,55 @@ def _count_transitive_interactions(
             break
         after += len(traces)
 
+    return tx_hashes, None
+
+
+def _bisect_transitive_range(
+    w3: Web3,
+    from_checksum: str,
+    from_address: str,
+    scan_start: int,
+    scan_end: int,
+    page_size: int,
+) -> tuple[list[str], list[tuple[int, int]]]:
+    """
+    Collect tx_hashes for transitive scan, skipping entire range on any error.
+    Returns (tx_hashes, skipped_ranges).
+    """
+    tx_hashes, error_type = _scan_transitive_range(
+        w3, from_checksum, scan_start, scan_end, page_size
+    )
+
+    if error_type is None:
+        return tx_hashes, []
+
+    print(
+        f"[skip] transitive range={scan_start}-{scan_end} "
+        f"from={from_address} error={error_type}"
+    )
+    return [], [(scan_start, scan_end)]
+
+
+def _count_transitive_interactions(
+    w3: Web3,
+    from_address: str,
+    to_address: str,
+    scan_start: int,
+    scan_end: int,
+    page_size: int,
+) -> tuple[int, list[tuple[int, int]]]:
+    try:
+        from_checksum = Web3.to_checksum_address(from_address)
+    except Exception:
+        return 0, [(scan_start, scan_end)]
+    target_norm = _normalize_address(to_address)
+    if not target_norm:
+        return 0, [(scan_start, scan_end)]
+
+    tx_hashes, skipped = _bisect_transitive_range(
+        w3, from_checksum, from_address, scan_start, scan_end, page_size
+    )
+
     total = 0
     for tx_hash in tx_hashes:
         try:
@@ -286,7 +441,6 @@ def _count_transitive_interactions(
             )
         except Exception:
             continue
-        if isinstance(tree, dict) and _trace_touches_target(tree, target_norm):
+        if isinstance(tree, Mapping) and _trace_touches_target(tree, target_norm):
             total += 1
-    return total
-
+    return total, skipped

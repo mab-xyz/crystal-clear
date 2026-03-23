@@ -57,6 +57,7 @@ from src.api.models.address_metadata import AddressMetadata
 from src.api.models.deployment import Deployment, DeploymentCreate
 from src.api.models.first_interaction import FirstInteraction
 from src.api.models.interaction_scan_hot import InteractionScanHot
+from src.api.models.interaction_scan_skipped_range import InteractionScanSkippedRange
 from src.api.models.interaction_scan_state import InteractionScanState
 import backfill_interaction_checks as interaction_checks
 
@@ -85,6 +86,7 @@ def _ensure_state_table() -> None:
             InteractionScanState.__table__,
             AddressMetadata.__table__,
             InteractionScanHot.__table__,
+            InteractionScanSkippedRange.__table__,
         ],
     )
 
@@ -148,7 +150,9 @@ def _iter_scan_rows(
 ):
     stmt = select(InteractionScanState)
     if interaction_types:
-        stmt = stmt.where(InteractionScanState.interaction_type.in_(interaction_types))
+        stmt = stmt.where(
+            InteractionScanState.interaction_type.in_(interaction_types)
+        )
     if only_retry:
         stmt = stmt.where(InteractionScanState.needs_creation_retry.is_(True))
     if from_filter:
@@ -160,7 +164,9 @@ def _iter_scan_rows(
         yield row
 
 
-def _has_code_at_block(w3: Web3, checksum_address: str, block_number: int) -> bool:
+def _has_code_at_block(
+    w3: Web3, checksum_address: str, block_number: int
+) -> bool:
     try:
         code = w3.eth.get_code(checksum_address, block_identifier=block_number)
     except Exception:
@@ -250,10 +256,18 @@ def _resolve_creation_block(
     ):
         block = int(metadata.creation_block)
         cache[normalized] = block
-        return block, bool(metadata.needs_retry), metadata.source or "address_metadata"
+        return (
+            block,
+            bool(metadata.needs_retry),
+            metadata.source or "address_metadata",
+        )
 
     record = session.get(Deployment, normalized)
-    if record and isinstance(record.block_number, int) and record.block_number >= 0:
+    if (
+        record
+        and isinstance(record.block_number, int)
+        and record.block_number >= 0
+    ):
         block = int(record.block_number)
         _upsert_address_metadata(
             session,
@@ -353,7 +367,9 @@ def _has_sender_activity_in_range(
     return False
 
 
-def _find_first_sender_tx_block(w3: Web3, sender_address: str) -> Optional[int]:
+def _find_first_sender_tx_block(
+    w3: Web3, sender_address: str
+) -> Optional[int]:
     try:
         latest = int(w3.eth.block_number)
     except Exception:
@@ -400,7 +416,9 @@ def _find_first_sender_tx_block_etherscan(
         "apikey": etherscan_api_key,
     }
     if DEBUG_LOG_ENABLED:
-        print(f"[etherscan] query first-tx address={normalized} params={params}")
+        print(
+            f"[etherscan] query first-tx address={normalized} params={params}"
+        )
     try:
         response = requests.get(
             "https://api.etherscan.io/v2/api",
@@ -461,14 +479,28 @@ def _resolve_address_lower_bound(
 
     metadata = session.get(AddressMetadata, normalized)
     if metadata:
-        if metadata.address_type == "contract" and metadata.creation_block is not None:
+        if (
+            metadata.address_type == "contract"
+            and metadata.creation_block is not None
+        ):
             block = max(0, int(metadata.creation_block))
             cache[normalized] = block
-            return block, bool(metadata.needs_retry), metadata.source or "address_metadata"
-        if metadata.address_type == "eoa" and metadata.first_tx_block is not None:
+            return (
+                block,
+                bool(metadata.needs_retry),
+                metadata.source or "address_metadata",
+            )
+        if (
+            metadata.address_type == "eoa"
+            and metadata.first_tx_block is not None
+        ):
             block = max(0, int(metadata.first_tx_block))
             cache[normalized] = block
-            return block, bool(metadata.needs_retry), metadata.source or "address_metadata"
+            return (
+                block,
+                bool(metadata.needs_retry),
+                metadata.source or "address_metadata",
+            )
 
     try:
         checksum = Web3.to_checksum_address(normalized)
@@ -560,7 +592,7 @@ def _count_direct_interactions(
     *,
     root_only: bool,
     mode_name: str,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_direct_interactions(
         w3,
@@ -581,7 +613,7 @@ def _count_contract_direct_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_contract_direct_interactions(
         w3,
@@ -600,7 +632,7 @@ def _count_sender_direct_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> tuple[int, bool]:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_sender_direct_interactions(
         w3,
@@ -623,7 +655,7 @@ def _count_transitive_interactions(
     scan_start: int,
     scan_end: int,
     page_size: int,
-) -> int:
+) -> tuple[int, list[tuple[int, int]]]:
     _sync_interaction_check_settings()
     return interaction_checks._count_transitive_interactions(
         w3,
@@ -641,7 +673,9 @@ def _resolve_scan_start(
     last_analyzed_block: Optional[int],
     override_start: Optional[int],
 ) -> int:
-    last_plus_one = (last_analyzed_block + 1) if last_analyzed_block is not None else 0
+    last_plus_one = (
+        (last_analyzed_block + 1) if last_analyzed_block is not None else 0
+    )
     candidates = [
         max(0, int(from_block)),
         max(0, int(sender_lower_bound)),
@@ -671,7 +705,9 @@ def _get_hot_record(
     ).first()
 
 
-def _is_hot_active(record: Optional[InteractionScanHot], now: datetime) -> bool:
+def _is_hot_active(
+    record: Optional[InteractionScanHot], now: datetime
+) -> bool:
     return bool(record and record.hot_until and record.hot_until > now)
 
 
@@ -685,8 +721,8 @@ def _build_processing_order(
     i = 0
     j = 0
     fast_step = max(1, int(fast_per_cycle))
-    hot_step = max(1, int(hot_per_cycle))
-    while i < len(fast_rows) or j < len(hot_rows):
+    hot_step = max(0, int(hot_per_cycle))
+    while i < len(fast_rows) or (hot_step > 0 and j < len(hot_rows)):
         for _ in range(fast_step):
             if i >= len(fast_rows):
                 break
@@ -698,7 +734,8 @@ def _build_processing_order(
             ordered.append(hot_rows[j])
             j += 1
         if i >= len(fast_rows) and j < len(hot_rows):
-            ordered.extend(hot_rows[j:])
+            if hot_step > 0:
+                ordered.extend(hot_rows[j:])
             break
         if j >= len(hot_rows) and i < len(fast_rows):
             ordered.extend(fast_rows[i:])
@@ -771,7 +808,9 @@ def _mark_hot_pair(
 ) -> None:
     now = datetime.utcnow()
     hot_until = now + timedelta(seconds=max(1, int(cooldown_seconds)))
-    record = _get_hot_record(session, from_address, to_address, interaction_type)
+    record = _get_hot_record(
+        session, from_address, to_address, interaction_type
+    )
     if record is None:
         record = InteractionScanHot(
             from_address=from_address,
@@ -929,8 +968,13 @@ def _interaction_types_for_run(selected: Optional[str]) -> list[str]:
         if normalized == "transitive":
             return ["contract_transitive", "sender_transitive"]
         return [normalized]
-    # Default mode: only direct types
-    return ["contract_direct", "sender_direct"]
+    # Default mode: process all interaction types.
+    return [
+        "contract_direct",
+        "sender_direct",
+        "contract_transitive",
+        "sender_transitive",
+    ]
 
 
 def main() -> None:
@@ -938,16 +982,24 @@ def main() -> None:
     selected_types = _interaction_types_for_run(args.interaction_type)
 
     _ensure_state_table()
-    trace_collector = TraceCollector(settings.eth_node_url, log_level=settings.log_level)
+    trace_collector = TraceCollector(
+        settings.eth_node_url, log_level=settings.log_level
+    )
     allium_client = (
-        AlliumClient(settings.allium_api_key) if settings.allium_api_key else None
+        AlliumClient(settings.allium_api_key)
+        if settings.allium_api_key
+        else None
     )
 
-    from_filter = _normalize_address(args.from_address) if args.from_address else None
+    from_filter = (
+        _normalize_address(args.from_address) if args.from_address else None
+    )
     if args.from_address and not from_filter:
         raise SystemExit(f"Invalid --from-address value: {args.from_address}")
 
-    to_filter = _normalize_address(args.to_address) if args.to_address else None
+    to_filter = (
+        _normalize_address(args.to_address) if args.to_address else None
+    )
     if args.to_address and not to_filter:
         raise SystemExit(f"Invalid --to-address value: {args.to_address}")
 
@@ -992,32 +1044,35 @@ def main() -> None:
                 )
             print(f"seeded_scan_rows={seeded}")
 
-        address_bound_cache: dict[str, int] = {}
         while True:
             rounds += 1
+            # Rebuild lower-bound cache every round so transient lookup failures
+            # can recover without restarting the worker process.
+            address_bound_cache: dict[str, int] = {}
             round_advanced = 0
             round_remaining = 0
             round_skipped_done = 0
             round_skipped_retry = 0
-            processing_rows, fast_lane_rows, hot_lane_rows = _collect_processing_rows(
-                session,
-                interaction_types=selected_types,
-                only_retry=args.only_retry,
-                from_filter=from_filter,
-                to_filter=to_filter,
-                include_hot=args.include_hot,
-                fast_per_cycle=args.fast_per_cycle,
-                hot_per_cycle=args.hot_per_cycle,
-                limit=args.limit,
+            processing_rows, fast_lane_rows, hot_lane_rows = (
+                _collect_processing_rows(
+                    session,
+                    interaction_types=selected_types,
+                    only_retry=args.only_retry,
+                    from_filter=from_filter,
+                    to_filter=to_filter,
+                    include_hot=args.include_hot,
+                    fast_per_cycle=args.fast_per_cycle,
+                    hot_per_cycle=args.hot_per_cycle,
+                    limit=args.limit,
+                )
             )
             if not processing_rows:
                 break
 
             for row in processing_rows:
-                if (
-                    row.last_analyzed_block is not None
-                    and int(row.last_analyzed_block) >= int(target_block)
-                ):
+                if row.last_analyzed_block is not None and int(
+                    row.last_analyzed_block
+                ) >= int(target_block):
                     round_skipped_done += 1
                     continue
                 round_remaining += 1
@@ -1025,14 +1080,16 @@ def main() -> None:
 
                 before_last_analyzed = row.last_analyzed_block
 
-                to_lower_bound, to_needs_retry, to_source = _resolve_address_lower_bound(
-                    session,
-                    trace_collector.w3,
-                    row.to_address,
-                    address_bound_cache,
-                    allium_client=allium_client,
-                    etherscan_api_key=settings.etherscan_api_key,
-                    persist_deployment=not args.dry_run,
+                to_lower_bound, to_needs_retry, to_source = (
+                    _resolve_address_lower_bound(
+                        session,
+                        trace_collector.w3,
+                        row.to_address,
+                        address_bound_cache,
+                        allium_client=allium_client,
+                        etherscan_api_key=settings.etherscan_api_key,
+                        persist_deployment=not args.dry_run,
+                    )
                 )
                 if to_lower_bound > latest_block:
                     print(
@@ -1071,24 +1128,37 @@ def main() -> None:
                     row.last_analyzed_block = row.from_block - 1
 
                 chunks_done = 0
-                normalized_type = _normalize_interaction_type(row.interaction_type)
-
-                from_lower_bound, from_needs_retry, from_source = _resolve_address_lower_bound(
-                    session,
-                    trace_collector.w3,
-                    row.from_address,
-                    address_bound_cache,
-                    allium_client=allium_client,
-                    etherscan_api_key=settings.etherscan_api_key,
-                    persist_deployment=not args.dry_run,
+                normalized_type = _normalize_interaction_type(
+                    row.interaction_type
                 )
+
+                from_lower_bound, from_needs_retry, from_source = (
+                    _resolve_address_lower_bound(
+                        session,
+                        trace_collector.w3,
+                        row.from_address,
+                        address_bound_cache,
+                        allium_client=allium_client,
+                        etherscan_api_key=settings.etherscan_api_key,
+                        persist_deployment=not args.dry_run,
+                    )
+                )
+                if from_lower_bound > latest_block:
+                    print(
+                        f"[warn] suspicious sender lower bound address={row.from_address} "
+                        f"lower_bound={from_lower_bound} latest={latest_block} source={from_source}"
+                    )
+                    from_lower_bound = latest_block
+                    from_needs_retry = True
                 if from_needs_retry:
                     creation_failures += 1
 
                 effective_start = max(
                     max(0, int(to_lower_bound)),
                     max(0, int(from_lower_bound)),
-                    max(0, int(args.override_start)) if args.override_start is not None else 0,
+                    max(0, int(args.override_start))
+                    if args.override_start is not None
+                    else 0,
                 )
 
                 # from_block stores the first effective analyzed block for this pair.
@@ -1134,100 +1204,120 @@ def main() -> None:
                         scan_start = row.from_block
 
                     if scan_start > target_block:
+                        round_remaining -= 1
+                        round_skipped_done += 1
+                        print(
+                            f"[skip] scan start beyond target id={row.id} type={normalized_type} "
+                            f"scan_start={scan_start} target={target_block}"
+                        )
                         break
 
                     scan_end = min(target_block, scan_start + chunk_size - 1)
                     chunk_started = time.perf_counter()
 
-                if normalized_type in TRANSITIVE_INTERACTION_TYPES:
-                    hits = _count_transitive_interactions(
-                        trace_collector.w3,
-                        row.from_address,
-                        row.to_address,
-                        scan_start,
-                        scan_end,
-                        page_size,
-                    )
-                    chunk_complete = True
-                elif normalized_type == "sender_direct":
-                    hits, chunk_complete = _count_direct_interactions(
-                        trace_collector.w3,
-                        row.from_address,
-                        row.to_address,
-                        scan_start,
-                        scan_end,
-                        page_size,
-                        root_only=True,
-                        mode_name="sender_direct",
-                    )
-                else:
-                    hits, chunk_complete = _count_direct_interactions(
-                        trace_collector.w3,
-                        row.from_address,
-                        row.to_address,
-                        scan_start,
-                        scan_end,
-                        page_size,
-                        root_only=False,
-                        mode_name="contract_direct",
+                    if normalized_type in TRANSITIVE_INTERACTION_TYPES:
+                        hits, chunk_skipped = _count_transitive_interactions(
+                            trace_collector.w3,
+                            row.from_address,
+                            row.to_address,
+                            scan_start,
+                            scan_end,
+                            page_size,
+                        )
+                    elif normalized_type == "sender_direct":
+                        hits, chunk_skipped = _count_direct_interactions(
+                            trace_collector.w3,
+                            row.from_address,
+                            row.to_address,
+                            scan_start,
+                            scan_end,
+                            page_size,
+                            root_only=True,
+                            mode_name="sender_direct",
+                        )
+                    else:
+                        hits, chunk_skipped = _count_direct_interactions(
+                            trace_collector.w3,
+                            row.from_address,
+                            row.to_address,
+                            scan_start,
+                            scan_end,
+                            page_size,
+                            root_only=False,
+                            mode_name="contract_direct",
+                        )
+
+                    if chunk_skipped and not args.dry_run:
+                        for range_start, range_end in chunk_skipped:
+                            session.add(
+                                InteractionScanSkippedRange(
+                                    from_address=row.from_address,
+                                    to_address=row.to_address,
+                                    interaction_type=normalized_type,
+                                    range_start=range_start,
+                                    range_end=range_end,
+                                    reason="bisect_exhausted",
+                                )
+                            )
+                        print(
+                            f"[skip] recorded {len(chunk_skipped)} skipped range(s) "
+                            f"id={row.id} type={normalized_type} "
+                            f"{row.from_address}->{row.to_address}"
+                        )
+
+                    new_total = max(0, int(row.how_many_times)) + int(hits)
+                    discovered = hits > 0
+                    chunk_duration_ms = int(
+                        (time.perf_counter() - chunk_started) * 1000
                     )
 
-                if not chunk_complete:
                     print(
-                        f"[warn] incomplete chunk id={row.id} type={normalized_type} "
-                        f"{row.from_address}->{row.to_address} scan={scan_start}-{scan_end}; "
-                        "not advancing checkpoint"
-                    )
-                    break
-
-                new_total = max(0, int(row.how_many_times)) + int(hits)
-                discovered = hits > 0
-                chunk_duration_ms = int(
-                    (time.perf_counter() - chunk_started) * 1000
-                )
-
-                print(
-                    f"[{processed}] id={row.id} type={row.interaction_type} "
-                    f"{row.from_address}->{row.to_address} "
-                    f"to_lb={row.from_block} to_source={to_source} "
-                    f"from_lb={from_lower_bound} from_source={from_source} "
-                    f"scan={scan_start}-{scan_end} hits={hits} "
-                    f"new_hits={discovered} total={new_total} "
-                    f"duration_ms={chunk_duration_ms}"
-                )
-
-                if chunk_duration_ms > int(args.hot_threshold_seconds) * 1000:
-                    hot_marked += 1
-                    _mark_hot_pair(
-                        session,
-                        row.from_address,
-                        row.to_address,
-                        normalized_type,
-                        reason="slow_chunk",
-                        duration_ms=chunk_duration_ms,
-                        cooldown_seconds=args.hot_cooldown_seconds,
-                    )
-                    print(
-                        f"[mark-hot] id={row.id} type={normalized_type} "
+                        f"[{processed}] id={row.id} type={row.interaction_type} "
                         f"{row.from_address}->{row.to_address} "
-                        f"duration_ms={chunk_duration_ms} "
-                        f"cooldown_seconds={args.hot_cooldown_seconds}"
+                        f"to_lb={to_lower_bound} to_source={to_source} "
+                        f"from_lb={from_lower_bound} from_source={from_source} "
+                        f"scan={scan_start}-{scan_end} hits={hits} "
+                        f"new_hits={discovered} total={new_total} "
+                        f"duration_ms={chunk_duration_ms}"
                     )
+
+                    if (
+                        chunk_duration_ms
+                        > int(args.hot_threshold_seconds) * 1000
+                    ):
+                        hot_marked += 1
+                        _mark_hot_pair(
+                            session,
+                            row.from_address,
+                            row.to_address,
+                            normalized_type,
+                            reason="slow_chunk",
+                            duration_ms=chunk_duration_ms,
+                            cooldown_seconds=args.hot_cooldown_seconds,
+                        )
+                        print(
+                            f"[mark-hot] id={row.id} type={normalized_type} "
+                            f"{row.from_address}->{row.to_address} "
+                            f"duration_ms={chunk_duration_ms} "
+                            f"cooldown_seconds={args.hot_cooldown_seconds}"
+                        )
+                        if not args.dry_run:
+                            session.commit()
+
+                    scanned_chunks += 1
+                    total_hits += hits
+
+                    row.how_many_times = new_total
+                    row.first_time_interact = _is_first_time_interact(
+                        new_total
+                    )
+                    row.last_analyzed_block = scan_end
+                    row.checked_at = datetime.utcnow()
+
                     if not args.dry_run:
+                        session.add(row)
                         session.commit()
-
-                scanned_chunks += 1
-                total_hits += hits
-
-                row.how_many_times = new_total
-                row.first_time_interact = _is_first_time_interact(new_total)
-                row.last_analyzed_block = scan_end
-                row.checked_at = datetime.utcnow()
-
-                if not args.dry_run:
-                    session.add(row)
-                    session.commit()
-                    updated += 1
+                        updated += 1
 
                     chunks_done += 1
 
