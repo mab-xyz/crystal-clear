@@ -296,7 +296,7 @@ class SimulationResultItem(BaseModel):
 
 
 class SimulationResponse(BaseModel):
-    status: Literal["OK", "DANGEROUS"]
+    status: Literal["OK", "DANGEROUS", "POTENTIAL_DANGEROUS"]
     interaction_status: Dict[
         Literal[
             "sender_direct",
@@ -304,11 +304,13 @@ class SimulationResponse(BaseModel):
             "contract_direct",
             "contract_transitive",
         ],
-        Literal["dangerous", "ok", "not_checked"],
+        Literal["dangerous", "ok", "not_checked", "potential_dangerous"],
     ] | None = None
     details: List[SimulationResultItem]
     dangerous_interaction_types: List[str] | None = None
-    danger_reason: Optional[Literal["FIRST_TIME_INTERACTION"]] = None
+    danger_reason: Optional[
+        Literal["FIRST_TIME_INTERACTION", "MISSING_HISTORY"]
+    ] = None
 
 
 class RawTxRiskRequest(BaseModel):

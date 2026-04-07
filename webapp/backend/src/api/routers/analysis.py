@@ -105,7 +105,7 @@ def _evaluate_interaction_scan_risk(
         seen_targets.add(addr)
 
     if not sender_norm or not normalized_targets or not checked_interaction_types:
-        return {}, {}, [], []
+        return {}, {}, [], [], [], []
 
     from_candidates = {sender_norm}
     if root_norm:
@@ -127,6 +127,8 @@ def _evaluate_interaction_scan_risk(
     state_map: dict[str, dict[str, str]] = {}
     contract_dangerous_types: list[str] = []
     sender_dangerous_types: list[str] = []
+    contract_missing_types: list[str] = []
+    sender_missing_types: list[str] = []
 
     for target in normalized_targets:
         first_time_map[target] = {}
@@ -151,6 +153,18 @@ def _evaluate_interaction_scan_risk(
             state_map[target][interaction_type] = state_val
             if not first_time_val:
                 continue
+            # MISSING history: we lack data — flag as potential, not confirmed.
+            if state_val == "MISSING":
+                if (
+                    interaction_type in DANGEROUS_INTERACTION_TYPES
+                    and interaction_type not in contract_missing_types
+                ):
+                    contract_missing_types.append(interaction_type)
+                elif interaction_type.startswith("sender_") and (
+                    interaction_type not in sender_missing_types
+                ):
+                    sender_missing_types.append(interaction_type)
+                continue
             if (
                 interaction_type in DANGEROUS_INTERACTION_TYPES
                 and interaction_type not in contract_dangerous_types
@@ -166,21 +180,27 @@ def _evaluate_interaction_scan_risk(
         state_map,
         contract_dangerous_types,
         sender_dangerous_types,
+        contract_missing_types,
+        sender_missing_types,
     )
 
 
 def _build_interaction_status(
     checked_interaction_types: list[str],
     dangerous_interaction_types: list[str],
+    missing_interaction_types: list[str] | None = None,
 ) -> dict[str, str]:
     checked = set(checked_interaction_types)
     dangerous = set(dangerous_interaction_types)
+    missing = set(missing_interaction_types or [])
     status_map: dict[str, str] = {}
     for interaction_type in ALL_INTERACTION_TYPES:
         if interaction_type not in checked:
             status_map[interaction_type] = "not_checked"
         elif interaction_type in dangerous:
             status_map[interaction_type] = "dangerous"
+        elif interaction_type in missing:
+            status_map[interaction_type] = "potential_dangerous"
         else:
             status_map[interaction_type] = "ok"
     return status_map
@@ -365,6 +385,8 @@ async def simulate_transaction(
         interaction_state,
         contract_dangerous_types,
         sender_dangerous_types,
+        contract_missing_types,
+        sender_missing_types,
     ) = (
         _evaluate_interaction_scan_risk(
             session=session,
@@ -399,13 +421,19 @@ async def simulate_transaction(
         for addr, info in results.items()
     ]
 
-    status = "DANGEROUS" if contract_dangerous_types else "OK"
-    danger_reason = (
-        "FIRST_TIME_INTERACTION" if contract_dangerous_types else None
-    )
+    if contract_dangerous_types:
+        status = "DANGEROUS"
+        danger_reason = "FIRST_TIME_INTERACTION"
+    elif contract_missing_types:
+        status = "POTENTIAL_DANGEROUS"
+        danger_reason = "MISSING_HISTORY"
+    else:
+        status = "OK"
+        danger_reason = None
     interaction_status = _build_interaction_status(
         checked_interaction_types,
         contract_dangerous_types + sender_dangerous_types,
+        contract_missing_types + sender_missing_types,
     )
 
     return SimulationResponse(
@@ -762,6 +790,8 @@ async def get_tx_risk_from_raw(
         interaction_state,
         contract_dangerous_types,
         sender_dangerous_types,
+        contract_missing_types,
+        sender_missing_types,
     ) = (
         _evaluate_interaction_scan_risk(
             session=session,
@@ -778,13 +808,19 @@ async def get_tx_risk_from_raw(
         item["interaction_state"] = interaction_state.get(normalized, {})
         item["first_time"] = any(first_time_by_type.values())
 
-    status_val = "DANGEROUS" if contract_dangerous_types else "OK"
-    danger_reason = (
-        "FIRST_TIME_INTERACTION" if contract_dangerous_types else None
-    )
+    if contract_dangerous_types:
+        status_val = "DANGEROUS"
+        danger_reason = "FIRST_TIME_INTERACTION"
+    elif contract_missing_types:
+        status_val = "POTENTIAL_DANGEROUS"
+        danger_reason = "MISSING_HISTORY"
+    else:
+        status_val = "OK"
+        danger_reason = None
     interaction_status = _build_interaction_status(
         checked_interaction_types,
         contract_dangerous_types + sender_dangerous_types,
+        contract_missing_types + sender_missing_types,
     )
     resp = SimulationResponse(
         status=status_val,
