@@ -286,17 +286,69 @@ class SimulationRequest(BaseModel):
 
 
 class SimulationResultItem(BaseModel):
-    address: str
-    first_time: bool
-    verification: dict | None = None
-    depth: int | None = None
-    types: Dict[str, int] | None = None
-    interaction_first_time: Dict[str, bool] | None = None
-    interaction_state: Dict[str, Literal["FOUND", "MISSING"]] | None = None
+    """Risk analysis result for a single contract touched during the transaction."""
+
+    address: str = Field(
+        ..., description="Checksummed Ethereum address of the touched contract"
+    )
+    first_time: bool = Field(
+        ...,
+        description=(
+            "True if the sender has never interacted with this contract "
+            "across any of the checked interaction types"
+        ),
+    )
+    verification: dict | None = Field(
+        None,
+        description=(
+            "Source-code verification status from Etherscan/Sourcify "
+            "(e.g. {\"verification\": \"verified\", \"compiler\": \"solc\", ...}). "
+            "Null when verification data is unavailable."
+        ),
+    )
+    depth: int | None = Field(
+        None,
+        description=(
+            "Call depth at which this contract was reached during trace simulation "
+            "(0 = direct target, 1+ = internal/delegate call)"
+        ),
+    )
+    types: Dict[str, int] | None = Field(
+        None,
+        description=(
+            "Map of EVM call types to their frequency for this address "
+            "(e.g. {\"CALL\": 2, \"DELEGATECALL\": 1})"
+        ),
+    )
+    interaction_first_time: Dict[str, bool] | None = Field(
+        None,
+        description=(
+            "Per-interaction-type first-time flag. Keys are interaction types "
+            "(sender_direct, sender_transitive, contract_direct, contract_transitive); "
+            "values are true if this is the first recorded interaction of that type."
+        ),
+    )
+    interaction_state: Dict[str, Literal["FOUND", "MISSING"]] | None = Field(
+        None,
+        description=(
+            "Per-interaction-type data availability. FOUND means historical scan data "
+            "exists; MISSING means no scan data is available and the result is "
+            "best-effort."
+        ),
+    )
 
 
 class SimulationResponse(BaseModel):
-    status: Literal["OK", "DANGEROUS", "POTENTIAL_DANGEROUS"]
+    """Aggregated risk verdict for a simulated or decoded transaction."""
+
+    status: Literal["OK", "DANGEROUS", "POTENTIAL_DANGEROUS"] = Field(
+        ...,
+        description=(
+            "Overall risk verdict. OK = no issues found; "
+            "DANGEROUS = at least one first-time or unverified contract interaction; "
+            "POTENTIAL_DANGEROUS = scan data is incomplete so risk cannot be ruled out."
+        ),
+    )
     interaction_status: Dict[
         Literal[
             "sender_direct",
@@ -305,12 +357,34 @@ class SimulationResponse(BaseModel):
             "contract_transitive",
         ],
         Literal["dangerous", "ok", "not_checked", "potential_dangerous"],
-    ] | None = None
-    details: List[SimulationResultItem]
-    dangerous_interaction_types: List[str] | None = None
+    ] | None = Field(
+        None,
+        description=(
+            "Per-interaction-type risk status. Each key is an interaction type and "
+            "its value is one of: ok, dangerous, potential_dangerous, or not_checked."
+        ),
+    )
+    details: List[SimulationResultItem] = Field(
+        ...,
+        description="Per-contract breakdown of risk signals for every address touched by the transaction",
+    )
+    dangerous_interaction_types: List[str] | None = Field(
+        None,
+        description=(
+            "Interaction types that triggered the DANGEROUS verdict "
+            "(e.g. [\"contract_direct\"]). Null when status is OK."
+        ),
+    )
     danger_reason: Optional[
         Literal["FIRST_TIME_INTERACTION", "MISSING_HISTORY", "UNVERIFIED"]
-    ] = None
+    ] = Field(
+        None,
+        description=(
+            "Root cause of a non-OK verdict. FIRST_TIME_INTERACTION = sender/contract "
+            "has never called this address; MISSING_HISTORY = no historical scan data "
+            "available; UNVERIFIED = contract source code is not verified on-chain."
+        ),
+    )
 
 
 class RawTxRiskRequest(BaseModel):
