@@ -213,16 +213,17 @@ def _build_interaction_status(
 
 
 def _has_unverified_dangerous(items: list[dict]) -> bool:
-    """Return True if any item has a confirmed first-time (FOUND) interaction with an unverified contract."""
+    """Return True if any contract in the call chain is unverified.
+
+    An unverified contract is dangerous regardless of whether it is a first-time
+    interaction: interacting with an unverified contract is always risky.
+    Verified contracts are considered safe even on a first-time call.
+    """
     for item in items:
-        it_first = item.get("interaction_first_time") or {}
-        it_state = item.get("interaction_state") or {}
-        for t in DANGEROUS_INTERACTION_TYPES:
-            if it_first.get(t) and it_state.get(t) == "FOUND":
-                v = item.get("verification") or {}
-                ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
-                if ver not in {"verified", "fully-verified"}:
-                    return True
+        v = item.get("verification") or {}
+        ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
+        if ver not in {"verified", "fully-verified"}:
+            return True
     return False
 
 

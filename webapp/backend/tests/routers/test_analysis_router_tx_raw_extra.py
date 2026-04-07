@@ -133,6 +133,117 @@ async def test_simulate_transaction_verified_first_time_is_not_dangerous(monkeyp
 
 
 @pytest.mark.asyncio
+# Reproduces issue #248 tx 0x2eef...: unverified MEV root contract with self-interaction
+# FOUND (after the self-interaction fix) must still be DANGEROUS because the contract is
+# unverified, not because it is first-time.
+async def test_simulate_transaction_unverified_root_contract_is_dangerous(monkeypatch):
+    # The root contract is the only touched address. After the self-interaction fix
+    # its interaction_state is FOUND/not-first-time, so contract_dangerous_types and
+    # contract_missing_types are both empty. Status must still be DANGEROUS because
+    # the contract itself is unverified.
+    root = "0x51c72848c68a965f66fa7a88855f9f7784502a7f"
+    _patch_interaction_helpers(
+        monkeypatch,
+        # Self-interaction is FOUND/not-first-time — neither dangerous nor missing.
+        contract_dangerous_types=[],
+        contract_missing_types=[],
+        interaction_first_time={root: {"contract_direct": False, "contract_transitive": False}},
+        interaction_state={root: {"contract_direct": "FOUND", "contract_transitive": "FOUND"}},
+    )
+    # Checksummed address as the engine would return it.
+    engine = _CaptureEngine(
+        {
+            "0x51C72848c68a965f66FA7a88855F9f7784502a7F": {
+                "verification": {"verification": "not-verified"},
+                "depth": 0,
+                "types": {"CALL": 1},
+            }
+        }
+    )
+    body = SimulationRequest(
+        from_addr="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        to_addr="0x51C72848c68a965f66FA7a88855F9f7784502a7F",
+        data="0x",
+    )
+
+    response = await analysis.simulate_transaction(
+        body,
+        risk_engine=engine,
+        session=object(),
+    )
+
+    # Status must be DANGEROUS because the root contract is unverified.
+    assert response.status == "DANGEROUS"
+    assert response.danger_reason == "UNVERIFIED"
+    # The root contract must appear in the details list (contracts must not disappear).
+    assert len(response.details) == 1
+    assert response.details[0].address == "0x51C72848c68a965f66FA7a88855F9f7784502a7F"
+    # interaction_state must show FOUND after the self-interaction fix.
+    assert response.details[0].interaction_state == {
+        "contract_direct": "FOUND",
+        "contract_transitive": "FOUND",
+    }
+
+
+@pytest.mark.asyncio
+# Same scenario via tx-risk-raw: unverified root contract with FOUND self-interaction
+# must still produce DANGEROUS with UNVERIFIED (issue #248).
+async def test_tx_risk_raw_unverified_root_contract_is_dangerous(monkeypatch):
+    root = "0x51c72848c68a965f66fa7a88855f9f7784502a7f"
+
+    class _TypedObj:
+        def as_dict(self):
+            return {
+                "to": "0x51C72848c68a965f66FA7a88855F9f7784502a7F",
+                "data": "0x",
+                "type": "0x2",
+            }
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            return _TypedObj()
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    monkeypatch.setattr(
+        analysis.Account,
+        "recover_transaction",
+        lambda _b: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    )
+    _patch_interaction_helpers(
+        monkeypatch,
+        contract_dangerous_types=[],
+        contract_missing_types=[],
+        interaction_first_time={root: {"contract_direct": False, "contract_transitive": False}},
+        interaction_state={root: {"contract_direct": "FOUND", "contract_transitive": "FOUND"}},
+    )
+    engine = _CaptureEngine(
+        {
+            "0x51C72848c68a965f66FA7a88855F9f7784502a7F": {
+                "verification": {"verification": "not-verified"},
+                "depth": 0,
+                "types": {"CALL": 1},
+            }
+        }
+    )
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x02aa"),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    assert response.status == "DANGEROUS"
+    assert response.danger_reason == "UNVERIFIED"
+    assert len(response.details) == 1
+    assert response.details[0].address == "0x51C72848c68a965f66FA7a88855F9f7784502a7F"
+    assert response.details[0].interaction_state == {
+        "contract_direct": "FOUND",
+        "contract_transitive": "FOUND",
+    }
+
+
+@pytest.mark.asyncio
 # Sender-side first-time interactions should mark interaction_status as dangerous without flipping overall status.
 async def test_simulate_transaction_marks_sender_dangerous_in_status(monkeypatch):
     _patch_interaction_helpers(
