@@ -192,3 +192,33 @@ def test_evaluate_interaction_scan_risk_marks_sender_first_time():
     assert contract_dangerous == []
     assert sender_missing == ["sender_direct", "sender_transitive"]
     assert contract_missing == []
+
+
+# A contract's interaction_state with itself should always be FOUND (not first-time).
+def test_evaluate_interaction_scan_risk_self_interaction_is_always_found():
+    root = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    # root is also included in touched_addresses (the target of the tx is always touched)
+    session = _Session([])
+
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        sender_dangerous,
+        contract_missing,
+        sender_missing,
+    ) = analysis._evaluate_interaction_scan_risk(
+        session=session,
+        sender_address="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        root_contract=root,
+        touched_addresses=[root],
+        checked_interaction_types=["contract_direct", "contract_transitive"],
+    )
+
+    # Self-interaction must never be flagged as first-time or missing.
+    assert first_map[root]["contract_direct"] is False
+    assert state_map[root]["contract_direct"] == "FOUND"
+    assert first_map[root]["contract_transitive"] is False
+    assert state_map[root]["contract_transitive"] == "FOUND"
+    assert contract_dangerous == []
+    assert contract_missing == []
