@@ -20,6 +20,8 @@ def _patch_interaction_helpers(
     monkeypatch,
     contract_dangerous_types=None,
     sender_dangerous_types=None,
+    contract_missing_types=None,
+    sender_missing_types=None,
 ):
     monkeypatch.setattr(
         analysis,
@@ -34,6 +36,8 @@ def _patch_interaction_helpers(
             {},
             contract_dangerous_types or [],
             sender_dangerous_types or [],
+            contract_missing_types or [],
+            sender_missing_types or [],
         ),
     )
 
@@ -513,7 +517,7 @@ async def test_seed_failures_are_swallowed_in_both_endpoints(monkeypatch):
     monkeypatch.setattr(
         analysis,
         "_evaluate_interaction_scan_risk",
-        lambda **_k: ({}, {}, [], []),
+        lambda **_k: ({}, {}, [], [], [], []),
     )
 
     engine = _CaptureEngine(

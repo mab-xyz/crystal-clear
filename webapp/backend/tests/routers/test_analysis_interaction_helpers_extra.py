@@ -59,6 +59,8 @@ def test_evaluate_interaction_scan_risk_empty_inputs_short_circuit():
         state_map,
         contract_dangerous,
         sender_dangerous,
+        contract_missing,
+        sender_missing,
     ) = analysis._evaluate_interaction_scan_risk(
         session=_Session([]),
         sender_address="bad-address",
@@ -70,6 +72,8 @@ def test_evaluate_interaction_scan_risk_empty_inputs_short_circuit():
     assert state_map == {}
     assert contract_dangerous == []
     assert sender_dangerous == []
+    assert contract_missing == []
+    assert sender_missing == []
 
 
 # Builds FOUND/MISSING state maps and dangerous types from scan-state rows.
@@ -90,6 +94,8 @@ def test_evaluate_interaction_scan_risk_found_and_missing_rows():
         state_map,
         contract_dangerous,
         sender_dangerous,
+        contract_missing,
+        sender_missing,
     ) = analysis._evaluate_interaction_scan_risk(
         session=session,
         sender_address=sender.upper(),
@@ -102,8 +108,11 @@ def test_evaluate_interaction_scan_risk_found_and_missing_rows():
     assert state_map[target]["sender_direct"] == "FOUND"
     assert first_map[target]["contract_direct"] is True
     assert state_map[target]["contract_direct"] == "MISSING"
-    assert contract_dangerous == ["contract_direct"]
+    # MISSING dangerous types now go to the "missing" buckets, not "dangerous".
+    assert contract_dangerous == []
     assert sender_dangerous == []
+    assert contract_missing == ["contract_direct"]
+    assert sender_missing == []
 
 
 # Maps checked vs dangerous interaction types into response status fields.
@@ -136,6 +145,8 @@ def test_evaluate_interaction_scan_risk_skips_contract_type_without_root():
         state_map,
         contract_dangerous,
         sender_dangerous,
+        contract_missing,
+        sender_missing,
     ) = analysis._evaluate_interaction_scan_risk(
         session=_Session([]),
         sender_address=sender,
@@ -147,6 +158,8 @@ def test_evaluate_interaction_scan_risk_skips_contract_type_without_root():
     assert state_map[target] == {}
     assert contract_dangerous == []
     assert sender_dangerous == []
+    assert contract_missing == []
+    assert sender_missing == []
 
 
 def test_evaluate_interaction_scan_risk_marks_sender_first_time():
@@ -159,6 +172,8 @@ def test_evaluate_interaction_scan_risk_marks_sender_first_time():
         state_map,
         contract_dangerous,
         sender_dangerous,
+        contract_missing,
+        sender_missing,
     ) = analysis._evaluate_interaction_scan_risk(
         session=session,
         sender_address=sender,
@@ -172,5 +187,8 @@ def test_evaluate_interaction_scan_risk_marks_sender_first_time():
 
     assert first_map[target]["sender_direct"] is True
     assert state_map[target]["sender_direct"] == "MISSING"
-    assert sender_dangerous == ["sender_direct", "sender_transitive"]
+    # MISSING sender types now flow to sender_missing instead of sender_dangerous.
+    assert sender_dangerous == []
     assert contract_dangerous == []
+    assert sender_missing == ["sender_direct", "sender_transitive"]
+    assert contract_missing == []
