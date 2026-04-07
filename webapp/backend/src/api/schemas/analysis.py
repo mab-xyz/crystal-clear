@@ -309,7 +309,7 @@ class SimulationResponse(BaseModel):
     details: List[SimulationResultItem]
     dangerous_interaction_types: List[str] | None = None
     danger_reason: Optional[
-        Literal["FIRST_TIME_INTERACTION", "MISSING_HISTORY"]
+        Literal["FIRST_TIME_INTERACTION", "MISSING_HISTORY", "UNVERIFIED"]
     ] = None
 
 

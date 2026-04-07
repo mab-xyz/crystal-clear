@@ -22,6 +22,8 @@ def _patch_interaction_helpers(
     sender_dangerous_types=None,
     contract_missing_types=None,
     sender_missing_types=None,
+    interaction_first_time=None,
+    interaction_state=None,
 ):
     monkeypatch.setattr(
         analysis,
@@ -32,8 +34,8 @@ def _patch_interaction_helpers(
         analysis,
         "_evaluate_interaction_scan_risk",
         lambda **_k: (
-            {},
-            {},
+            interaction_first_time or {},
+            interaction_state or {},
             contract_dangerous_types or [],
             sender_dangerous_types or [],
             contract_missing_types or [],
@@ -45,14 +47,17 @@ def _patch_interaction_helpers(
 @pytest.mark.asyncio
 # Verifies optional tx fields are forwarded and dangerous status derives from interaction scan.
 async def test_simulate_transaction_sets_all_optional_fields(monkeypatch):
+    addr = "0x3333333333333333333333333333333333333333"
     _patch_interaction_helpers(
         monkeypatch,
         contract_dangerous_types=["contract_direct"],
+        interaction_first_time={addr: {"contract_direct": True}},
+        interaction_state={addr: {"contract_direct": "FOUND"}},
     )
     engine = _CaptureEngine(
         {
-            "0x3333333333333333333333333333333333333333": {
-                "first_time": False,
+            addr: {
+                "first_time": True,
                 "verification": {"verification": "unknown"},
                 "depth": 1,
                 "types": {"CALL": 1},
@@ -81,6 +86,7 @@ async def test_simulate_transaction_sets_all_optional_fields(monkeypatch):
 
     call_object, kwargs = engine.calls[0]
     assert response.status == "DANGEROUS"
+    assert response.danger_reason == "UNVERIFIED"
     assert call_object["gas"] == "0x5208"
     assert call_object["gasPrice"] == "0x2"
     assert call_object["maxFeePerGas"] == "0x3"
@@ -88,6 +94,42 @@ async def test_simulate_transaction_sets_all_optional_fields(monkeypatch):
     assert call_object["type"] == "0x2"
     assert kwargs["from_block"] == " 100 "
     assert kwargs["to_block"] == "200"
+
+
+@pytest.mark.asyncio
+# Verified first-time contracts must not be flagged as dangerous (issue #248).
+async def test_simulate_transaction_verified_first_time_is_not_dangerous(monkeypatch):
+    addr = "0x3333333333333333333333333333333333333333"
+    _patch_interaction_helpers(
+        monkeypatch,
+        contract_dangerous_types=["contract_direct"],
+        interaction_first_time={addr: {"contract_direct": True}},
+        interaction_state={addr: {"contract_direct": "FOUND"}},
+    )
+    engine = _CaptureEngine(
+        {
+            addr: {
+                "first_time": True,
+                "verification": {"verification": "verified"},
+                "depth": 1,
+                "types": {"CALL": 1},
+            }
+        }
+    )
+    body = SimulationRequest(
+        from_addr="0x1111111111111111111111111111111111111111",
+        to_addr="0x2222222222222222222222222222222222222222",
+        data="0x",
+    )
+
+    response = await analysis.simulate_transaction(
+        body,
+        risk_engine=engine,
+        session=object(),
+    )
+
+    assert response.status == "OK"
+    assert response.danger_reason is None
 
 
 @pytest.mark.asyncio
