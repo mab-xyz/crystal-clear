@@ -211,7 +211,19 @@ class TraceCollector:
                 self.logger.info(f"Invalid contract address format: {address}")
                 self._validation_cache[cache_key] = False
                 return False
-            code = self.w3.eth.get_code(address, block_identifier=block)
+            try:
+                code = self.w3.eth.get_code(address, block_identifier=block)
+            except Exception as e:
+                # eth_getCode failed (e.g. RPC error or unsupported method).
+                # Include the address optimistically rather than silently dropping it
+                # from the call chain – an RPC failure is not evidence that the
+                # address is an EOA or precompile.
+                self.logger.warning(
+                    f"eth_getCode failed for {address} at block {block}: {e}. "
+                    "Including address in call chain (optimistic)."
+                )
+                self._validation_cache[cache_key] = True
+                return True
             if len(code) == 0:
                 self.logger.info(f"No code at address: {address}")
                 self._validation_cache[cache_key] = False

@@ -232,3 +232,54 @@ def test_wrapper_simulate_and_check(mock_is_connected):
         == "verified"
     )
     assert "0x5555555555555555555555555555555555555555" in res
+
+
+@patch("web3.Web3.is_connected", return_value=True)
+def test_validate_contract_includes_address_when_getcode_raises(mock_connected):
+    """When eth_getCode raises an exception, _validate_contract must return True.
+
+    Production bug: any RPC error during eth_getCode caused _validate_contract to
+    return False, silently dropping every subcall contract from the call chain.
+    Only the root contract (added before the edge loop) survived, so
+    ``len(details)`` was always 1 in production.
+    """
+    collector = SimulationCollector(url="http://mock.node")
+    mock_w3 = MagicMock()
+    collector.w3 = mock_w3
+
+    ROOT = "0x1111111111111111111111111111111111111111"
+    TARGET = "0x2222222222222222222222222222222222222222"
+
+    mock_w3.tracing.trace_call.return_value = [
+        {
+            "type": "call",
+            "action": {
+                "from": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "to": ROOT,
+                "callType": "call",
+            },
+            "traceAddress": [],
+        },
+        {
+            "type": "call",
+            "action": {"from": ROOT, "to": TARGET, "callType": "call"},
+            "traceAddress": [0],
+        },
+    ]
+
+    # Simulate eth_getCode raising an RPC-level exception for every address.
+    mock_w3.eth.get_code.side_effect = Exception("RPC error: method not supported")
+
+    edges = collector.get_edges_from_simulation(
+        {"from": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "to": ROOT},
+        block_tag="latest",
+    )
+
+    # TARGET must be present even when eth_getCode fails.
+    # Before the fix this assert fails because _validate_contract returned False
+    # on exception, filtering out TARGET and leaving edges empty.
+    targets = {e.target.lower() for e in edges}
+    assert TARGET.lower() in targets, (
+        "Contract was silently dropped when eth_getCode raised an exception. "
+        "_validate_contract must include addresses optimistically on RPC failure."
+    )
