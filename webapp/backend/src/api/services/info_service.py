@@ -10,7 +10,7 @@ from sqlmodel import Session
 from web3 import Web3
 
 import src.api.crud.deployment as crud_deployment
-from src.api.core.config import settings
+from src.api.core.config import get_eth_node_url, settings
 from src.api.core.exceptions import (
     InputValidationError,
     InternalServerError,
@@ -30,7 +30,7 @@ def get_latest_block_number() -> int:
         Latest block number
     """
     try:
-        w3 = Web3(Web3.HTTPProvider(settings.eth_node_url))
+        w3 = Web3(Web3.HTTPProvider(get_eth_node_url()))
         latest_block = w3.eth.get_block_number()
         return latest_block
     except Exception as e:
@@ -262,7 +262,7 @@ def get_proxy_data(address: str) -> Optional[Dict[str, str]]:
             raise InputValidationError(f"Invalid Ethereum address: {address}")
 
         proxy_type, message, all_lines = detect_delegatecall_and_address(
-            address, settings.eth_node_url
+            address, get_eth_node_url()
         )
 
         return {"address": address, "type": proxy_type, "message": message}

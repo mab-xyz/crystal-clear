@@ -1,10 +1,11 @@
+import random
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # Ethereum Node Configuration
-    eth_node_url: str | None = Field(default=None, alias="ETH_NODE_URL")
     eth_node_urls: str | None = Field(default=None, alias="ETH_NODE_URLS")
     eth_rpc_timeout_seconds: int = Field(
         120, alias="ETH_RPC_TIMEOUT_SECONDS"
@@ -67,3 +68,10 @@ class Settings(BaseSettings):
 
 # Instantiate settings
 settings = Settings()
+
+
+def get_eth_node_url() -> str | None:
+    if not settings.eth_node_urls:
+        return None
+    urls = settings.eth_node_urls.split("|")
+    return random.choice(urls)
