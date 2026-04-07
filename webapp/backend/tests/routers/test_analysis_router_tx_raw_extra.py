@@ -244,6 +244,103 @@ async def test_tx_risk_raw_unverified_root_contract_is_dangerous(monkeypatch):
 
 
 @pytest.mark.asyncio
+# Full call-chain scenario (issue #248): root is unverified, two further contracts are
+# called during execution. All three must appear in details with correct per-contract
+# interaction_state and verification. Only one unverified contract is enough to make the
+# whole tx DANGEROUS/UNVERIFIED.
+async def test_simulate_transaction_full_call_chain_all_contracts_present(monkeypatch):
+    # Addresses as the engine would return them (checksummed).
+    root  = "0x51C72848c68a965f66FA7a88855F9f7784502a7F"  # unverified MEV bot
+    addr_b = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"  # verified, MISSING history
+    addr_c = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"  # verified, FOUND/not-first-time
+
+    root_n  = root.lower()
+    addr_b_n = addr_b.lower()
+    addr_c_n = addr_c.lower()
+
+    _patch_interaction_helpers(
+        monkeypatch,
+        contract_dangerous_types=[],
+        contract_missing_types=["contract_direct", "contract_transitive"],
+        interaction_first_time={
+            root_n:   {"contract_direct": False, "contract_transitive": False},
+            addr_b_n: {"contract_direct": True,  "contract_transitive": True},
+            addr_c_n: {"contract_direct": False, "contract_transitive": False},
+        },
+        interaction_state={
+            root_n:   {"contract_direct": "FOUND",   "contract_transitive": "FOUND"},
+            addr_b_n: {"contract_direct": "MISSING", "contract_transitive": "MISSING"},
+            addr_c_n: {"contract_direct": "FOUND",   "contract_transitive": "FOUND"},
+        },
+    )
+    engine = _CaptureEngine(
+        {
+            root: {
+                "verification": {"verification": "not-verified"},
+                "depth": 0,
+                "types": {"CALL": 1},
+            },
+            addr_b: {
+                "verification": {"verification": "verified"},
+                "depth": 1,
+                "types": {"CALL": 1},
+            },
+            addr_c: {
+                "verification": {"verification": "verified"},
+                "depth": 1,
+                "types": {"STATICCALL": 2},
+            },
+        }
+    )
+    body = SimulationRequest(
+        from_addr="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        to_addr=root,
+        data="0x",
+    )
+
+    response = await analysis.simulate_transaction(
+        body,
+        risk_engine=engine,
+        session=object(),
+    )
+
+    # Unverified root contract drives the overall status.
+    assert response.status == "DANGEROUS"
+    assert response.danger_reason == "UNVERIFIED"
+
+    # All three contracts from the call chain must be present.
+    assert len(response.details) == 3
+    by_addr = {item.address: item for item in response.details}
+    assert root   in by_addr, "root contract missing from details"
+    assert addr_b in by_addr, "addr_b missing from details"
+    assert addr_c in by_addr, "addr_c missing from details"
+
+    # Root: self-interaction → FOUND, not first-time, unverified.
+    assert by_addr[root].interaction_state == {
+        "contract_direct": "FOUND",
+        "contract_transitive": "FOUND",
+    }
+    assert by_addr[root].first_time is False
+    assert by_addr[root].verification == {"verification": "not-verified"}
+
+    # addr_b: no scan history → MISSING, first-time True, but verified.
+    assert by_addr[addr_b].interaction_state == {
+        "contract_direct": "MISSING",
+        "contract_transitive": "MISSING",
+    }
+    assert by_addr[addr_b].first_time is True
+    assert by_addr[addr_b].verification == {"verification": "verified"}
+
+    # addr_c: known contract, not first-time, verified.
+    assert by_addr[addr_c].interaction_state == {
+        "contract_direct": "FOUND",
+        "contract_transitive": "FOUND",
+    }
+    assert by_addr[addr_c].first_time is False
+    assert by_addr[addr_c].verification == {"verification": "verified"}
+
+
+@pytest.mark.asyncio
 # Sender-side first-time interactions should mark interaction_status as dangerous without flipping overall status.
 async def test_simulate_transaction_marks_sender_dangerous_in_status(monkeypatch):
     _patch_interaction_helpers(
