@@ -141,6 +141,12 @@ def _evaluate_interaction_scan_risk(
             if not from_addr:
                 continue
 
+            # A contract's interaction with itself is always FOUND (OK).
+            if from_addr == target:
+                first_time_map[target][interaction_type] = False
+                state_map[target][interaction_type] = "FOUND"
+                continue
+
             row = row_index.get((from_addr, target, interaction_type))
             if row is None:
                 first_time_val = True
@@ -204,6 +210,20 @@ def _build_interaction_status(
         else:
             status_map[interaction_type] = "ok"
     return status_map
+
+
+def _has_unverified_dangerous(items: list[dict]) -> bool:
+    """Return True if any item has a confirmed first-time (FOUND) interaction with an unverified contract."""
+    for item in items:
+        it_first = item.get("interaction_first_time") or {}
+        it_state = item.get("interaction_state") or {}
+        for t in DANGEROUS_INTERACTION_TYPES:
+            if it_first.get(t) and it_state.get(t) == "FOUND":
+                v = item.get("verification") or {}
+                ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
+                if ver not in {"verified", "fully-verified"}:
+                    return True
+    return False
 
 
 @router.get(
@@ -421,9 +441,9 @@ async def simulate_transaction(
         for addr, info in results.items()
     ]
 
-    if contract_dangerous_types:
+    if _has_unverified_dangerous(items):
         status = "DANGEROUS"
-        danger_reason = "FIRST_TIME_INTERACTION"
+        danger_reason = "UNVERIFIED"
     elif contract_missing_types:
         status = "POTENTIAL_DANGEROUS"
         danger_reason = "MISSING_HISTORY"
@@ -808,9 +828,9 @@ async def get_tx_risk_from_raw(
         item["interaction_state"] = interaction_state.get(normalized, {})
         item["first_time"] = any(first_time_by_type.values())
 
-    if contract_dangerous_types:
+    if _has_unverified_dangerous(items):
         status_val = "DANGEROUS"
-        danger_reason = "FIRST_TIME_INTERACTION"
+        danger_reason = "UNVERIFIED"
     elif contract_missing_types:
         status_val = "POTENTIAL_DANGEROUS"
         danger_reason = "MISSING_HISTORY"
