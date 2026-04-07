@@ -30,9 +30,13 @@ RUN npm install --global sevm
 # Clean up apt cache
 RUN rm -rf /var/lib/apt/lists/*
 
-# Install Python requirements
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Poetry
+RUN pip install --no-cache-dir poetry
+
+# Install Python dependencies from pyproject.toml
+COPY pyproject.toml .
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-root --only main
 
 # Copy your app files
 COPY . .
