@@ -45,7 +45,7 @@ def test_tx_risk_post_success(monkeypatch):
     monkeypatch.setattr(
         analysis,
         "_evaluate_interaction_scan_risk",
-        lambda **_k: ({}, {}, [], []),
+        lambda **_k: ({}, {}, [], [], [], []),
     )
     client = _build_client()
     response = client.post(
