@@ -20,18 +20,11 @@ def test_health_check_ok():
 
 
 def test_eth_node_health_check_connected(monkeypatch):
-    class _FakeWeb3:
-        @staticmethod
-        def HTTPProvider(_url):
-            return object()
-
-        def __init__(self, _provider):
-            pass
-
+    class _FakeW3:
         def is_connected(self):
             return True
 
-    monkeypatch.setattr(health, "Web3", _FakeWeb3)
+    monkeypatch.setattr(health, "make_tracked_w3", lambda _url: _FakeW3())
     client = _build_client()
 
     response = client.get("/health/eth-node")
@@ -44,12 +37,10 @@ def test_eth_node_health_check_connected(monkeypatch):
 
 
 def test_eth_node_health_check_exception(monkeypatch):
-    class _BrokenWeb3:
-        @staticmethod
-        def HTTPProvider(_url):
-            raise RuntimeError("boom")
+    def _raise(_url):
+        raise RuntimeError("boom")
 
-    monkeypatch.setattr(health, "Web3", _BrokenWeb3)
+    monkeypatch.setattr(health, "make_tracked_w3", _raise)
     client = _build_client()
 
     response = client.get("/health/eth-node")
