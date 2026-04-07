@@ -217,7 +217,8 @@ def _has_unverified_dangerous(items: list[dict]) -> bool:
 
     An unverified contract is dangerous regardless of whether it is a first-time
     interaction: interacting with an unverified contract is always risky.
-    Verified contracts are considered safe even on a first-time call.
+    Verified contracts can still be dangerous on a first-time call; that case is
+    handled separately via contract_dangerous_types / FIRST_TIME_INTERACTION.
     """
     for item in items:
         v = item.get("verification") or {}
@@ -445,6 +446,9 @@ async def simulate_transaction(
     if _has_unverified_dangerous(items):
         status = "DANGEROUS"
         danger_reason = "UNVERIFIED"
+    elif contract_dangerous_types:
+        status = "DANGEROUS"
+        danger_reason = "FIRST_TIME_INTERACTION"
     elif contract_missing_types:
         status = "POTENTIAL_DANGEROUS"
         danger_reason = "MISSING_HISTORY"
@@ -832,6 +836,9 @@ async def get_tx_risk_from_raw(
     if _has_unverified_dangerous(items):
         status_val = "DANGEROUS"
         danger_reason = "UNVERIFIED"
+    elif contract_dangerous_types:
+        status_val = "DANGEROUS"
+        danger_reason = "FIRST_TIME_INTERACTION"
     elif contract_missing_types:
         status_val = "POTENTIAL_DANGEROUS"
         danger_reason = "MISSING_HISTORY"

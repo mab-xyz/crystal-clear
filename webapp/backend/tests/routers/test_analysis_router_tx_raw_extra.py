@@ -97,8 +97,8 @@ async def test_simulate_transaction_sets_all_optional_fields(monkeypatch):
 
 
 @pytest.mark.asyncio
-# Verified first-time contracts must not be flagged as dangerous (issue #248).
-async def test_simulate_transaction_verified_first_time_is_not_dangerous(monkeypatch):
+# Verified first-time contracts are also dangerous (FIRST_TIME_INTERACTION).
+async def test_simulate_transaction_verified_first_time_is_dangerous(monkeypatch):
     addr = "0x3333333333333333333333333333333333333333"
     _patch_interaction_helpers(
         monkeypatch,
@@ -128,8 +128,8 @@ async def test_simulate_transaction_verified_first_time_is_not_dangerous(monkeyp
         session=object(),
     )
 
-    assert response.status == "OK"
-    assert response.danger_reason is None
+    assert response.status == "DANGEROUS"
+    assert response.danger_reason == "FIRST_TIME_INTERACTION"
 
 
 @pytest.mark.asyncio
