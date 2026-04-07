@@ -11,6 +11,7 @@ from web3 import Web3
 
 import src.api.crud.deployment as crud_deployment
 from src.api.core.config import get_eth_node_url, settings
+from src.api.core.rpc_health import make_tracked_w3
 from src.api.core.exceptions import (
     InputValidationError,
     InternalServerError,
@@ -30,7 +31,7 @@ def get_latest_block_number() -> int:
         Latest block number
     """
     try:
-        w3 = Web3(Web3.HTTPProvider(get_eth_node_url()))
+        w3 = make_tracked_w3(get_eth_node_url())
         latest_block = w3.eth.get_block_number()
         return latest_block
     except Exception as e:

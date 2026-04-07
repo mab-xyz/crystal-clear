@@ -12,33 +12,22 @@ from src.api.services import info_service
 
 
 def test_get_latest_block_number_success(monkeypatch):
-    class _Eth:
-        @staticmethod
-        def get_block_number():
-            return 123
+    class _FakeW3:
+        class eth:
+            @staticmethod
+            def get_block_number():
+                return 123
 
-    class _Web3:
-        eth = _Eth()
-
-        @staticmethod
-        def HTTPProvider(_url):
-            return object()
-
-        def __init__(self, _provider):
-            pass
-
-    monkeypatch.setattr(info_service, "Web3", _Web3)
+    monkeypatch.setattr(info_service, "make_tracked_w3", lambda _url: _FakeW3())
 
     assert info_service.get_latest_block_number() == 123
 
 
 def test_get_latest_block_number_error(monkeypatch):
-    class _BrokenWeb3:
-        @staticmethod
-        def HTTPProvider(_url):
-            raise RuntimeError("boom")
+    def _raise(_url):
+        raise RuntimeError("boom")
 
-    monkeypatch.setattr(info_service, "Web3", _BrokenWeb3)
+    monkeypatch.setattr(info_service, "make_tracked_w3", _raise)
 
     with pytest.raises(InternalServerError):
         info_service.get_latest_block_number()

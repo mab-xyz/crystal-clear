@@ -74,4 +74,8 @@ def get_eth_node_url() -> str | None:
     if not settings.eth_node_urls:
         return None
     urls = settings.eth_node_urls.split("|")
-    return random.choice(urls)
+    if len(urls) == 1:
+        return urls[0]
+    from src.api.core.rpc_health import tracker  # avoid circular import at module load
+    weights = [tracker.health_ratio(url) for url in urls]
+    return random.choices(urls, weights=weights, k=1)[0]
