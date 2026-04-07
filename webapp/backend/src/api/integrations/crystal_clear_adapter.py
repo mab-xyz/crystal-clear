@@ -3,7 +3,7 @@ from typing import Mapping, Any
 
 from crystal_clear import CrystalClear
 
-from src.api.core.config import settings
+from src.api.core.config import get_eth_node_url, settings
 from src.api.schemas.analysis import RiskAnalysis
 from src.api.integrations.risk_engine import RiskEngine
 from src.api.services.first_time_cache import FirstInteractionCache
@@ -17,7 +17,7 @@ class CrystalClearRiskEngine(RiskEngine):
         self._verification_cache = ContractVerificationCache()
         self._first_time_cache = FirstInteractionCache()
         self._client = CrystalClear(
-            url=settings.eth_node_url,
+            url=get_eth_node_url(),
             allium_api_key=settings.allium_api_key,
             etherscan_api_key=settings.etherscan_api_key,
             log_level=settings.log_level,

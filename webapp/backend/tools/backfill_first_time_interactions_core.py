@@ -50,7 +50,7 @@ if str(API_ROOT) not in sys.path:
 from crystal_clear.traces.trace_collector import TraceCollector
 
 from src.api.clients.allium_client import AlliumClient
-from src.api.core.config import settings
+from src.api.core.config import get_eth_node_url, settings
 from src.api.core.database import engine
 from src.api.crud import deployment as deployment_crud
 from src.api.models.address_metadata import AddressMetadata
@@ -986,7 +986,7 @@ def main() -> None:
 
     _ensure_state_table()
     trace_collector = TraceCollector(
-        settings.eth_node_url, log_level=settings.log_level
+        get_eth_node_url(), log_level=settings.log_level
     )
     allium_client = (
         AlliumClient(settings.allium_api_key)
