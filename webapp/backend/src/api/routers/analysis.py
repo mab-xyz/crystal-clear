@@ -6,6 +6,7 @@ from sqlmodel import select
 from src.api.core.config import settings
 from src.api.core.database import get_session
 from src.api.models.interaction_scan_state import InteractionScanState
+from src.api.models.interaction_scan_skipped_range import InteractionScanSkippedRange
 from src.api.schemas.analysis import (
     ContractDependenciesRequest,
     ContractDependenciesResponse,
@@ -123,6 +124,21 @@ def _evaluate_interaction_scan_risk(
         for row in rows
     }
 
+    # Targets for which contract_direct scanning has skipped block ranges.
+    # If a (root_contract -> target, contract_direct) pair is recorded here,
+    # the scanner gave up on some range, so prior interactions likely existed
+    # and we must not treat it as a first-time interaction.
+    skipped_contract_direct: set[str] = set()
+    if root_norm and "contract_direct" in checked_interaction_types:
+        skipped_rows = session.exec(
+            select(InteractionScanSkippedRange).where(
+                InteractionScanSkippedRange.from_address == root_norm,
+                InteractionScanSkippedRange.to_address.in_(normalized_targets),
+                InteractionScanSkippedRange.interaction_type == "contract_direct",
+            )
+        ).all()
+        skipped_contract_direct = {r.to_address for r in skipped_rows}
+
     first_time_map: dict[str, dict[str, bool]] = {}
     state_map: dict[str, dict[str, str]] = {}
     contract_dangerous_types: list[str] = []
@@ -153,6 +169,16 @@ def _evaluate_interaction_scan_risk(
                 state_val = "MISSING"
             else:
                 first_time_val = bool(row.first_time_interact)
+                state_val = "FOUND"
+
+            # contract_direct override: a skipped scan range means interactions
+            # likely existed but were not recorded — do not flag as first-time.
+            if (
+                interaction_type == "contract_direct"
+                and first_time_val
+                and target in skipped_contract_direct
+            ):
+                first_time_val = False
                 state_val = "FOUND"
 
             first_time_map[target][interaction_type] = first_time_val
