@@ -7,7 +7,7 @@ name: Build and deploy Python app to Azure Web App - cc-api
 on:
   push:
     branches:
-      - production
+      - main
   workflow_dispatch:
 
 concurrency:
