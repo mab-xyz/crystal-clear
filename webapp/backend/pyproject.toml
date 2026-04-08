@@ -16,6 +16,7 @@ fastapi-cache2 = ">=0.2.2,<0.3.0"
 sqlmodel = ">=0.0.25,<0.0.26"
 psycopg2-binary = ">=2.9.10,<3.0.0"
 mab-crystal-clear = ">=1.0.10"
+keyring = ">=25.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
