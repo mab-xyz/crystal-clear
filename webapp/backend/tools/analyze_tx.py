@@ -5,11 +5,16 @@ Usage:
     python tools/analyze_tx.py <tx_hash>
     python tools/analyze_tx.py --json <tx_hash>
 
-Required environment variables (or entries in backend .env):
-    ETH_NODE_URLS       Comma-separated list of Ethereum RPC endpoints
-    ETHERSCAN_API_KEY   Etherscan API key for contract verification
+Credentials are resolved in this order (first non-empty value wins):
+    1. Environment variable
+    2. Backend .env file
+    3. System keyring  (service name: "crystal-clear", key: variable name)
 
-Example:
+To store credentials in the keyring:
+    python -c "import keyring; keyring.set_password('crystal-clear', 'ETH_NODE_URLS', 'http://...')"
+    python -c "import keyring; keyring.set_password('crystal-clear', 'ETHERSCAN_API_KEY', 'yourkey')"
+
+Example (env vars):
     ETH_NODE_URLS=http://localhost:8545 ETHERSCAN_API_KEY=... \\
         python tools/analyze_tx.py 0xabc...
 """
@@ -53,6 +58,28 @@ _load_env()
 
 
 # ---------------------------------------------------------------------------
+# Keyring helper
+# ---------------------------------------------------------------------------
+
+_KEYRING_SERVICE = "crystal-clear"
+
+
+def _get_secret(name: str) -> str:
+    """Return the value for *name*, checking env then system keyring."""
+    value = os.environ.get(name, "")
+    if value:
+        return value
+    try:
+        import keyring  # optional dependency
+        stored = keyring.get_password(_KEYRING_SERVICE, name)
+        if stored:
+            return stored
+    except Exception:
+        pass
+    return ""
+
+
+# ---------------------------------------------------------------------------
 # Core analysis helpers
 # ---------------------------------------------------------------------------
 
@@ -74,15 +101,17 @@ def _assess_status(results: dict) -> str:
 def _run(tx_hash: str, as_json: bool) -> None:
     from crystal_clear import CrystalClear
 
-    eth_node_urls = os.environ.get("ETH_NODE_URLS") or os.environ.get("ETH_NODE_URL")
+    eth_node_urls = _get_secret("ETH_NODE_URLS") or _get_secret("ETH_NODE_URL")
     if not eth_node_urls:
         sys.exit(
-            "Error: ETH_NODE_URLS environment variable is required.\n"
-            "Set it to one or more comma-separated Ethereum RPC endpoints."
+            "Error: ETH_NODE_URLS not found.\n"
+            "Set it via environment variable, backend .env file, or keyring:\n"
+            "  python -c \"import keyring; keyring.set_password"
+            "('crystal-clear', 'ETH_NODE_URLS', 'http://...')\""
         )
 
-    etherscan_key = os.environ.get("ETHERSCAN_API_KEY", "")
-    allium_key = os.environ.get("ALLIUM_API_KEY", "")
+    etherscan_key = _get_secret("ETHERSCAN_API_KEY")
+    allium_key = _get_secret("ALLIUM_API_KEY")
 
     client = CrystalClear(
         url=eth_node_urls.split(",")[0].strip(),
