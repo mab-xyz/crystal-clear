@@ -744,6 +744,67 @@ async def test_tx_risk_raw_legacy_signed_branch(monkeypatch):
 
 
 @pytest.mark.asyncio
+# Regression: plain ETH transfer to an EOA must not be flagged DANGEROUS.
+# The simulation returns no contract interactions (empty results) because the
+# target has no bytecode, so there is nothing to verify.
+async def test_simulate_transaction_eoa_target_is_ok(monkeypatch):
+    _patch_interaction_helpers(monkeypatch)
+    engine = _CaptureEngine({})  # no contract interactions — target is an EOA
+
+    body = SimulationRequest(
+        from_addr="0x1111111111111111111111111111111111111111",
+        to_addr="0x2222222222222222222222222222222222222222",
+        data="0x",
+    )
+
+    response = await analysis.simulate_transaction(
+        body,
+        risk_engine=engine,
+        session=object(),
+    )
+
+    assert response.status == "OK"
+    assert response.danger_reason is None
+    assert response.details == []
+
+
+@pytest.mark.asyncio
+# Same regression via tx-risk-raw: plain ETH transfer to an EOA must be OK.
+async def test_tx_risk_raw_eoa_target_is_ok(monkeypatch):
+    class _TypedObj:
+        def as_dict(self):
+            return {
+                "to": "0x2222222222222222222222222222222222222222",
+                "data": "0x",
+                "type": "0x2",
+            }
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            return _TypedObj()
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    monkeypatch.setattr(
+        analysis.Account,
+        "recover_transaction",
+        lambda _b: "0x1111111111111111111111111111111111111111",
+    )
+    _patch_interaction_helpers(monkeypatch)
+    engine = _CaptureEngine({})  # no contract interactions — target is an EOA
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x02aa"),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    assert response.status == "OK"
+    assert response.danger_reason is None
+    assert response.details == []
+
+
+@pytest.mark.asyncio
 # Ensures seed failures are logged/swallowed and both endpoints still return responses.
 async def test_seed_failures_are_swallowed_in_both_endpoints(monkeypatch):
     class _TypedObj:
