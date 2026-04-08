@@ -84,11 +84,43 @@ def _get_secret(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 SAFE_VERIFICATIONS = {"verified", "fully-verified"}
+_EOA_MARKER = "n-a"
+
+
+def _mark_eoa_addresses(client, results: dict) -> dict:
+    """Replace verification with "n-a" for addresses that have no bytecode (EOAs).
+
+    Addresses that arrived via _filter_contract_calls already have ``types``
+    set, so they are confirmed contracts.  Only root-level addresses (no
+    ``types``) that are also "not-verified" need the eth_getCode check.
+    """
+    sc = getattr(client, "simulation_collector", None)
+    out = {}
+    for addr, info in results.items():
+        info = dict(info)
+        if info.get("types") is None:
+            v = info.get("verification") or {}
+            ver = (
+                str(v.get("verification", "")).lower()
+                if isinstance(v, dict)
+                else ""
+            )
+            if ver not in SAFE_VERIFICATIONS:
+                if sc and not sc._validate_contract(addr, "latest"):
+                    info["verification"] = _EOA_MARKER
+        out[addr] = info
+    return out
 
 
 def _assess_status(results: dict) -> str:
-    """Apply the same risk logic as the /tx-risk/{tx_hash} endpoint."""
+    """Apply the same risk logic as the /tx-risk/{tx_hash} endpoint.
+
+    Addresses marked "n-a" (EOAs) are skipped — there is no contract code to
+    verify, so they are never a source of risk.
+    """
     for info in results.values():
+        if info.get("verification") == _EOA_MARKER:
+            continue
         if info.get("first_time", False):
             return "DANGEROUS"
         v = info.get("verification") or {}
@@ -121,6 +153,7 @@ def _run(tx_hash: str, as_json: bool) -> None:
     )
 
     results = client.simulate_from_tx(tx_hash)
+    results = _mark_eoa_addresses(client, results)
     status = _assess_status(results)
 
     if as_json:
@@ -132,7 +165,11 @@ def _run(tx_hash: str, as_json: bool) -> None:
                     "address": addr,
                     "depth": info.get("depth"),
                     "first_time": info.get("first_time", False),
-                    "verification": info.get("verification"),
+                    "verification": (
+                        "n-a"
+                        if info.get("verification") == _EOA_MARKER
+                        else info.get("verification")
+                    ),
                     "types": info.get("types"),
                 }
                 for addr, info in results.items()
@@ -153,8 +190,13 @@ def _run(tx_hash: str, as_json: bool) -> None:
     print(f"{'Address':<44}  {'Depth':>5}  {'First?':>6}  {'Verification':<16}  Types")
     print("-" * 100)
     for addr, info in sorted(results.items(), key=lambda kv: (kv[1].get("depth") or 0, kv[0])):
-        v = info.get("verification") or {}
-        ver = v.get("verification", "unknown") if isinstance(v, dict) else str(v)
+        raw_ver = info.get("verification")
+        if raw_ver == _EOA_MARKER:
+            ver = "n-a"
+        elif isinstance(raw_ver, dict):
+            ver = raw_ver.get("verification", "unknown")
+        else:
+            ver = str(raw_ver) if raw_ver is not None else "unknown"
         types_str = ", ".join(
             f"{k}×{n}" for k, n in (info.get("types") or {}).items()
         ) or "—"
