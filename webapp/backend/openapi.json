@@ -89,14 +89,16 @@
         "properties": {
           "detail": {
             "type": "string",
-            "title": "Detail"
+            "title": "Detail",
+            "description": "Human-readable explanation of what went wrong"
           }
         },
         "type": "object",
         "required": [
           "detail"
         ],
-        "title": "ErrorResponse"
+        "title": "ErrorResponse",
+        "description": "Standard error envelope returned for 4xx/5xx responses."
       },
       "RawTxRiskRequest": {
         "properties": {
@@ -166,6 +168,24 @@
             ],
             "title": "To Block",
             "description": "Upper bound block for first-time checks"
+          },
+          "interaction_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "sender_direct",
+                  "sender_transitive",
+                  "contract_direct",
+                  "contract_transitive"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction Type",
+            "description": "Specific interaction type to evaluate. If omitted, all applicable types are used."
           }
         },
         "type": "object",
@@ -181,16 +201,80 @@
             "type": "string",
             "enum": [
               "OK",
-              "DANGEROUS"
+              "DANGEROUS",
+              "POTENTIAL_DANGEROUS"
             ],
-            "title": "Status"
+            "title": "Status",
+            "description": "Overall risk verdict. OK = no issues found; DANGEROUS = at least one first-time or unverified contract interaction; POTENTIAL_DANGEROUS = scan data is incomplete so risk cannot be ruled out."
+          },
+          "interaction_status": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "dangerous",
+                    "ok",
+                    "not_checked",
+                    "potential_dangerous"
+                  ]
+                },
+                "propertyNames": {
+                  "enum": [
+                    "sender_direct",
+                    "sender_transitive",
+                    "contract_direct",
+                    "contract_transitive"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction Status",
+            "description": "Per-interaction-type risk status. Each key is an interaction type and its value is one of: ok, dangerous, potential_dangerous, or not_checked."
           },
           "details": {
             "items": {
               "$ref": "#/components/schemas/SimulationResultItem"
             },
             "type": "array",
-            "title": "Details"
+            "title": "Details",
+            "description": "Per-contract breakdown of risk signals for every address touched by the transaction"
+          },
+          "dangerous_interaction_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dangerous Interaction Types",
+            "description": "Interaction types that triggered the DANGEROUS verdict (e.g. [\"contract_direct\"]). Null when status is OK."
+          },
+          "danger_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "FIRST_TIME_INTERACTION",
+                  "MISSING_HISTORY",
+                  "UNVERIFIED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Danger Reason",
+            "description": "Root cause of a non-OK verdict. FIRST_TIME_INTERACTION = sender/contract has never called this address; MISSING_HISTORY = no historical scan data available; UNVERIFIED = contract source code is not verified on-chain."
           }
         },
         "type": "object",
@@ -198,17 +282,20 @@
           "status",
           "details"
         ],
-        "title": "SimulationResponse"
+        "title": "SimulationResponse",
+        "description": "Aggregated risk verdict for a simulated or decoded transaction."
       },
       "SimulationResultItem": {
         "properties": {
           "address": {
             "type": "string",
-            "title": "Address"
+            "title": "Address",
+            "description": "Checksummed Ethereum address of the touched contract"
           },
           "first_time": {
             "type": "boolean",
-            "title": "First Time"
+            "title": "First Time",
+            "description": "True if the sender has never interacted with this contract across any of the checked interaction types"
           },
           "verification": {
             "anyOf": [
@@ -220,7 +307,8 @@
                 "type": "null"
               }
             ],
-            "title": "Verification"
+            "title": "Verification",
+            "description": "Source-code verification status from Etherscan/Sourcify (e.g. {\"verification\": \"verified\", \"compiler\": \"solc\", ...}). Null when verification data is unavailable."
           },
           "depth": {
             "anyOf": [
@@ -231,7 +319,8 @@
                 "type": "null"
               }
             ],
-            "title": "Depth"
+            "title": "Depth",
+            "description": "Call depth at which this contract was reached during trace simulation (0 = direct target, 1+ = internal/delegate call)"
           },
           "types": {
             "anyOf": [
@@ -245,7 +334,42 @@
                 "type": "null"
               }
             ],
-            "title": "Types"
+            "title": "Types",
+            "description": "Map of EVM call types to their frequency for this address (e.g. {\"CALL\": 2, \"DELEGATECALL\": 1})"
+          },
+          "interaction_first_time": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction First Time",
+            "description": "Per-interaction-type first-time flag. Keys are interaction types (sender_direct, sender_transitive, contract_direct, contract_transitive); values are true if this is the first recorded interaction of that type."
+          },
+          "interaction_state": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "FOUND",
+                    "MISSING"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction State",
+            "description": "Per-interaction-type data availability. FOUND means historical scan data exists; MISSING means no scan data is available and the result is best-effort."
           }
         },
         "type": "object",
@@ -253,7 +377,8 @@
           "address",
           "first_time"
         ],
-        "title": "SimulationResultItem"
+        "title": "SimulationResultItem",
+        "description": "Risk analysis result for a single contract touched during the transaction."
       }
     },
     "securitySchemes": {
