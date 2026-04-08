@@ -24,6 +24,7 @@ from src.api.services.analysis_service import (
 from src.api.services.interaction_scan_seed import (
     seed_interaction_scan_state_from_tx,
 )
+from src.api.services.tx_risk_assessment import _has_unverified_dangerous
 from src.api.integrations.crystal_clear_adapter import get_risk_engine
 from src.api.integrations.risk_engine import RiskEngine
 from eth_account import Account
@@ -237,21 +238,6 @@ def _build_interaction_status(
             status_map[interaction_type] = "ok"
     return status_map
 
-
-def _has_unverified_dangerous(items: list[dict]) -> bool:
-    """Return True if any contract in the call chain is unverified.
-
-    An unverified contract is dangerous regardless of whether it is a first-time
-    interaction: interacting with an unverified contract is always risky.
-    Verified contracts can still be dangerous on a first-time call; that case is
-    handled separately via contract_dangerous_types / FIRST_TIME_INTERACTION.
-    """
-    for item in items:
-        v = item.get("verification") or {}
-        ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
-        if ver not in {"verified", "fully-verified"}:
-            return True
-    return False
 
 
 @router.get(

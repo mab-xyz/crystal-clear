@@ -27,11 +27,6 @@ import os
 import sys
 from pathlib import Path
 
-
-# ---------------------------------------------------------------------------
-# Path / env setup (mirrors the pattern used by other tools in this directory)
-# ---------------------------------------------------------------------------
-
 TOOLS_DIR = Path(__file__).resolve().parent
 BACKEND_ROOT = TOOLS_DIR.parent
 
@@ -39,9 +34,17 @@ for _p in (str(BACKEND_ROOT), str(BACKEND_ROOT / "src")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# Load .env before any module that reads settings.  Import the service module
+# directly — it has no heavy dependencies so it works without a full .env.
+from src.api.services.tx_risk_assessment import _has_unverified_dangerous  # noqa: E402
+
+_ENV_LOADED = False
+
 
 def _load_env() -> None:
-    """Populate os.environ from backend .env file (if present)."""
+    global _ENV_LOADED
+    if _ENV_LOADED:
+        return
     for candidate in (BACKEND_ROOT / ".env", BACKEND_ROOT / "api" / ".env"):
         if not candidate.exists():
             continue
@@ -52,13 +55,13 @@ def _load_env() -> None:
             key, value = line.split("=", 1)
             os.environ.setdefault(key.strip(), value.strip())
         break
+    _ENV_LOADED = True
 
 
 _load_env()
 
-
 # ---------------------------------------------------------------------------
-# Keyring helper
+# Keyring helper — CLI-only, not in backend
 # ---------------------------------------------------------------------------
 
 _KEYRING_SERVICE = "crystal-clear"
@@ -80,55 +83,8 @@ def _get_secret(name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Core analysis helpers
+# Analysis + display
 # ---------------------------------------------------------------------------
-
-SAFE_VERIFICATIONS = {"verified", "fully-verified"}
-_EOA_MARKER = "n-a"
-
-
-def _mark_eoa_addresses(client, results: dict) -> dict:
-    """Replace verification with "n-a" for addresses that have no bytecode (EOAs).
-
-    Addresses that arrived via _filter_contract_calls already have ``types``
-    set, so they are confirmed contracts.  Only root-level addresses (no
-    ``types``) that are also "not-verified" need the eth_getCode check.
-    """
-    sc = getattr(client, "simulation_collector", None)
-    out = {}
-    for addr, info in results.items():
-        info = dict(info)
-        if info.get("types") is None:
-            v = info.get("verification") or {}
-            ver = (
-                str(v.get("verification", "")).lower()
-                if isinstance(v, dict)
-                else ""
-            )
-            if ver not in SAFE_VERIFICATIONS:
-                if sc and not sc._validate_contract(addr, "latest"):
-                    info["verification"] = _EOA_MARKER
-        out[addr] = info
-    return out
-
-
-def _assess_status(results: dict) -> str:
-    """Apply the same risk logic as the /tx-risk/{tx_hash} endpoint.
-
-    Addresses marked "n-a" (EOAs) are skipped — there is no contract code to
-    verify, so they are never a source of risk.
-    """
-    for info in results.values():
-        if info.get("verification") == _EOA_MARKER:
-            continue
-        if info.get("first_time", False):
-            return "DANGEROUS"
-        v = info.get("verification") or {}
-        ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
-        if ver not in SAFE_VERIFICATIONS:
-            return "DANGEROUS"
-    return "OK"
-
 
 def _run(tx_hash: str, as_json: bool) -> None:
     from crystal_clear import CrystalClear
@@ -142,67 +98,76 @@ def _run(tx_hash: str, as_json: bool) -> None:
             "('crystal-clear', 'ETH_NODE_URLS', 'http://...')\""
         )
 
-    etherscan_key = _get_secret("ETHERSCAN_API_KEY")
-    allium_key = _get_secret("ALLIUM_API_KEY")
-
     client = CrystalClear(
         url=eth_node_urls.split(",")[0].strip(),
-        etherscan_api_key=etherscan_key,
-        allium_api_key=allium_key,
+        etherscan_api_key=_get_secret("ETHERSCAN_API_KEY"),
+        allium_api_key=_get_secret("ALLIUM_API_KEY"),
         log_level=os.environ.get("LOG_LEVEL", "ERROR"),
     )
 
-    results = client.simulate_from_tx(tx_hash)
-    results = _mark_eoa_addresses(client, results)
-    status = _assess_status(results)
+    raw = client.simulate_from_tx(tx_hash)
+
+    # Defense-in-depth: the SDK fix excludes EOA roots, but if an unpatched SDK
+    # returns one (root, no types, no bytecode), mark verification "n-a" so the
+    # backend helper does not flag it as an unverified contract.
+    sc = getattr(client, "simulation_collector", None)
+    items = []
+    for addr, info in raw.items():
+        ver_dict = info.get("verification") if isinstance(info.get("verification"), dict) else {}
+        if (
+            info.get("types") is None
+            and ver_dict.get("verification") not in {"verified", "fully-verified"}
+            and sc
+            and not sc._validate_contract(addr, "latest")
+        ):
+            info = {**info, "verification": "n-a"}
+        items.append({"address": addr, **info})
+
+    contract_items = [it for it in items if it.get("verification") != "n-a"]
+    status = (
+        "DANGEROUS"
+        if any(it.get("first_time") for it in contract_items)
+        or _has_unverified_dangerous(contract_items)
+        else "OK"
+    )
 
     if as_json:
-        output = {
+        print(json.dumps({
             "tx_hash": tx_hash,
             "status": status,
             "contracts": [
                 {
-                    "address": addr,
-                    "depth": info.get("depth"),
-                    "first_time": info.get("first_time", False),
-                    "verification": (
-                        "n-a"
-                        if info.get("verification") == _EOA_MARKER
-                        else info.get("verification")
-                    ),
-                    "types": info.get("types"),
+                    "address": it["address"],
+                    "depth": it.get("depth"),
+                    "first_time": it.get("first_time", False),
+                    "verification": it.get("verification"),
+                    "types": it.get("types"),
                 }
-                for addr, info in results.items()
+                for it in items
             ],
-        }
-        print(json.dumps(output, indent=2))
+        }, indent=2))
         return
 
-    # Human-readable output
     print(f"Transaction : {tx_hash}")
     print(f"Status      : {status}")
     print()
 
-    if not results:
+    if not items:
         print("No contract interactions found (plain ETH transfer to EOA).")
         return
 
     print(f"{'Address':<44}  {'Depth':>5}  {'First?':>6}  {'Verification':<16}  Types")
     print("-" * 100)
-    for addr, info in sorted(results.items(), key=lambda kv: (kv[1].get("depth") or 0, kv[0])):
-        raw_ver = info.get("verification")
-        if raw_ver == _EOA_MARKER:
-            ver = "n-a"
-        elif isinstance(raw_ver, dict):
-            ver = raw_ver.get("verification", "unknown")
-        else:
-            ver = str(raw_ver) if raw_ver is not None else "unknown"
-        types_str = ", ".join(
-            f"{k}×{n}" for k, n in (info.get("types") or {}).items()
-        ) or "—"
-        first = "YES" if info.get("first_time", False) else "no"
-        depth = info.get("depth", "?")
-        print(f"{addr:<44}  {depth:>5}  {first:>6}  {ver:<16}  {types_str}")
+    for it in sorted(items, key=lambda x: (x.get("depth") or 0, x["address"])):
+        raw_ver = it.get("verification")
+        ver = (
+            "n-a" if raw_ver == "n-a"
+            else raw_ver.get("verification", "unknown") if isinstance(raw_ver, dict)
+            else str(raw_ver) if raw_ver is not None else "unknown"
+        )
+        types_str = ", ".join(f"{k}×{n}" for k, n in (it.get("types") or {}).items()) or "—"
+        print(f"{it['address']:<44}  {it.get('depth', '?'):>5}  "
+              f"{'YES' if it.get('first_time') else 'no':>6}  {ver:<16}  {types_str}")
 
 
 # ---------------------------------------------------------------------------
@@ -216,9 +181,7 @@ def main() -> None:
         epilog=__doc__,
     )
     parser.add_argument("tx_hash", help="Transaction hash (0x-prefixed, 66 chars)")
-    parser.add_argument(
-        "--json", dest="as_json", action="store_true", help="Output raw JSON"
-    )
+    parser.add_argument("--json", dest="as_json", action="store_true", help="Output raw JSON")
     args = parser.parse_args()
 
     tx = args.tx_hash.strip().lower()
