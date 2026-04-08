@@ -1,9 +1,7 @@
 name: Promote main to production
 
 on:
-  pull_request:
-    branches: [main]
-    types: [closed]
+  workflow_dispatch: # disabled automatic promotion
 
 jobs:
   open-production-pr:
