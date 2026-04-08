@@ -573,6 +573,13 @@ class CrystalClear:
                 root_addr = Web3.to_checksum_address(root_addr)
         except Exception:
             pass
+        # Skip root address if it has no bytecode (EOA — not a smart contract).
+        # A plain ETH transfer to an EOA must not appear in risk results as an
+        # "unverified" entity: there is no contract code to check.
+        if root_addr and not self.simulation_collector._validate_contract(
+            root_addr, "latest"
+        ):
+            root_addr = ""
         # Compute depths for all nodes using existing helper
         try:
             nodes = set()
