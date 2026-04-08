@@ -12,11 +12,19 @@ class _Rows:
 
 
 class _Session:
-    def __init__(self, rows):
+    def __init__(self, rows, skipped_rows=None):
+        # First exec() returns InteractionScanState rows; subsequent exec()
+        # calls (e.g. the contract_direct skipped-range lookup) return
+        # `skipped_rows`. Defaults to [] so existing tests are unaffected.
         self._rows = rows
+        self._skipped_rows = skipped_rows or []
+        self._call = 0
 
     def exec(self, _stmt):
-        return _Rows(self._rows)
+        self._call += 1
+        if self._call == 1:
+            return _Rows(self._rows)
+        return _Rows(self._skipped_rows)
 
 
 # Verifies address normalization and interaction-type resolution with dedupe/filtering.
@@ -221,4 +229,82 @@ def test_evaluate_interaction_scan_risk_self_interaction_is_always_found():
     assert first_map[root]["contract_transitive"] is False
     assert state_map[root]["contract_transitive"] == "FOUND"
     assert contract_dangerous == []
+    assert contract_missing == []
+
+
+# When contract_direct would otherwise be flagged as first-time (row recorded
+# with first_time_interact=True), a matching entry in the skipped-range table
+# means the scanner gave up on some block range and interactions likely
+# existed — so the status must be downgraded to FOUND/not-first-time.
+def test_evaluate_interaction_scan_risk_contract_direct_skipped_overrides_first_time():
+    sender = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    root = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    target = "0xcccccccccccccccccccccccccccccccccccccccc"
+    row_first_time = SimpleNamespace(
+        from_address=root,
+        to_address=target,
+        interaction_type="contract_direct",
+        first_time_interact=True,
+    )
+    skipped = SimpleNamespace(
+        from_address=root,
+        to_address=target,
+        interaction_type="contract_direct",
+    )
+    session = _Session([row_first_time], skipped_rows=[skipped])
+
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        sender_dangerous,
+        contract_missing,
+        sender_missing,
+    ) = analysis._evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=root,
+        touched_addresses=[target],
+        checked_interaction_types=["contract_direct"],
+    )
+
+    # Skipped-range override: no longer first-time, no longer dangerous.
+    assert first_map[target]["contract_direct"] is False
+    assert state_map[target]["contract_direct"] == "FOUND"
+    assert contract_dangerous == []
+    assert contract_missing == []
+
+
+# Without a skipped-range entry, a contract_direct first-time row remains
+# dangerous — guards against the override firing unconditionally.
+def test_evaluate_interaction_scan_risk_contract_direct_first_time_without_skip():
+    sender = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    root = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    target = "0xcccccccccccccccccccccccccccccccccccccccc"
+    row_first_time = SimpleNamespace(
+        from_address=root,
+        to_address=target,
+        interaction_type="contract_direct",
+        first_time_interact=True,
+    )
+    session = _Session([row_first_time])
+
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        _sender_dangerous,
+        contract_missing,
+        _sender_missing,
+    ) = analysis._evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=root,
+        touched_addresses=[target],
+        checked_interaction_types=["contract_direct"],
+    )
+
+    assert first_map[target]["contract_direct"] is True
+    assert state_map[target]["contract_direct"] == "FOUND"
+    assert contract_dangerous == ["contract_direct"]
     assert contract_missing == []
