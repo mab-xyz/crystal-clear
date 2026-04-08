@@ -23,8 +23,12 @@ TRANSITIVE_INTERACTION_TYPES = {"contract_transitive", "sender_transitive"}
 DEBUG_LOG_ENABLED = os.getenv("LOG_LEVEL", "").strip().upper() == "DEBUG"
 
 
+_KEYRING_SERVICE = "crystal-clear"
+_KEYRING_SECRETS = ("ETH_NODE_URLS", "ETH_NODE_URL", "ETHERSCAN_API_KEY", "ALLIUM_API_KEY")
+
+
 def _load_env() -> None:
-    """Populate os.environ with values from backend .env file (if present)."""
+    """Populate os.environ from backend .env file then system keyring."""
 
     candidates = [ROOT / ".env", ROOT / "api" / ".env"]
     for env_path in candidates:
@@ -37,6 +41,16 @@ def _load_env() -> None:
             key, value = line.split("=", 1)
             os.environ.setdefault(key.strip(), value.strip())
         break
+
+    try:
+        import keyring  # optional dependency
+        for name in _KEYRING_SECRETS:
+            if not os.environ.get(name):
+                stored = keyring.get_password(_KEYRING_SERVICE, name)
+                if stored:
+                    os.environ[name] = stored
+    except Exception:
+        pass
 
 
 _load_env()

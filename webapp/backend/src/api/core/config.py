@@ -1,10 +1,17 @@
 import random
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_empty_strings(cls, data: dict) -> dict:
+        if isinstance(data, dict):
+            return {k: v for k, v in data.items() if v != ""}
+        return data
+
     # Ethereum Node Configuration
     eth_node_urls: str | None = Field(default=None, alias="ETH_NODE_URLS")
     eth_rpc_timeout_seconds: int = Field(
@@ -15,12 +22,12 @@ class Settings(BaseSettings):
     database_url: str = Field(..., alias="DATABASE_URL")
 
     # Cache Configuration
-    cache_url: str = Field(..., alias="CACHE_URL")
+    cache_url: str | None = Field(default=None, alias="CACHE_URL")
     cache_ttl: int = Field(60, alias="CACHE_TTL")
 
     # API Configuration
-    api_host: str = Field(..., alias="API_HOST")
-    api_port: int = Field(..., alias="API_PORT")
+    api_host: str = Field("0.0.0.0", alias="API_HOST")
+    api_port: int = Field(8000, alias="API_PORT")
 
     # API Key Auth Configuration
     api_key_auth_enabled: bool = Field(False, alias="API_KEY_AUTH_ENABLED")
@@ -44,7 +51,7 @@ class Settings(BaseSettings):
     allium_api_key: str = Field(..., alias="ALLIUM_API_KEY")
 
     # Github Token
-    github_token: str = Field(..., alias="GITHUB_TOKEN")
+    github_token: str | None = Field(default=None, alias="GITHUB_TOKEN")
 
     # Etherscan API Key
     etherscan_api_key: str = Field(..., alias="ETHERSCAN_API_KEY")
