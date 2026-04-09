@@ -113,11 +113,19 @@ def _evaluate_interaction_scan_risk(
     if root_norm:
         from_candidates.add(root_norm)
 
+    # Also fetch the "direct" counterpart so the direct⊂transitive implication
+    # can fire even when only the transitive type was requested.
+    query_types = set(checked_interaction_types)
+    if "contract_transitive" in query_types:
+        query_types.add("contract_direct")
+    if "sender_transitive" in query_types:
+        query_types.add("sender_direct")
+
     rows = session.exec(
         select(InteractionScanState).where(
             InteractionScanState.from_address.in_(list(from_candidates)),
             InteractionScanState.to_address.in_(normalized_targets),
-            InteractionScanState.interaction_type.in_(checked_interaction_types),
+            InteractionScanState.interaction_type.in_(list(query_types)),
         )
     ).all()
     row_index = {
@@ -184,8 +192,43 @@ def _evaluate_interaction_scan_risk(
 
             first_time_map[target][interaction_type] = first_time_val
             state_map[target][interaction_type] = state_val
-            if not first_time_val:
+
+        # Implication: direct interaction ⊂ transitive interaction.
+        # If contract_direct is not first-time, contract_transitive cannot be either.
+        # This works even when contract_direct was not in checked_interaction_types
+        # because we fetched the direct rows in the query above.
+        def _direct_is_not_first_time(from_addr: str | None, target: str, direct_type: str) -> bool:
+            """Check if the direct counterpart has a known prior interaction."""
+            if not from_addr:
+                return False
+            # Already evaluated in the loop above
+            if direct_type in first_time_map.get(target, {}):
+                return not first_time_map[target][direct_type]
+            # Not in checked types, but may exist in DB via the expanded query
+            row = row_index.get((from_addr, target, direct_type))
+            return row is not None and not row.first_time_interact
+
+        if (
+            first_time_map[target].get("contract_transitive", False)
+            and _direct_is_not_first_time(root_norm, target, "contract_direct")
+        ):
+            first_time_map[target]["contract_transitive"] = False
+            if state_map[target].get("contract_transitive") == "MISSING":
+                state_map[target]["contract_transitive"] = "FOUND"
+
+        if (
+            first_time_map[target].get("sender_transitive", False)
+            and _direct_is_not_first_time(sender_norm, target, "sender_direct")
+        ):
+            first_time_map[target]["sender_transitive"] = False
+            if state_map[target].get("sender_transitive") == "MISSING":
+                state_map[target]["sender_transitive"] = "FOUND"
+
+        for interaction_type in checked_interaction_types:
+            first_time_val = first_time_map[target].get(interaction_type)
+            if first_time_val is None or not first_time_val:
                 continue
+            state_val = state_map[target].get(interaction_type, "MISSING")
             # MISSING history: we lack data — flag as potential, not confirmed.
             if state_val == "MISSING":
                 if (

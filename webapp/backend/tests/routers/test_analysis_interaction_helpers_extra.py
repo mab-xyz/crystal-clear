@@ -308,3 +308,159 @@ def test_evaluate_interaction_scan_risk_contract_direct_first_time_without_skip(
     assert state_map[target]["contract_direct"] == "FOUND"
     assert contract_dangerous == ["contract_direct"]
     assert contract_missing == []
+
+
+# If contract_direct is not first-time, contract_transitive must also not be
+# first-time (direct ⊂ transitive). Even when the transitive row is MISSING
+# in the DB, the implication overrides it to FOUND/not-first-time.
+def test_evaluate_contract_direct_not_first_time_implies_transitive_not_first_time():
+    sender = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    root = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    target = "0xcccccccccccccccccccccccccccccccccccccccc"
+    # contract_direct exists and is not first-time
+    row_direct = SimpleNamespace(
+        from_address=root,
+        to_address=target,
+        interaction_type="contract_direct",
+        first_time_interact=False,
+    )
+    # No contract_transitive row in DB (MISSING)
+    session = _Session([row_direct])
+
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        sender_dangerous,
+        contract_missing,
+        sender_missing,
+    ) = analysis._evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=root,
+        touched_addresses=[target],
+        checked_interaction_types=["contract_direct", "contract_transitive"],
+    )
+
+    assert first_map[target]["contract_direct"] is False
+    assert state_map[target]["contract_direct"] == "FOUND"
+    # Transitive must be inferred as not first-time from direct
+    assert first_map[target]["contract_transitive"] is False
+    assert state_map[target]["contract_transitive"] == "FOUND"
+    assert contract_dangerous == []
+    assert contract_missing == []
+
+
+# Same implication for sender: sender_direct not first-time implies
+# sender_transitive not first-time.
+def test_evaluate_sender_direct_not_first_time_implies_transitive_not_first_time():
+    sender = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    root = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    target = "0xcccccccccccccccccccccccccccccccccccccccc"
+    row_direct = SimpleNamespace(
+        from_address=sender,
+        to_address=target,
+        interaction_type="sender_direct",
+        first_time_interact=False,
+    )
+    session = _Session([row_direct])
+
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        sender_dangerous,
+        contract_missing,
+        sender_missing,
+    ) = analysis._evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=root,
+        touched_addresses=[target],
+        checked_interaction_types=["sender_direct", "sender_transitive"],
+    )
+
+    assert first_map[target]["sender_direct"] is False
+    assert first_map[target]["sender_transitive"] is False
+    assert state_map[target]["sender_transitive"] == "FOUND"
+    assert sender_dangerous == []
+    assert sender_missing == []
+
+
+# When contract_direct IS first-time, the implication must NOT fire —
+# contract_transitive should retain its own DB state.
+def test_evaluate_contract_direct_first_time_does_not_override_transitive():
+    sender = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    root = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    target = "0xcccccccccccccccccccccccccccccccccccccccc"
+    row_direct = SimpleNamespace(
+        from_address=root,
+        to_address=target,
+        interaction_type="contract_direct",
+        first_time_interact=True,
+    )
+    row_transitive = SimpleNamespace(
+        from_address=root,
+        to_address=target,
+        interaction_type="contract_transitive",
+        first_time_interact=True,
+    )
+    session = _Session([row_direct, row_transitive])
+
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        _sender_dangerous,
+        contract_missing,
+        _sender_missing,
+    ) = analysis._evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=root,
+        touched_addresses=[target],
+        checked_interaction_types=["contract_direct", "contract_transitive"],
+    )
+
+    assert first_map[target]["contract_direct"] is True
+    assert first_map[target]["contract_transitive"] is True
+    assert contract_dangerous == ["contract_direct", "contract_transitive"]
+
+
+# When the endpoint only checks contract_transitive (not contract_direct),
+# the implication should still fire by looking up contract_direct from the DB.
+def test_evaluate_transitive_only_checked_but_direct_exists_in_db():
+    sender = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    root = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    target = "0xcccccccccccccccccccccccccccccccccccccccc"
+    # contract_direct exists in DB as not first-time, but is NOT in checked types
+    row_direct = SimpleNamespace(
+        from_address=root,
+        to_address=target,
+        interaction_type="contract_direct",
+        first_time_interact=False,
+    )
+    # No contract_transitive row in DB
+    session = _Session([row_direct])
+
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        sender_dangerous,
+        contract_missing,
+        sender_missing,
+    ) = analysis._evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=root,
+        touched_addresses=[target],
+        # Only checking transitive, not direct
+        checked_interaction_types=["contract_transitive"],
+    )
+
+    # Transitive was MISSING in DB but inferred from direct
+    assert first_map[target]["contract_transitive"] is False
+    assert state_map[target]["contract_transitive"] == "FOUND"
+    assert contract_dangerous == []
+    assert contract_missing == []
