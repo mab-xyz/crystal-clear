@@ -30,3 +30,13 @@ def _has_unverified_dangerous(items: list[dict]) -> bool:
         if ver not in {"verified", "fully-verified", "allowlisted"}:
             return True
     return False
+
+
+def _has_allowlisted_verification(items: list[dict]) -> bool:
+    """Return True if any item was accepted through the verification allowlist."""
+    for item in items:
+        v = item.get("verification") or {}
+        ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
+        if ver == "allowlisted":
+            return True
+    return False

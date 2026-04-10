@@ -26,7 +26,10 @@ from src.api.services.analysis_service import (
 from src.api.services.interaction_scan_seed import (
     seed_interaction_scan_state_from_tx,
 )
-from src.api.services.tx_risk_assessment import _has_unverified_dangerous
+from src.api.services.tx_risk_assessment import (
+    _has_allowlisted_verification,
+    _has_unverified_dangerous,
+)
 from src.api.integrations.crystal_clear_adapter import get_risk_engine
 from src.api.integrations.risk_engine import RiskEngine
 from eth_account import Account
@@ -539,6 +542,8 @@ async def simulate_transaction(
             ok_reason = "EIP-7702 delegated EOA (verified delegate)"
         elif call_object.get("to") and not touched_addresses:
             ok_reason = "to EOA"
+        elif _has_allowlisted_verification(items):
+            ok_reason = "allowlist"
         else:
             ok_reason = None
     interaction_status = _build_interaction_status(
@@ -639,7 +644,17 @@ async def get_tx_risk(
             if ver not in {"verified", "fully-verified", "allowlisted"}:
                 status = "DANGEROUS"
 
-    return SimulationResponse(status=status, details=items)
+    ok_reason = (
+        "allowlist"
+        if status == "OK" and _has_allowlisted_verification(items)
+        else None
+    )
+
+    return SimulationResponse(
+        status=status,
+        details=items,
+        ok_reason=ok_reason,
+    )
 
 
 @router.post(
@@ -957,6 +972,8 @@ async def get_tx_risk_from_raw(
             ok_reason = "EIP-7702 delegated EOA (verified delegate)"
         elif call_object.get("to") and not touched_addresses:
             ok_reason = "to EOA"
+        elif _has_allowlisted_verification(items):
+            ok_reason = "allowlist"
         else:
             ok_reason = None
     interaction_status = _build_interaction_status(
