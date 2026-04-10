@@ -810,6 +810,7 @@ async def test_simulate_transaction_eoa_target_is_ok(monkeypatch):
 
     assert response.status == "OK"
     assert response.danger_reason is None
+    assert response.ok_reason == "to EOA"
     assert response.details == []
 
 
@@ -846,6 +847,7 @@ async def test_tx_risk_raw_eoa_target_is_ok(monkeypatch):
 
     assert response.status == "OK"
     assert response.danger_reason is None
+    assert response.ok_reason == "to EOA"
     assert response.details == []
 
 

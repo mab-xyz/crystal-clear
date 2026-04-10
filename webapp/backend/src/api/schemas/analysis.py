@@ -385,6 +385,13 @@ class SimulationResponse(BaseModel):
             "available; UNVERIFIED = contract source code is not verified on-chain."
         ),
     )
+    ok_reason: Optional[Literal["to EOA"]] = Field(
+        None,
+        description=(
+            "Reason the verdict is OK when the transaction touches no contracts. "
+            "to EOA = the destination address has no bytecode (plain ETH transfer)."
+        ),
+    )
 
 
 class RawTxRiskRequest(BaseModel):
