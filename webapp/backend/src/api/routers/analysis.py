@@ -501,15 +501,23 @@ async def simulate_transaction(
     if _has_unverified_dangerous(items):
         status = "DANGEROUS"
         danger_reason = "UNVERIFIED"
+        ok_reason = None
     elif contract_dangerous_types:
         status = "DANGEROUS"
         danger_reason = "FIRST_TIME_INTERACTION"
+        ok_reason = None
     elif contract_missing_types:
         status = "POTENTIAL_DANGEROUS"
         danger_reason = "MISSING_HISTORY"
+        ok_reason = None
     else:
         status = "OK"
         danger_reason = None
+        ok_reason = (
+            "to EOA"
+            if (call_object.get("to") and not touched_addresses)
+            else None
+        )
     interaction_status = _build_interaction_status(
         checked_interaction_types,
         contract_dangerous_types + sender_dangerous_types,
@@ -522,6 +530,7 @@ async def simulate_transaction(
         details=items,
         dangerous_interaction_types=contract_dangerous_types,
         danger_reason=danger_reason,
+        ok_reason=ok_reason,
     )
 
 
@@ -893,15 +902,23 @@ async def get_tx_risk_from_raw(
     if _has_unverified_dangerous(items):
         status_val = "DANGEROUS"
         danger_reason = "UNVERIFIED"
+        ok_reason = None
     elif contract_dangerous_types:
         status_val = "DANGEROUS"
         danger_reason = "FIRST_TIME_INTERACTION"
+        ok_reason = None
     elif contract_missing_types:
         status_val = "POTENTIAL_DANGEROUS"
         danger_reason = "MISSING_HISTORY"
+        ok_reason = None
     else:
         status_val = "OK"
         danger_reason = None
+        ok_reason = (
+            "to EOA"
+            if (call_object.get("to") and not touched_addresses)
+            else None
+        )
     interaction_status = _build_interaction_status(
         checked_interaction_types,
         contract_dangerous_types + sender_dangerous_types,
@@ -913,5 +930,6 @@ async def get_tx_risk_from_raw(
         details=items,
         dangerous_interaction_types=contract_dangerous_types,
         danger_reason=danger_reason,
+        ok_reason=ok_reason,
     )
     return resp
