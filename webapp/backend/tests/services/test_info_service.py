@@ -79,6 +79,9 @@ def test_get_deployment_data_fetches_from_allium_when_cache_miss(monkeypatch):
 
 def test_get_verification_data_falls_back_to_etherscan(monkeypatch):
     monkeypatch.setattr(info_service.Web3, "is_address", lambda _a: True)
+    monkeypatch.setattr(
+        info_service, "_detect_eip7702_delegate", lambda _a: None
+    )
 
     class _Resp:
         def __init__(self, status_code, payload):
@@ -106,7 +109,133 @@ def test_get_verification_data_falls_back_to_etherscan(monkeypatch):
         "address": "0x1111111111111111111111111111111111111111",
         "match": "match",
         "verifiedAt": "na",
+        "is_eip7702": False,
+        "delegate_address": None,
     }
+
+
+def test_detect_eip7702_delegate_returns_delegate_address(monkeypatch):
+    """EIP-7702 delegation designator: 0xef0100 + 20-byte delegate address."""
+    delegate = "0x1111111111111111111111111111111111111111"
+    # Build raw 23-byte delegation designator
+    delegation_code = b"\xef\x01\x00" + bytes.fromhex(delegate[2:])
+
+    class _FakeEth:
+        @staticmethod
+        def get_code(_address):
+            return delegation_code
+
+    class _FakeW3:
+        eth = _FakeEth()
+
+    monkeypatch.setattr(
+        info_service, "make_tracked_w3", lambda _url: _FakeW3()
+    )
+    monkeypatch.setattr(
+        info_service.Web3, "to_checksum_address", lambda a: a
+    )
+
+    result = info_service._detect_eip7702_delegate(
+        "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    )
+    assert result is not None
+    assert result.lower() == delegate.lower()
+
+
+def test_detect_eip7702_delegate_returns_none_for_regular_contract(monkeypatch):
+    """Regular contract bytecode should not trigger EIP-7702 detection."""
+
+    class _FakeEth:
+        @staticmethod
+        def get_code(_address):
+            return b"\x60\x80\x60\x40\x52"  # typical contract init
+
+    class _FakeW3:
+        eth = _FakeEth()
+
+    monkeypatch.setattr(
+        info_service, "make_tracked_w3", lambda _url: _FakeW3()
+    )
+    monkeypatch.setattr(
+        info_service.Web3, "to_checksum_address", lambda a: a
+    )
+
+    result = info_service._detect_eip7702_delegate("0xabc")
+    assert result is None
+
+
+def test_detect_eip7702_delegate_returns_none_for_eoa(monkeypatch):
+    """Empty code (EOA) should not trigger EIP-7702 detection."""
+
+    class _FakeEth:
+        @staticmethod
+        def get_code(_address):
+            return b""
+
+    class _FakeW3:
+        eth = _FakeEth()
+
+    monkeypatch.setattr(
+        info_service, "make_tracked_w3", lambda _url: _FakeW3()
+    )
+    monkeypatch.setattr(
+        info_service.Web3, "to_checksum_address", lambda a: a
+    )
+
+    result = info_service._detect_eip7702_delegate("0xabc")
+    assert result is None
+
+
+def test_detect_eip7702_delegate_returns_none_on_rpc_error(monkeypatch):
+    """RPC errors should be swallowed, returning None."""
+
+    class _FakeW3:
+        class eth:
+            @staticmethod
+            def get_code(_address):
+                raise RuntimeError("RPC down")
+
+    monkeypatch.setattr(
+        info_service, "make_tracked_w3", lambda _url: _FakeW3()
+    )
+    monkeypatch.setattr(
+        info_service.Web3, "to_checksum_address", lambda a: a
+    )
+
+    result = info_service._detect_eip7702_delegate("0xabc")
+    assert result is None
+
+
+def test_get_verification_data_eip7702_verifies_delegate(monkeypatch):
+    """When address is EIP-7702, verification should check the delegate contract."""
+    delegate = "0x2222222222222222222222222222222222222222"
+    queried = "0x1111111111111111111111111111111111111111"
+
+    monkeypatch.setattr(info_service.Web3, "is_address", lambda _a: True)
+    monkeypatch.setattr(
+        info_service, "_detect_eip7702_delegate", lambda _a: delegate
+    )
+
+    class _Resp:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {
+                "address": delegate,
+                "match": "full_match",
+                "verifiedAt": "2024-01-01",
+            }
+
+    monkeypatch.setattr(info_service.requests, "get", lambda _url: _Resp())
+
+    result = info_service.get_verification_data(queried)
+
+    # Should report against the queried address, not the delegate
+    assert result["address"] == queried
+    assert result["is_eip7702"] is True
+    assert result["delegate_address"] == delegate
+    assert result["match"] == "full_match"
 
 
 @pytest.mark.asyncio

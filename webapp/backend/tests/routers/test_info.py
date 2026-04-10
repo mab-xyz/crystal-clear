@@ -13,6 +13,8 @@ class _DummyVerificationData:
             "address": "0x1111111111111111111111111111111111111111",
             "verification": "verified",
             "verifiedAt": "na",
+            "is_eip7702": False,
+            "delegate_address": None,
         }
 
 

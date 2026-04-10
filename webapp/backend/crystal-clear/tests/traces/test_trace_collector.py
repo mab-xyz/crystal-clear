@@ -85,6 +85,42 @@ def test_get_calls_from(
     )
 
 
+def test_validate_contract_returns_false_for_eip7702(trace_collector):
+    """EIP-7702 delegation designator should not be treated as a contract."""
+    delegate = "0x1111111111111111111111111111111111111111"
+    delegation_code = b"\xef\x01\x00" + bytes.fromhex(delegate[2:])
+
+    class _FakeEth:
+        @staticmethod
+        def get_code(address, block_identifier=None):
+            return delegation_code
+
+    mock_w3 = MagicMock()
+    mock_w3.eth = _FakeEth()
+    trace_collector.w3 = mock_w3
+
+    address = "0x2222222222222222222222222222222222222222"
+    result = trace_collector._validate_contract(address, "latest")
+    assert result is False
+
+
+def test_validate_contract_returns_true_for_regular_contract(trace_collector):
+    """Regular contract bytecode should still be treated as a contract."""
+
+    class _FakeEth:
+        @staticmethod
+        def get_code(address, block_identifier=None):
+            return b"\x60\x80\x60\x40\x52\x34\x80\x15"
+
+    mock_w3 = MagicMock()
+    mock_w3.eth = _FakeEth()
+    trace_collector.w3 = mock_w3
+
+    address = "0x2222222222222222222222222222222222222222"
+    result = trace_collector._validate_contract(address, "latest")
+    assert result is True
+
+
 @patch("web3.Web3")
 def test_filter_txs_from(MockWeb3, trace_collector):
     mock_w3_instance = MockWeb3.return_value

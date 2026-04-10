@@ -91,9 +91,62 @@ def get_deployment_data(
         ) from e
 
 
+def _detect_eip7702_delegate(address: str) -> Optional[str]:
+    """
+    Check if an address is an EIP-7702 delegated EOA and return the delegate
+    contract address, or None if it is not.
+    """
+    try:
+        w3 = make_tracked_w3(get_eth_node_url())
+        code = w3.eth.get_code(Web3.to_checksum_address(address))
+        if code and len(code) == 23 and code[:3] == b"\xef\x01\x00":
+            return Web3.to_checksum_address("0x" + code[3:].hex())
+    except Exception as e:
+        logger.warning(f"EIP-7702 check failed for {address}: {e}")
+    return None
+
+
+def _fetch_verification(address: str) -> Dict[str, str]:
+    """
+    Fetch verification status for a single address from Sourcify, falling back
+    to Etherscan.
+    """
+    request_url = f"https://sourcify.dev/server/v2/contract/1/{address}"
+    response = requests.get(request_url)
+    verification_info = response.json()
+
+    if (
+        response.status_code != 200
+        or not verification_info
+        or verification_info.get("match") == "null"
+    ):
+        etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={address}&apikey={settings.etherscan_api_key}"
+        response = requests.get(etherscan_url)
+        if response.status_code == 200:
+            etherscan_data = response.json()["result"]
+            if (
+                len(etherscan_data) > 0
+                and len(etherscan_data[0].get("SourceCode")) > 0
+            ):
+                return {
+                    "address": address,
+                    "match": "match",
+                    "verifiedAt": "na",
+                }
+
+            return {
+                "address": address,
+                "match": "not_match",
+                "verifiedAt": "na",
+            }
+
+    return verification_info
+
+
 def get_verification_data(address: str) -> Optional[Dict[str, str]]:
     """
     Get the verification information for a given contract address.
+    For EIP-7702 delegated EOAs, checks the delegate contract's verification.
 
     Args:
         address: Ethereum contract address
@@ -106,37 +159,20 @@ def get_verification_data(address: str) -> Optional[Dict[str, str]]:
         if not Web3.is_address(address):
             raise InputValidationError(f"Invalid Ethereum address: {address}")
 
-        request_url = f"https://sourcify.dev/server/v2/contract/1/{address}"
+        delegate_address = _detect_eip7702_delegate(address)
 
-        response = requests.get(request_url)
-        verification_info = response.json()
+        if delegate_address:
+            # Verify the delegate contract, but report against the queried address
+            result = _fetch_verification(delegate_address)
+            result["address"] = address
+            result["is_eip7702"] = True
+            result["delegate_address"] = delegate_address
+            return result
 
-        if (
-            response.status_code != 200
-            or not verification_info
-            or verification_info.get("match") == "null"
-        ):
-            etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={address}&apikey={settings.etherscan_api_key}"
-            response = requests.get(etherscan_url)
-            if response.status_code == 200:
-                etherscan_data = response.json()["result"]
-                if (
-                    len(etherscan_data) > 0
-                    and len(etherscan_data[0].get("SourceCode")) > 0
-                ):
-                    return {
-                        "address": address,
-                        "match": "match",
-                        "verifiedAt": "na",
-                    }
-
-                return {
-                    "address": address,
-                    "match": "not_match",
-                    "verifiedAt": "na",
-                }
-
-        return verification_info
+        result = _fetch_verification(address)
+        result["is_eip7702"] = False
+        result["delegate_address"] = None
+        return result
     except InputValidationError as e:
         logger.error(f"Error: {e}")
         raise e

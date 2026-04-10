@@ -12,7 +12,11 @@ class AddressMetadata(SQLModel, table=True):
     address: str = Field(primary_key=True)
     address_type: str = Field(
         default="unknown",
-        description="eoa, contract, or unknown",
+        description="eoa, eoa_delegated, contract, or unknown",
+    )
+    delegate_address: Optional[str] = Field(
+        default=None,
+        description="Delegate contract address for EIP-7702 delegated EOAs",
     )
     creation_block: Optional[int] = Field(
         default=None,
