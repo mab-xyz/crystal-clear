@@ -3,6 +3,7 @@ import subprocess
 from typing import Dict, Optional
 
 import requests
+from pydantic import BaseModel, Field
 from src.api.clients.allium_client import AlliumClient
 from fastapi import HTTPException
 from loguru import logger
@@ -91,6 +92,16 @@ def get_deployment_data(
         ) from e
 
 
+class VerificationData(BaseModel):
+    """Service-level model for contract verification results."""
+
+    address: str
+    match: str
+    verifiedAt: Optional[str] = None
+    is_eip7702: bool = False
+    delegate_address: Optional[str] = None
+
+
 def _detect_eip7702_delegate(address: str) -> Optional[str]:
     """
     Check if an address is an EIP-7702 delegated EOA and return the delegate
@@ -106,7 +117,7 @@ def _detect_eip7702_delegate(address: str) -> Optional[str]:
     return None
 
 
-def _fetch_verification(address: str) -> Dict[str, str]:
+def _fetch_verification(address: str) -> VerificationData:
     """
     Fetch verification status for a single address from Sourcify, falling back
     to Etherscan.
@@ -128,22 +139,22 @@ def _fetch_verification(address: str) -> Dict[str, str]:
                 len(etherscan_data) > 0
                 and len(etherscan_data[0].get("SourceCode")) > 0
             ):
-                return {
-                    "address": address,
-                    "match": "match",
-                    "verifiedAt": "na",
-                }
+                return VerificationData(
+                    address=address, match="match", verifiedAt="na"
+                )
 
-            return {
-                "address": address,
-                "match": "not_match",
-                "verifiedAt": "na",
-            }
+            return VerificationData(
+                address=address, match="not_match", verifiedAt="na"
+            )
 
-    return verification_info
+    return VerificationData(
+        address=verification_info.get("address", address),
+        match=verification_info.get("match", "not_match"),
+        verifiedAt=verification_info.get("verifiedAt"),
+    )
 
 
-def get_verification_data(address: str) -> Optional[Dict[str, str]]:
+def get_verification_data(address: str) -> VerificationData:
     """
     Get the verification information for a given contract address.
     For EIP-7702 delegated EOAs, checks the delegate contract's verification.
@@ -164,15 +175,12 @@ def get_verification_data(address: str) -> Optional[Dict[str, str]]:
         if delegate_address:
             # Verify the delegate contract, but report against the queried address
             result = _fetch_verification(delegate_address)
-            result["address"] = address
-            result["is_eip7702"] = True
-            result["delegate_address"] = delegate_address
+            result.address = address
+            result.is_eip7702 = True
+            result.delegate_address = delegate_address
             return result
 
-        result = _fetch_verification(address)
-        result["is_eip7702"] = False
-        result["delegate_address"] = None
-        return result
+        return _fetch_verification(address)
     except InputValidationError as e:
         logger.error(f"Error: {e}")
         raise e

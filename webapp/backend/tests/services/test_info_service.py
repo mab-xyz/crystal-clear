@@ -105,13 +105,12 @@ def test_get_verification_data_falls_back_to_etherscan(monkeypatch):
         "0x1111111111111111111111111111111111111111"
     )
 
-    assert result == {
-        "address": "0x1111111111111111111111111111111111111111",
-        "match": "match",
-        "verifiedAt": "na",
-        "is_eip7702": False,
-        "delegate_address": None,
-    }
+    assert isinstance(result, info_service.VerificationData)
+    assert result.address == "0x1111111111111111111111111111111111111111"
+    assert result.match == "match"
+    assert result.verifiedAt == "na"
+    assert result.is_eip7702 is False
+    assert result.delegate_address is None
 
 
 def test_detect_eip7702_delegate_returns_delegate_address(monkeypatch):
@@ -232,10 +231,11 @@ def test_get_verification_data_eip7702_verifies_delegate(monkeypatch):
     result = info_service.get_verification_data(queried)
 
     # Should report against the queried address, not the delegate
-    assert result["address"] == queried
-    assert result["is_eip7702"] is True
-    assert result["delegate_address"] == delegate
-    assert result["match"] == "full_match"
+    assert isinstance(result, info_service.VerificationData)
+    assert result.address == queried
+    assert result.is_eip7702 is True
+    assert result.delegate_address == delegate
+    assert result.match == "full_match"
 
 
 @pytest.mark.asyncio

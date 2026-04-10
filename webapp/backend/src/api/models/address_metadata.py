@@ -14,10 +14,6 @@ class AddressMetadata(SQLModel, table=True):
         default="unknown",
         description="eoa, eoa_delegated, contract, or unknown",
     )
-    delegate_address: Optional[str] = Field(
-        default=None,
-        description="Delegate contract address for EIP-7702 delegated EOAs",
-    )
     creation_block: Optional[int] = Field(
         default=None,
         description="Contract creation block when address_type=contract",
