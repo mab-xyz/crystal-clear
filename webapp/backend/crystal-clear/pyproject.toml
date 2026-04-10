@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mab-crystal-clear"
-version = "1.0.16"
+version = "1.0.17"
 description = "Crystal-Clear CLI: Smart Contract Supply Chain Tool"
 authors = [
     "Monica Jin <monicachenjin@gmail.com>",
