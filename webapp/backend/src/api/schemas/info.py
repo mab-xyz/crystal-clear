@@ -36,7 +36,7 @@ class VerificationInfoResponse(BaseModel):
     verification: Literal["verified", "fully-verified", "not-verified"] = (
         Field(..., description="Verification status")
     )
-    verifiedAt: str = Field(None, description="Verification date")
+    verifiedAt: Optional[str] = Field(None, description="Verification date")
     is_eip7702: bool = Field(
         False,
         description="Whether address is an EIP-7702 delegated EOA",
