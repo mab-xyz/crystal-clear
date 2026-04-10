@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -814,6 +816,92 @@ async def test_simulate_transaction_eoa_target_is_ok(monkeypatch):
     assert response.details == []
 
 
+# Allowlisted contracts are OK when no first-time or missing-history signal exists.
+def test_simulate_transaction_allowlisted_contract_sets_ok_reason(monkeypatch):
+    addr = "0x3333333333333333333333333333333333333333"
+    _patch_interaction_helpers(
+        monkeypatch,
+        interaction_first_time={addr: {"contract_direct": False}},
+        interaction_state={addr: {"contract_direct": "FOUND"}},
+    )
+    engine = _CaptureEngine(
+        {
+            addr: {
+                "first_time": False,
+                "verification": {"verification": "allowlisted"},
+                "depth": 0,
+                "types": {"CALL": 1},
+            }
+        }
+    )
+    body = SimulationRequest(
+        from_addr="0x1111111111111111111111111111111111111111",
+        to_addr=addr,
+        data="0x",
+    )
+
+    response = asyncio.run(
+        analysis.simulate_transaction(
+            body,
+            risk_engine=engine,
+            session=object(),
+        )
+    )
+
+    assert response.status == "OK"
+    assert response.danger_reason is None
+    assert response.ok_reason == "allowlist"
+
+
+def test_allowlisted_and_unverified_supply_chain_is_dangerous(monkeypatch):
+    allowlisted = "0x3333333333333333333333333333333333333333"
+    unverified = "0x4444444444444444444444444444444444444444"
+    _patch_interaction_helpers(
+        monkeypatch,
+        interaction_first_time={
+            allowlisted: {"contract_direct": False},
+            unverified: {"contract_transitive": False},
+        },
+        interaction_state={
+            allowlisted: {"contract_direct": "FOUND"},
+            unverified: {"contract_transitive": "FOUND"},
+        },
+    )
+    engine = _CaptureEngine(
+        {
+            allowlisted: {
+                "first_time": False,
+                "verification": {"verification": "allowlisted"},
+                "depth": 0,
+                "types": {"CALL": 1},
+            },
+            unverified: {
+                "first_time": False,
+                "verification": {"verification": "not-verified"},
+                "depth": 1,
+                "types": {"DELEGATECALL": 1},
+            },
+        }
+    )
+    body = SimulationRequest(
+        from_addr="0x1111111111111111111111111111111111111111",
+        to_addr=allowlisted,
+        data="0x",
+    )
+
+    response = asyncio.run(
+        analysis.simulate_transaction(
+            body,
+            risk_engine=engine,
+            session=object(),
+        )
+    )
+
+    assert response.status == "DANGEROUS"
+    assert response.danger_reason == "UNVERIFIED"
+    assert response.ok_reason is None
+
+
 @pytest.mark.asyncio
 # Same regression via tx-risk-raw: plain ETH transfer to an EOA must be OK.
 async def test_tx_risk_raw_eoa_target_is_ok(monkeypatch):
@@ -849,6 +937,58 @@ async def test_tx_risk_raw_eoa_target_is_ok(monkeypatch):
     assert response.danger_reason is None
     assert response.ok_reason == "to EOA"
     assert response.details == []
+
+
+# Same allowlist OK reason via tx-risk-raw.
+def test_tx_risk_raw_allowlisted_contract_sets_ok_reason(monkeypatch):
+    addr = "0x3333333333333333333333333333333333333333"
+
+    class _TypedObj:
+        def as_dict(self):
+            return {
+                "to": addr,
+                "data": "0x",
+                "type": "0x2",
+            }
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            return _TypedObj()
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    monkeypatch.setattr(
+        analysis.Account,
+        "recover_transaction",
+        lambda _b: "0x1111111111111111111111111111111111111111",
+    )
+    _patch_interaction_helpers(
+        monkeypatch,
+        interaction_first_time={addr: {"contract_direct": False}},
+        interaction_state={addr: {"contract_direct": "FOUND"}},
+    )
+    engine = _CaptureEngine(
+        {
+            addr: {
+                "first_time": False,
+                "verification": {"verification": "allowlisted"},
+                "depth": 0,
+                "types": {"CALL": 1},
+            }
+        }
+    )
+
+    response = asyncio.run(
+        analysis.get_tx_risk_from_raw(
+            RawTxRiskRequest(raw_tx="0x02aa"),
+            risk_engine=engine,
+            session=object(),
+        )
+    )
+
+    assert response.status == "OK"
+    assert response.danger_reason is None
+    assert response.ok_reason == "allowlist"
 
 
 @pytest.mark.asyncio

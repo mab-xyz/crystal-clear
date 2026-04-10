@@ -303,6 +303,7 @@ class SimulationResultItem(BaseModel):
         description=(
             "Source-code verification status from Etherscan/Sourcify "
             '(e.g. {"verification": "verified", "compiler": "solc", ...}). '
+            '(e.g. {"verification": "verified", "compiler": "solc", ...}). '
             "Null when verification data is unavailable."
         ),
     )
@@ -317,6 +318,7 @@ class SimulationResultItem(BaseModel):
         None,
         description=(
             "Map of EVM call types to their frequency for this address "
+            '(e.g. {"CALL": 2, "DELEGATECALL": 1})'
             '(e.g. {"CALL": 2, "DELEGATECALL": 1})'
         ),
     )
@@ -334,6 +336,17 @@ class SimulationResultItem(BaseModel):
             "Per-interaction-type data availability. FOUND means historical scan data "
             "exists; MISSING means no scan data is available and the result is "
             "best-effort."
+        ),
+    )
+    is_eip7702: bool = Field(
+        False,
+        description="Whether this address is an EIP-7702 delegated EOA",
+    )
+    delegate_address: Optional[str] = Field(
+        None,
+        description=(
+            "Delegate contract address for EIP-7702 delegated EOAs. "
+            "Verification data refers to this delegate contract."
         ),
     )
     is_eip7702: bool = Field(
@@ -401,18 +414,22 @@ class SimulationResponse(BaseModel):
         description=(
             "Root cause of a non-OK verdict. FIRST_TIME_INTERACTION = sender/contract "
             "has never called this address; MISSING_HISTORY = no historical scan data "
-            "available; UNVERIFIED = contract source code is not verified on-chain; "
-            "EIP_7702_UNVERIFIED_DELEGATE = the destination is an EIP-7702 delegated "
-            "EOA whose delegate contract is not verified."
+            "available; UNVERIFIED = contract source code is not verified on-chain."
         ),
     )
     ok_reason: Optional[
-        Literal["to EOA", "EIP-7702 delegated EOA (verified delegate)"]
+        Literal[
+            "to EOA",
+            "allowlist",
+            "EIP-7702 delegated EOA (verified delegate)",
+        ]
     ] = Field(
         None,
         description=(
-            "Reason the verdict is OK when the transaction touches no contracts. "
+            "Reason the verdict is OK. "
             "to EOA = the destination address has no bytecode (plain ETH transfer). "
+            "allowlist = at least one contract bypassed source-code verification through "
+            "the configured allowlist and no other risk signals were found. "
             "EIP-7702 delegated EOA (verified delegate) = destination is an EIP-7702 "
             "delegated EOA whose delegate contract is verified."
         ),
