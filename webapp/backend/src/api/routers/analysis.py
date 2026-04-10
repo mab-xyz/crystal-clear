@@ -756,8 +756,10 @@ async def get_tx_risk_from_raw(
 
         # --- 3. Sender Recovery ---
         sender: str
-        if is_signed:
-            # Recover sender from signature (works for all signed types)
+        if body.sender_address and body.sender_address.startswith("0x"):
+            sender = body.sender_address
+        elif is_signed:
+            # Recover sender from signature when no explicit sender is provided.
             sender = Account.recover_transaction(txn_bytes)
         else:
             # Requires explicit sender address for unsigned transactions
