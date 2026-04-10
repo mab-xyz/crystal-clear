@@ -44,6 +44,8 @@ def test_crystal_clear_risk_engine_methods(monkeypatch):
 
     engine = adapter.CrystalClearRiskEngine()
 
+    assert "verification_allowlist" not in engine._client.kwargs
+
     risk = engine.get_risk_factors("0xabc", scope="supply-chain")
     assert risk.root_address == "0x1111111111111111111111111111111111111111"
 

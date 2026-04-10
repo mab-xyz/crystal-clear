@@ -18,6 +18,6 @@ def _has_unverified_dangerous(items: list[dict]) -> bool:
     for item in items:
         v = item.get("verification") or {}
         ver = str(v.get("verification", "")).lower() if isinstance(v, dict) else ""
-        if ver not in {"verified", "fully-verified"}:
+        if ver not in {"verified", "fully-verified", "allowlisted"}:
             return True
     return False
