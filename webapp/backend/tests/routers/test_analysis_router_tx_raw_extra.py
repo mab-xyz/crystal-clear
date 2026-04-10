@@ -744,6 +744,51 @@ async def test_tx_risk_raw_legacy_signed_branch(monkeypatch):
 
 
 @pytest.mark.asyncio
+# When sender_address is provided, it takes precedence over signature recovery.
+async def test_tx_risk_raw_prefers_explicit_sender_over_signature(monkeypatch):
+    _patch_interaction_helpers(monkeypatch)
+
+    class _TypedObj:
+        def as_dict(self):
+            return {
+                "to": "0x" + ("22" * 20),
+                "data": "0x",
+                "type": "0x2",
+            }
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            return _TypedObj()
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    monkeypatch.setattr(
+        analysis.Account, "recover_transaction", lambda _b: "0x" + "9" * 40
+    )
+    engine = _CaptureEngine(
+        {
+            "0x3333333333333333333333333333333333333333": {
+                "first_time": False,
+                "verification": {"verification": "verified"},
+            }
+        }
+    )
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(
+            raw_tx="0x02aa",
+            sender_address="0x" + "8" * 40,
+        ),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    assert response.status == "OK"
+    call_object, _kwargs = engine.calls[0]
+    assert call_object["from"] == "0x" + "8" * 40
+
+
+@pytest.mark.asyncio
 # Regression: plain ETH transfer to an EOA must not be flagged DANGEROUS.
 # The simulation returns no contract interactions (empty results) because the
 # target has no bytecode, so there is nothing to verify.

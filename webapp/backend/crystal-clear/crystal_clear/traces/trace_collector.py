@@ -86,6 +86,7 @@ class RateLimitRetryMiddleware(Web3Middleware):
 class TraceCollector:
     # Hard cap to prevent excessive processing when trace_filter returns many results
     TRACE_FILTER_TX_LIMIT = 10
+    ALLOWED_TRACE_TYPES = {"call", "delegatecall", "staticcall", "callcode"}
 
     def __init__(
         self,
@@ -419,7 +420,7 @@ class TraceCollector:
         from_address: str,
         to_address: str,
         batch_size: int = 500,
-        page_size: int = 15,
+        page_size: int = 1,
     ) -> bool:
         """
         Returns True as soon as any matching call trace is found for
@@ -481,12 +482,11 @@ class TraceCollector:
                 if not isinstance(res, list) or len(res) == 0:
                     break
 
-                allowed = {"call", "delegatecall", "staticcall", "callcode"}
                 self.logger.debug(
                     f"Window {hex(win_start)}-{hex(hi)} after={after}: {len(res)} trace(s)"
                 )
                 for r in res:
-                    if str(r.get("type", "")).lower() in allowed:
+                    if str(r.get("type", "")).lower() in self.ALLOWED_TRACE_TYPES:
                         txh = (
                             r.get("transactionHash").to_0x_hex()
                             if isinstance(r.get("transactionHash"), HexBytes)
