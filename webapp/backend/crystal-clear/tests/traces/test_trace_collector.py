@@ -100,6 +100,35 @@ def test_filter_txs_from(MockWeb3, trace_collector):
 
 
 @patch("web3.Web3")
+def test_filter_txs_from_collects_unique_transactions_before_capping(
+    MockWeb3, trace_collector
+):
+    mock_w3_instance = MockWeb3.return_value
+    duplicate_traces = [
+        {"transactionHash": "0xdup", "type": "call"} for _ in range(100)
+    ]
+    mock_w3_instance.tracing.trace_filter.side_effect = [
+        duplicate_traces,
+        [{"transactionHash": "0xnext", "type": "call"}],
+    ]
+
+    trace_collector.w3 = mock_w3_instance
+
+    tx_hashes = trace_collector._filter_txs_from(1, 10, "0x123")
+
+    assert tx_hashes == {"0xdup", "0xnext"}
+    assert mock_w3_instance.tracing.trace_filter.call_args_list[0].args[0][
+        "after"
+    ] == 0
+    assert mock_w3_instance.tracing.trace_filter.call_args_list[0].args[0][
+        "count"
+    ] == 100
+    assert mock_w3_instance.tracing.trace_filter.call_args_list[1].args[0][
+        "after"
+    ] == 100
+
+
+@patch("web3.Web3")
 def test_get_calls_from_tx(MockWeb3, trace_collector):
     mock_w3_instance = MockWeb3.return_value
     mock_w3_instance.geth.debug.trace_transaction.return_value = {"calls": []}

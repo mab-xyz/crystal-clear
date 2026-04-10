@@ -257,30 +257,50 @@ class TraceCollector:
             "toBlock": to_block,
             "fromAddress": [contract_address],
         }
-        try:
-            res = self.w3.tracing.trace_filter(filter_params)
-        except Exception as e:
-            self.logger.error(f"Error filtering transactions: {e}")
-            return set()
+        page_size = max(self.TRACE_FILTER_TX_LIMIT * 10, 100)
+        tx_hashes: Set[str] = set()
+        after = 0
 
-        if res is None or not isinstance(res, list):
-            return set()
-        # If provider returns more than our cap, stop early to avoid heavy scans
-        if len(res) > self.TRACE_FILTER_TX_LIMIT:
+        while len(tx_hashes) < self.TRACE_FILTER_TX_LIMIT:
+            try:
+                res = self.w3.tracing.trace_filter(
+                    {
+                        **filter_params,
+                        "count": page_size,
+                        "after": after,
+                    }
+                )
+            except Exception as e:
+                self.logger.error(f"Error filtering transactions: {e}")
+                return set()
+
+            if res is None or not isinstance(res, list) or len(res) == 0:
+                break
+
+            for trace in res:
+                if (
+                    str(trace.get("type", "")).lower()
+                    not in self.ALLOWED_TRACE_TYPES
+                ):
+                    continue
+
+                tx_hash = trace.get("transactionHash")
+                if isinstance(tx_hash, HexBytes):
+                    tx_hash = tx_hash.to_0x_hex()
+                if tx_hash:
+                    tx_hashes.add(tx_hash)
+                if len(tx_hashes) >= self.TRACE_FILTER_TX_LIMIT:
+                    break
+
+            if len(res) < page_size:
+                break
+            after += len(res)
+
+        if len(tx_hashes) >= self.TRACE_FILTER_TX_LIMIT:
             self.logger.warning(
-                f"trace_filter returned {len(res)} results (> {self.TRACE_FILTER_TX_LIMIT}). Capping to limit."
+                "trace_filter reached the transaction cap of %s unique transactions.",
+                self.TRACE_FILTER_TX_LIMIT,
             )
-            res = res[: self.TRACE_FILTER_TX_LIMIT]
-        allowed = {"call", "delegatecall", "staticcall", "callcode"}
-        tx_hashes = {
-            (
-                r["transactionHash"].to_0x_hex()
-                if type(r["transactionHash"]) is HexBytes
-                else r["transactionHash"]
-            )
-            for r in res
-            if str(r.get("type", "")).lower() in allowed
-        }
         self.logger.info(f"Found {len(tx_hashes)} transactions.")
         return tx_hashes
 
