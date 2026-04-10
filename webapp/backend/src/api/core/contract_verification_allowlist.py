@@ -5,7 +5,7 @@ Sourcify/Etherscan verification checks and be marked as allowlisted.
 """
 
 CONTRACT_VERIFICATION_ALLOWLIST: set[str] = {
-    # "0x1111111111111111111111111111111111111111",
+    "0xD1669Ac6044269b59Fa12c5822439F609Ca54F41",
 }
 
 
