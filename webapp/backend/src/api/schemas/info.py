@@ -1,4 +1,4 @@
-from typing import Literal, List
+from typing import Literal, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,7 +36,15 @@ class VerificationInfoResponse(BaseModel):
     verification: Literal["verified", "fully-verified", "not-verified"] = (
         Field(..., description="Verification status")
     )
-    verifiedAt: str = Field(None, description="Verification date")
+    verifiedAt: Optional[str] = Field(None, description="Verification date")
+    is_eip7702: bool = Field(
+        False,
+        description="Whether address is an EIP-7702 delegated EOA",
+    )
+    delegate_address: Optional[str] = Field(
+        None,
+        description="Delegate contract address for EIP-7702 delegated EOAs",
+    )
 
 
 class ScorecardResponse(BaseModel):

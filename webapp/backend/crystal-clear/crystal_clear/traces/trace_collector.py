@@ -230,6 +230,15 @@ class TraceCollector:
                 self._validation_cache[cache_key] = False
                 return False
 
+            # EIP-7702: delegation designator is 0xef0100 + 20-byte delegate address (23 bytes total)
+            if len(code) == 23 and code[:3] == b"\xef\x01\x00":
+                delegate = "0x" + code[3:].hex()
+                self.logger.info(
+                    f"Address {address} is an EIP-7702 delegated EOA (delegate: {delegate})"
+                )
+                self._validation_cache[cache_key] = False
+                return False
+
             if code.hex() == "x0":
                 self.logger.info(f"Contract at {address} matches x0 contract")
                 self._validation_cache[cache_key] = False

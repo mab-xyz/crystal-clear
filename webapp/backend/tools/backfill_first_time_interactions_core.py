@@ -188,7 +188,12 @@ def _has_code_at_block(
         code = w3.eth.get_code(checksum_address, block_identifier=block_number)
     except Exception:
         return False
-    return bool(code and len(code) > 0)
+    if not code or len(code) == 0:
+        return False
+    # EIP-7702: delegation designator (0xef0100 + 20-byte address) is not contract code
+    if len(code) == 23 and code[:3] == b"\xef\x01\x00":
+        return False
+    return True
 
 
 def _find_creation_block_by_code(w3: Web3, address: str) -> Optional[int]:

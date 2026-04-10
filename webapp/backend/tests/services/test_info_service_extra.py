@@ -63,7 +63,7 @@ def test_get_verification_data_returns_sourcify_payload(monkeypatch):
     monkeypatch.setattr(info_service.requests, "get", lambda _u: _Resp())
 
     out = info_service.get_verification_data("0xabc")
-    assert out["match"] == "match"
+    assert out.verification == "verified"
 
 
 def test_get_verification_data_fallback_not_match(monkeypatch):
@@ -88,7 +88,7 @@ def test_get_verification_data_fallback_not_match(monkeypatch):
     monkeypatch.setattr(info_service.requests, "get", _get)
 
     out = info_service.get_verification_data("0xabc")
-    assert out["match"] == "not_match"
+    assert out.verification == "not-verified"
 
 
 def test_get_verification_data_invalid_address(monkeypatch):
