@@ -1,20 +1,25 @@
 from functools import lru_cache
-from typing import Mapping, Any
+from typing import Any, Mapping
 
 from crystal_clear import CrystalClear
 
 from src.api.core.config import get_eth_node_url, settings
-from src.api.schemas.analysis import RiskAnalysis
 from src.api.integrations.risk_engine import RiskEngine
+from src.api.schemas.analysis import RiskAnalysis
 from src.api.services.first_time_cache import FirstInteractionCache
-from src.api.services.verification_cache import ContractVerificationCache
+from src.api.services.verification_cache import (
+    AllowlistedContractVerificationCache,
+    ContractVerificationCache,
+)
 
 
 class CrystalClearRiskEngine(RiskEngine):
     """Concrete adapter that delegates to the Crystal Clear SDK."""
 
     def __init__(self) -> None:
-        self._verification_cache = ContractVerificationCache()
+        self._verification_cache = AllowlistedContractVerificationCache(
+            ContractVerificationCache()
+        )
         self._first_time_cache = FirstInteractionCache()
         self._client = CrystalClear(
             url=get_eth_node_url(),

@@ -613,7 +613,7 @@ async def get_tx_risk(
                 if isinstance(v, dict)
                 else ""
             )
-            if ver not in {"verified", "fully-verified"}:
+            if ver not in {"verified", "fully-verified", "allowlisted"}:
                 status = "DANGEROUS"
 
     return SimulationResponse(status=status, details=items)
