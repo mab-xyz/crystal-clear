@@ -302,7 +302,7 @@ class SimulationResultItem(BaseModel):
         None,
         description=(
             "Source-code verification status from Etherscan/Sourcify "
-            "(e.g. {\"verification\": \"verified\", \"compiler\": \"solc\", ...}). "
+            '(e.g. {"verification": "verified", "compiler": "solc", ...}). '
             "Null when verification data is unavailable."
         ),
     )
@@ -317,7 +317,7 @@ class SimulationResultItem(BaseModel):
         None,
         description=(
             "Map of EVM call types to their frequency for this address "
-            "(e.g. {\"CALL\": 2, \"DELEGATECALL\": 1})"
+            '(e.g. {"CALL": 2, "DELEGATECALL": 1})'
         ),
     )
     interaction_first_time: Dict[str, bool] | None = Field(
@@ -336,6 +336,17 @@ class SimulationResultItem(BaseModel):
             "best-effort."
         ),
     )
+    is_eip7702: bool = Field(
+        False,
+        description="Whether this address is an EIP-7702 delegated EOA",
+    )
+    delegate_address: Optional[str] = Field(
+        None,
+        description=(
+            "Delegate contract address for EIP-7702 delegated EOAs. "
+            "Verification data refers to this delegate contract."
+        ),
+    )
 
 
 class SimulationResponse(BaseModel):
@@ -349,15 +360,18 @@ class SimulationResponse(BaseModel):
             "POTENTIAL_DANGEROUS = scan data is incomplete so risk cannot be ruled out."
         ),
     )
-    interaction_status: Dict[
-        Literal[
-            "sender_direct",
-            "sender_transitive",
-            "contract_direct",
-            "contract_transitive",
-        ],
-        Literal["dangerous", "ok", "not_checked", "potential_dangerous"],
-    ] | None = Field(
+    interaction_status: (
+        Dict[
+            Literal[
+                "sender_direct",
+                "sender_transitive",
+                "contract_direct",
+                "contract_transitive",
+            ],
+            Literal["dangerous", "ok", "not_checked", "potential_dangerous"],
+        ]
+        | None
+    ) = Field(
         None,
         description=(
             "Per-interaction-type risk status. Each key is an interaction type and "
@@ -372,17 +386,35 @@ class SimulationResponse(BaseModel):
         None,
         description=(
             "Interaction types that triggered the DANGEROUS verdict "
-            "(e.g. [\"contract_direct\"]). Null when status is OK."
+            '(e.g. ["contract_direct"]). Null when status is OK.'
         ),
     )
     danger_reason: Optional[
-        Literal["FIRST_TIME_INTERACTION", "MISSING_HISTORY", "UNVERIFIED"]
+        Literal[
+            "FIRST_TIME_INTERACTION",
+            "MISSING_HISTORY",
+            "UNVERIFIED",
+            "EIP_7702_UNVERIFIED_DELEGATE",
+        ]
     ] = Field(
         None,
         description=(
             "Root cause of a non-OK verdict. FIRST_TIME_INTERACTION = sender/contract "
             "has never called this address; MISSING_HISTORY = no historical scan data "
-            "available; UNVERIFIED = contract source code is not verified on-chain."
+            "available; UNVERIFIED = contract source code is not verified on-chain; "
+            "EIP_7702_UNVERIFIED_DELEGATE = the destination is an EIP-7702 delegated "
+            "EOA whose delegate contract is not verified."
+        ),
+    )
+    ok_reason: Optional[
+        Literal["to EOA", "EIP-7702 delegated EOA (verified delegate)"]
+    ] = Field(
+        None,
+        description=(
+            "Reason the verdict is OK when the transaction touches no contracts. "
+            "to EOA = the destination address has no bytecode (plain ETH transfer). "
+            "EIP-7702 delegated EOA (verified delegate) = destination is an EIP-7702 "
+            "delegated EOA whose delegate contract is verified."
         ),
     )
     ok_reason: Optional[Literal["to EOA"]] = Field(

@@ -576,10 +576,17 @@ class CrystalClear:
         # Skip root address if it has no bytecode (EOA — not a smart contract).
         # A plain ETH transfer to an EOA must not appear in risk results as an
         # "unverified" entity: there is no contract code to check.
+        # However, EIP-7702 delegated EOAs should be included — they have a
+        # delegate contract that must be verified.
+        eip7702_delegate: str | None = None
         if root_addr and not self.simulation_collector._validate_contract(
             root_addr, "latest"
         ):
-            root_addr = ""
+            eip7702_delegate = (
+                self.simulation_collector.detect_eip7702_delegate(root_addr)
+            )
+            if not eip7702_delegate:
+                root_addr = ""
         # Compute depths for all nodes using existing helper
         try:
             nodes = set()
@@ -620,14 +627,21 @@ class CrystalClear:
                     to_block=to_block,
                     latest_offset=latest_offset,
                 )
-            verification = verification_map.get(root_norm)
-            if verification is None:
-                verification = self._verification_details(root_addr)
-            info = {
+            # For EIP-7702, verify the delegate contract instead of the EOA
+            if eip7702_delegate:
+                verification = self._verification_details(eip7702_delegate)
+            else:
+                verification = verification_map.get(root_norm)
+                if verification is None:
+                    verification = self._verification_details(root_addr)
+            info: dict = {
                 "first_time": first_time_val,
                 "verification": verification,
                 "depth": 0,
             }
+            if eip7702_delegate:
+                info["is_eip7702"] = True
+                info["delegate_address"] = eip7702_delegate
             results[root_addr] = info
         for edge in edges:
             # Edge targets are checksum-normalized by model validators
@@ -738,10 +752,16 @@ class CrystalClear:
         except Exception:
             pass
         # Skip root address if it has no bytecode (EOA — not a smart contract).
+        # However, EIP-7702 delegated EOAs should be included.
+        eip7702_delegate: str | None = None
         if root_addr and not self.simulation_collector._validate_contract(
             root_addr, "latest"
         ):
-            root_addr = ""
+            eip7702_delegate = (
+                self.simulation_collector.detect_eip7702_delegate(root_addr)
+            )
+            if not eip7702_delegate:
+                root_addr = ""
         # Compute depths for all nodes
         try:
             nodes = set()
@@ -781,14 +801,20 @@ class CrystalClear:
                     to_block=to_block,
                     latest_offset=latest_offset,
                 )
-            verification = verification_map.get(root_norm)
-            if verification is None:
-                verification = self._verification_details(root_addr)
-            info = {
+            if eip7702_delegate:
+                verification = self._verification_details(eip7702_delegate)
+            else:
+                verification = verification_map.get(root_norm)
+                if verification is None:
+                    verification = self._verification_details(root_addr)
+            info: dict = {
                 "first_time": first_time_val,
                 "verification": verification,
                 "depth": 0,
             }
+            if eip7702_delegate:
+                info["is_eip7702"] = True
+                info["delegate_address"] = eip7702_delegate
             results[root_addr] = info
         for edge in edges:
             addr = edge.target

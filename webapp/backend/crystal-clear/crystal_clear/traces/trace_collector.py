@@ -251,6 +251,22 @@ class TraceCollector:
             self._validation_cache[cache_key] = False
             return False
 
+    def detect_eip7702_delegate(self, address: str) -> str | None:
+        """
+        If *address* is an EIP-7702 delegated EOA return the delegate contract
+        address (checksummed), otherwise return None.
+        """
+        try:
+            address = Web3.to_checksum_address(address)
+            code = self.w3.eth.get_code(address, block_identifier="latest")
+            if code and len(code) == 23 and code[:3] == b"\xef\x01\x00":
+                return Web3.to_checksum_address("0x" + code[3:].hex())
+        except Exception as e:
+            self.logger.warning(
+                f"EIP-7702 delegate detection failed for {address}: {e}"
+            )
+        return None
+
     def _filter_txs_from(
         self, from_block: str, to_block: str, contract_address: str
     ) -> Set[str]:

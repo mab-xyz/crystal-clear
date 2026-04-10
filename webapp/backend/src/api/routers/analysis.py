@@ -6,7 +6,9 @@ from sqlmodel import select
 from src.api.core.config import settings
 from src.api.core.database import get_session
 from src.api.models.interaction_scan_state import InteractionScanState
-from src.api.models.interaction_scan_skipped_range import InteractionScanSkippedRange
+from src.api.models.interaction_scan_skipped_range import (
+    InteractionScanSkippedRange,
+)
 from src.api.schemas.analysis import (
     ContractDependenciesRequest,
     ContractDependenciesResponse,
@@ -106,7 +108,11 @@ def _evaluate_interaction_scan_risk(
         normalized_targets.append(addr)
         seen_targets.add(addr)
 
-    if not sender_norm or not normalized_targets or not checked_interaction_types:
+    if (
+        not sender_norm
+        or not normalized_targets
+        or not checked_interaction_types
+    ):
         return {}, {}, [], [], [], []
 
     from_candidates = {sender_norm}
@@ -143,7 +149,8 @@ def _evaluate_interaction_scan_risk(
             select(InteractionScanSkippedRange).where(
                 InteractionScanSkippedRange.from_address == root_norm,
                 InteractionScanSkippedRange.to_address.in_(normalized_targets),
-                InteractionScanSkippedRange.interaction_type == "contract_direct",
+                InteractionScanSkippedRange.interaction_type
+                == "contract_direct",
             )
         ).all()
         skipped_contract_direct = {r.to_address for r in skipped_rows}
@@ -197,7 +204,9 @@ def _evaluate_interaction_scan_risk(
         # If contract_direct is not first-time, contract_transitive cannot be either.
         # This works even when contract_direct was not in checked_interaction_types
         # because we fetched the direct rows in the query above.
-        def _direct_is_not_first_time(from_addr: str | None, target: str, direct_type: str) -> bool:
+        def _direct_is_not_first_time(
+            from_addr: str | None, target: str, direct_type: str
+        ) -> bool:
             """Check if the direct counterpart has a known prior interaction."""
             if not from_addr:
                 return False
@@ -208,18 +217,16 @@ def _evaluate_interaction_scan_risk(
             row = row_index.get((from_addr, target, direct_type))
             return row is not None and not row.first_time_interact
 
-        if (
-            first_time_map[target].get("contract_transitive", False)
-            and _direct_is_not_first_time(root_norm, target, "contract_direct")
-        ):
+        if first_time_map[target].get(
+            "contract_transitive", False
+        ) and _direct_is_not_first_time(root_norm, target, "contract_direct"):
             first_time_map[target]["contract_transitive"] = False
             if state_map[target].get("contract_transitive") == "MISSING":
                 state_map[target]["contract_transitive"] = "FOUND"
 
-        if (
-            first_time_map[target].get("sender_transitive", False)
-            and _direct_is_not_first_time(sender_norm, target, "sender_direct")
-        ):
+        if first_time_map[target].get(
+            "sender_transitive", False
+        ) and _direct_is_not_first_time(sender_norm, target, "sender_direct"):
             first_time_map[target]["sender_transitive"] = False
             if state_map[target].get("sender_transitive") == "MISSING":
                 state_map[target]["sender_transitive"] = "FOUND"
@@ -280,7 +287,6 @@ def _build_interaction_status(
         else:
             status_map[interaction_type] = "ok"
     return status_map
-
 
 
 @router.get(
@@ -464,14 +470,12 @@ async def simulate_transaction(
         sender_dangerous_types,
         contract_missing_types,
         sender_missing_types,
-    ) = (
-        _evaluate_interaction_scan_risk(
-            session=session,
-            sender_address=body.from_addr,
-            root_contract=call_object.get("to"),
-            touched_addresses=touched_addresses,
-            checked_interaction_types=checked_interaction_types,
-        )
+    ) = _evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=body.from_addr,
+        root_contract=call_object.get("to"),
+        touched_addresses=touched_addresses,
+        checked_interaction_types=checked_interaction_types,
     )
 
     items = [
@@ -494,13 +498,31 @@ async def simulate_transaction(
                 _normalize_address(addr) or "",
                 {},
             ),
+            "is_eip7702": info.get("is_eip7702", False),
+            "delegate_address": info.get("delegate_address"),
         }
         for addr, info in results.items()
     ]
 
+    # Check if any item is an EIP-7702 delegated EOA with unverified delegate
+    eip7702_unverified = any(
+        item.get("is_eip7702")
+        and item.get("verification", {}).get("verification") == "not-verified"
+        for item in items
+    )
+    eip7702_verified = any(
+        item.get("is_eip7702")
+        and item.get("verification", {}).get("verification") != "not-verified"
+        for item in items
+    )
+
     if _has_unverified_dangerous(items):
         status = "DANGEROUS"
         danger_reason = "UNVERIFIED"
+        ok_reason = None
+    elif eip7702_unverified:
+        status = "DANGEROUS"
+        danger_reason = "EIP_7702_UNVERIFIED_DELEGATE"
         ok_reason = None
     elif contract_dangerous_types:
         status = "DANGEROUS"
@@ -513,11 +535,12 @@ async def simulate_transaction(
     else:
         status = "OK"
         danger_reason = None
-        ok_reason = (
-            "to EOA"
-            if (call_object.get("to") and not touched_addresses)
-            else None
-        )
+        if eip7702_verified:
+            ok_reason = "EIP-7702 delegated EOA (verified delegate)"
+        elif call_object.get("to") and not touched_addresses:
+            ok_reason = "to EOA"
+        else:
+            ok_reason = None
     interaction_status = _build_interaction_status(
         checked_interaction_types,
         contract_dangerous_types + sender_dangerous_types,
@@ -854,6 +877,8 @@ async def get_tx_risk_from_raw(
             "verification": info.get("verification"),
             "depth": info.get("depth"),
             "types": info.get("types"),
+            "is_eip7702": info.get("is_eip7702", False),
+            "delegate_address": info.get("delegate_address"),
         }
         for addr, info in results.items()
     ]
@@ -883,14 +908,12 @@ async def get_tx_risk_from_raw(
         sender_dangerous_types,
         contract_missing_types,
         sender_missing_types,
-    ) = (
-        _evaluate_interaction_scan_risk(
-            session=session,
-            sender_address=sender,
-            root_contract=call_object.get("to"),
-            touched_addresses=touched_addresses,
-            checked_interaction_types=checked_interaction_types,
-        )
+    ) = _evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=call_object.get("to"),
+        touched_addresses=touched_addresses,
+        checked_interaction_types=checked_interaction_types,
     )
     for item in items:
         normalized = _normalize_address(item["address"]) or ""
@@ -899,9 +922,25 @@ async def get_tx_risk_from_raw(
         item["interaction_state"] = interaction_state.get(normalized, {})
         item["first_time"] = any(first_time_by_type.values())
 
+    # Check if any item is an EIP-7702 delegated EOA with unverified delegate
+    eip7702_unverified = any(
+        item.get("is_eip7702")
+        and item.get("verification", {}).get("verification") == "not-verified"
+        for item in items
+    )
+    eip7702_verified = any(
+        item.get("is_eip7702")
+        and item.get("verification", {}).get("verification") != "not-verified"
+        for item in items
+    )
+
     if _has_unverified_dangerous(items):
         status_val = "DANGEROUS"
         danger_reason = "UNVERIFIED"
+        ok_reason = None
+    elif eip7702_unverified:
+        status_val = "DANGEROUS"
+        danger_reason = "EIP_7702_UNVERIFIED_DELEGATE"
         ok_reason = None
     elif contract_dangerous_types:
         status_val = "DANGEROUS"
@@ -914,11 +953,12 @@ async def get_tx_risk_from_raw(
     else:
         status_val = "OK"
         danger_reason = None
-        ok_reason = (
-            "to EOA"
-            if (call_object.get("to") and not touched_addresses)
-            else None
-        )
+        if eip7702_verified:
+            ok_reason = "EIP-7702 delegated EOA (verified delegate)"
+        elif call_object.get("to") and not touched_addresses:
+            ok_reason = "to EOA"
+        else:
+            ok_reason = None
     interaction_status = _build_interaction_status(
         checked_interaction_types,
         contract_dangerous_types + sender_dangerous_types,
