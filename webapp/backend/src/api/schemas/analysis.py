@@ -349,17 +349,6 @@ class SimulationResultItem(BaseModel):
             "Verification data refers to this delegate contract."
         ),
     )
-    is_eip7702: bool = Field(
-        False,
-        description="Whether this address is an EIP-7702 delegated EOA",
-    )
-    delegate_address: Optional[str] = Field(
-        None,
-        description=(
-            "Delegate contract address for EIP-7702 delegated EOAs. "
-            "Verification data refers to this delegate contract."
-        ),
-    )
 
 
 class SimulationResponse(BaseModel):
@@ -414,7 +403,20 @@ class SimulationResponse(BaseModel):
         description=(
             "Root cause of a non-OK verdict. FIRST_TIME_INTERACTION = sender/contract "
             "has never called this address; MISSING_HISTORY = no historical scan data "
-            "available; UNVERIFIED = contract source code is not verified on-chain."
+            "available; UNVERIFIED = contract source code is not verified on-chain; "
+            "EIP_7702_UNVERIFIED_DELEGATE = the destination is an EIP-7702 delegated "
+            "EOA whose delegate contract is not verified."
+        ),
+    )
+    ok_reason: Optional[
+        Literal["to EOA", "EIP-7702 delegated EOA (verified delegate)"]
+    ] = Field(
+        None,
+        description=(
+            "Reason the verdict is OK when the transaction touches no contracts. "
+            "to EOA = the destination address has no bytecode (plain ETH transfer). "
+            "EIP-7702 delegated EOA (verified delegate) = destination is an EIP-7702 "
+            "delegated EOA whose delegate contract is verified."
         ),
     )
     ok_reason: Optional[
