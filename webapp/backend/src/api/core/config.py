@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         return data
 
     # Ethereum Node Configuration
-    eth_node_urls: str | None = Field(default=None, alias="ETH_NODE_URLS")
+    eth_node_urls: str = Field(..., alias="ETH_NODE_URLS")
     eth_rpc_timeout_seconds: int = Field(
         120, alias="ETH_RPC_TIMEOUT_SECONDS"
     )
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     database_url: str = Field(..., alias="DATABASE_URL")
 
     # Cache Configuration
-    cache_url: str | None = Field(default=None, alias="CACHE_URL")
+    cache_url: str = Field(..., alias="CACHE_URL")
     cache_ttl: int = Field(60, alias="CACHE_TTL")
 
     # API Configuration
@@ -77,9 +77,7 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
-def get_eth_node_url() -> str | None:
-    if not settings.eth_node_urls:
-        return None
+def get_eth_node_url() -> str:
     urls = settings.eth_node_urls.split("|")
     if len(urls) == 1:
         return urls[0]
