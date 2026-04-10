@@ -92,11 +92,24 @@ def get_deployment_data(
         ) from e
 
 
+_VERIFICATION_STATUS_MAP = {
+    "full_match": "fully-verified",
+    "partial_match": "verified",
+    "match": "verified",
+    "not_match": "not-verified",
+}
+
+
+def _normalize_verification_status(raw: str) -> str:
+    """Map Sourcify/Etherscan match values to API verification status."""
+    return _VERIFICATION_STATUS_MAP.get(raw, "not-verified")
+
+
 class VerificationData(BaseModel):
     """Service-level model for contract verification results."""
 
     address: str
-    match: str
+    verification: str
     verifiedAt: Optional[str] = None
     is_eip7702: bool = False
     delegate_address: Optional[str] = None
@@ -140,16 +153,18 @@ def _fetch_verification(address: str) -> VerificationData:
                 and len(etherscan_data[0].get("SourceCode")) > 0
             ):
                 return VerificationData(
-                    address=address, match="match", verifiedAt="na"
+                    address=address, verification="verified", verifiedAt="na"
                 )
 
             return VerificationData(
-                address=address, match="not_match", verifiedAt="na"
+                address=address, verification="not-verified", verifiedAt="na"
             )
 
     return VerificationData(
         address=verification_info.get("address", address),
-        match=verification_info.get("match", "not_match"),
+        verification=_normalize_verification_status(
+            verification_info.get("match", "not_match")
+        ),
         verifiedAt=verification_info.get("verifiedAt"),
     )
 

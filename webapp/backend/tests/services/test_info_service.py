@@ -107,7 +107,7 @@ def test_get_verification_data_falls_back_to_etherscan(monkeypatch):
 
     assert isinstance(result, info_service.VerificationData)
     assert result.address == "0x1111111111111111111111111111111111111111"
-    assert result.match == "match"
+    assert result.verification == "verified"
     assert result.verifiedAt == "na"
     assert result.is_eip7702 is False
     assert result.delegate_address is None
@@ -235,7 +235,7 @@ def test_get_verification_data_eip7702_verifies_delegate(monkeypatch):
     assert result.address == queried
     assert result.is_eip7702 is True
     assert result.delegate_address == delegate
-    assert result.match == "full_match"
+    assert result.verification == "fully-verified"
 
 
 @pytest.mark.asyncio
