@@ -5,9 +5,9 @@ import tempfile
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from src.api.services.request_logger import (
     RequestLogger,
@@ -62,7 +62,8 @@ def _build_app(logger: RequestLogger) -> FastAPI:
 
 
 class TestLoggingMiddleware:
-    def test_request_reaches_backend(self):
+    @pytest.mark.asyncio
+    async def test_request_reaches_backend(self):
         """Middleware should call log() once per request."""
         captured: list[RequestRecord] = []
 
@@ -77,18 +78,20 @@ class TestLoggingMiddleware:
         logger.log = _fake_log  # type: ignore[method-assign]
 
         app = _build_app(logger)
-        client = TestClient(app, raise_server_exceptions=False)
-        resp = client.get("/ping")
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/ping")
 
         assert resp.status_code == 200
-        # Wait briefly for the background task
-        asyncio.get_event_loop().run_until_complete(asyncio.sleep(0.05))
+        # Allow background task to complete
+        await asyncio.sleep(0.05)
         assert len(captured) == 1
         assert captured[0].method == "GET"
         assert captured[0].path == "/ping"
         assert captured[0].status_code == 200
 
-    def test_sensitive_headers_are_stripped(self):
+    @pytest.mark.asyncio
+    async def test_sensitive_headers_are_stripped(self):
         """Authorization and x-api-key headers must not be stored."""
         captured: list[RequestRecord] = []
 
@@ -103,24 +106,26 @@ class TestLoggingMiddleware:
         logger.log = _fake_log  # type: ignore[method-assign]
 
         app = _build_app(logger)
-        client = TestClient(app, raise_server_exceptions=False)
-        client.get(
-            "/ping",
-            headers={
-                "Authorization": "Bearer secret-token",
-                "X-API-Key": "my-key",
-                "X-Custom": "keep-me",
-            },
-        )
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.get(
+                "/ping",
+                headers={
+                    "Authorization": "Bearer secret-token",
+                    "X-API-Key": "my-key",
+                    "X-Custom": "keep-me",
+                },
+            )
 
-        asyncio.get_event_loop().run_until_complete(asyncio.sleep(0.05))
+        await asyncio.sleep(0.05)
         assert len(captured) == 1
         headers = captured[0].headers
         assert "authorization" not in headers
         assert "x-api-key" not in headers
         assert "x-custom" in headers
 
-    def test_request_body_is_captured(self):
+    @pytest.mark.asyncio
+    async def test_request_body_is_captured(self):
         """POST body should be recorded in the RequestRecord."""
         captured: list[RequestRecord] = []
 
@@ -141,9 +146,10 @@ class TestLoggingMiddleware:
             body = await request.body()
             return {"received": body.decode()}
 
-        client = TestClient(app, raise_server_exceptions=False)
-        client.post("/echo", content=b'{"tx": "0xabc"}')
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post("/echo", content=b'{"tx": "0xabc"}')
 
-        asyncio.get_event_loop().run_until_complete(asyncio.sleep(0.05))
+        await asyncio.sleep(0.05)
         assert len(captured) == 1
         assert b"0xabc" in captured[0].request_body
