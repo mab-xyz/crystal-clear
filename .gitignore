@@ -8,6 +8,8 @@ webapp/redis_data/
 test_tracecall.json
 
 webapp/backend/crystal-clear/scripts/
+webapp/backend/request_logs/
+webapp/backend/.env.swp
 
 
 # webapp analysis files
