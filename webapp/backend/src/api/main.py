@@ -1,5 +1,7 @@
 import asyncio
+import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import HTTPException
@@ -14,9 +16,17 @@ from src.api.core.logging import setup_logging
 from src.api.routers import analysis, audit, contract, health, info, repository
 from src.api.routers import keys
 from src.api.core.security import require_api_key
+from src.api.services.request_logger import RequestRecord, build_request_logger
 
 # Setup logging
 setup_logging()
+
+# Request logger – fan-out to local disk, GitHub, and Postgres (stub)
+_request_logger = build_request_logger(
+    log_dir=settings.request_log_dir,
+    github_token=settings.github_token,
+    github_repo=settings.github_database_repo,
+)
 
 
 @asynccontextmanager
@@ -48,6 +58,43 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def log_requests_middleware(request: Request, call_next):
+    """Capture every request/response and persist it to all backends."""
+    timestamp = datetime.now(tz=timezone.utc)
+    start = time.monotonic()
+
+    # Read and cache the body so the route handler can still read it.
+    try:
+        body = await request.body()
+    except Exception:
+        body = b""
+
+    # Strip credentials from headers before storing.
+    _SENSITIVE = {"authorization", "x-api-key", "cookie", "set-cookie"}
+    headers = {
+        k: v
+        for k, v in request.headers.items()
+        if k.lower() not in _SENSITIVE
+    }
+
+    response = await call_next(request)
+
+    elapsed_ms = (time.monotonic() - start) * 1000.0
+    record = RequestRecord(
+        timestamp=timestamp,
+        method=request.method,
+        path=request.url.path,
+        query_string=str(request.url.query),
+        headers=headers,
+        request_body=body,
+        status_code=response.status_code,
+        response_time_ms=elapsed_ms,
+    )
+    asyncio.create_task(_request_logger.log(record))
+    return response
 
 
 @app.middleware("http")
