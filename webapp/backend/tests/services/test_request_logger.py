@@ -93,7 +93,7 @@ class TestLocalDiskBackend:
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalDiskBackend(tmp)
             record = _make_record()
-            asyncio.get_event_loop().run_until_complete(backend.save(record))
+            asyncio.run(backend.save(record))
 
             log_file = Path(tmp) / "2024-06-15.jsonl"
             assert log_file.exists()
@@ -106,9 +106,8 @@ class TestLocalDiskBackend:
     def test_appends_multiple_records(self):
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalDiskBackend(tmp)
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(backend.save(_make_record()))
-            loop.run_until_complete(backend.save(_make_record(method="POST")))
+            asyncio.run(backend.save(_make_record()))
+            asyncio.run(backend.save(_make_record(method="POST")))
 
             log_file = Path(tmp) / "2024-06-15.jsonl"
             lines = log_file.read_text().splitlines()
@@ -117,15 +116,14 @@ class TestLocalDiskBackend:
     def test_different_dates_different_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalDiskBackend(tmp)
-            loop = asyncio.get_event_loop()
             r1 = _make_record(
                 timestamp=datetime(2024, 6, 15, tzinfo=timezone.utc)
             )
             r2 = _make_record(
                 timestamp=datetime(2024, 6, 16, tzinfo=timezone.utc)
             )
-            loop.run_until_complete(backend.save(r1))
-            loop.run_until_complete(backend.save(r2))
+            asyncio.run(backend.save(r1))
+            asyncio.run(backend.save(r2))
 
             assert (Path(tmp) / "2024-06-15.jsonl").exists()
             assert (Path(tmp) / "2024-06-16.jsonl").exists()
@@ -148,7 +146,7 @@ class TestGitHubBackend:
             "src.api.services.request_logger.http_requests.put",
             return_value=mock_response,
         ) as mock_put:
-            asyncio.get_event_loop().run_until_complete(backend.save(record))
+            asyncio.run(backend.save(record))
 
         mock_put.assert_called_once()
         call_kwargs = mock_put.call_args
@@ -174,7 +172,7 @@ class TestGitHubBackend:
             "src.api.services.request_logger.http_requests.put",
             return_value=mock_response,
         ) as mock_put:
-            asyncio.get_event_loop().run_until_complete(backend.save(record))
+            asyncio.run(backend.save(record))
 
         headers = mock_put.call_args[1]["headers"]
         assert headers["Authorization"] == "Bearer my-secret-token"
@@ -189,7 +187,7 @@ class TestGitHubBackend:
             side_effect=Exception("network down"),
         ):
             # Should not raise
-            asyncio.get_event_loop().run_until_complete(backend.save(record))
+            asyncio.run(backend.save(record))
 
     def test_file_path_contains_datetime(self):
         backend = GitHubBackend(token="tok", repo="org/db")
@@ -204,7 +202,7 @@ class TestGitHubBackend:
             "src.api.services.request_logger.http_requests.put",
             return_value=mock_response,
         ) as mock_put:
-            asyncio.get_event_loop().run_until_complete(backend.save(record))
+            asyncio.run(backend.save(record))
 
         url = mock_put.call_args[0][0]
         assert "2025/01/07" in url
@@ -221,7 +219,7 @@ class TestPostgresBackend:
         backend = PostgresBackend()
         record = _make_record()
         # Must complete without raising
-        asyncio.get_event_loop().run_until_complete(backend.save(record))
+        asyncio.run(backend.save(record))
 
 
 # ---------------------------------------------------------------------------
@@ -241,9 +239,7 @@ class TestRequestLogger:
                 calls.append(self._name)
 
         logger = RequestLogger([_FakeBackend("a"), _FakeBackend("b")])
-        asyncio.get_event_loop().run_until_complete(
-            logger.log(_make_record())
-        )
+        asyncio.run(logger.log(_make_record()))
         assert calls == ["a", "b"]
 
     def test_failed_backend_does_not_prevent_others(self):
@@ -260,7 +256,7 @@ class TestRequestLogger:
                 results.append("ok")
 
         rl = RequestLogger([BrokenB(), GoodB()])
-        asyncio.get_event_loop().run_until_complete(rl.log(_make_record()))
+        asyncio.run(rl.log(_make_record()))
         assert results == ["ok"]
 
 
