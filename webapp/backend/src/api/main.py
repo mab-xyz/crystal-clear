@@ -29,6 +29,20 @@ _request_logger = build_request_logger(
 )
 
 
+def _sanitize_headers_for_logging(headers: list[tuple[str, str]]) -> dict[str, str]:
+    sanitized: dict[str, str] = {}
+    sensitive = {"authorization", "cookie", "set-cookie"}
+    for key, value in headers:
+        lower_key = key.lower()
+        if lower_key in sensitive:
+            continue
+        if lower_key == "x-api-key":
+            sanitized[key] = value[:8]
+            continue
+        sanitized[key] = value
+    return sanitized
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: create tables
@@ -72,13 +86,8 @@ async def log_requests_middleware(request: Request, call_next):
     except Exception:
         body = b""
 
-    # Strip credentials from headers before storing.
-    _SENSITIVE = {"authorization", "x-api-key", "cookie", "set-cookie"}
-    headers = {
-        k: v
-        for k, v in request.headers.items()
-        if k.lower() not in _SENSITIVE
-    }
+    # Keep only a short API-key prefix while dropping other credentials.
+    headers = _sanitize_headers_for_logging(list(request.headers.items()))
 
     response = await call_next(request)
 

@@ -22,6 +22,19 @@ def _build_app(logger: RequestLogger) -> FastAPI:
 
     app = FastAPI()
 
+    def _sanitize_headers_for_logging(headers):
+        sanitized = {}
+        sensitive = {"authorization", "cookie", "set-cookie"}
+        for key, value in headers:
+            lower_key = key.lower()
+            if lower_key in sensitive:
+                continue
+            if lower_key == "x-api-key":
+                sanitized[key] = value[:8]
+                continue
+            sanitized[key] = value
+        return sanitized
+
     # Mirror the middleware from main.py
     @app.middleware("http")
     async def log_requests_middleware(request, call_next):
@@ -32,12 +45,7 @@ def _build_app(logger: RequestLogger) -> FastAPI:
         except Exception:
             body = b""
 
-        _SENSITIVE = {"authorization", "x-api-key", "cookie", "set-cookie"}
-        headers = {
-            k: v
-            for k, v in request.headers.items()
-            if k.lower() not in _SENSITIVE
-        }
+        headers = _sanitize_headers_for_logging(list(request.headers.items()))
 
         response = await call_next(request)
         elapsed_ms = (time.monotonic() - start) * 1000.0
@@ -92,7 +100,7 @@ class TestLoggingMiddleware:
 
     @pytest.mark.asyncio
     async def test_sensitive_headers_are_stripped(self):
-        """Authorization and x-api-key headers must not be stored."""
+        """Authorization is stripped while x-api-key is truncated to a prefix."""
         captured: list[RequestRecord] = []
 
         async def _fake_log(record: RequestRecord):
@@ -121,8 +129,34 @@ class TestLoggingMiddleware:
         assert len(captured) == 1
         headers = captured[0].headers
         assert "authorization" not in headers
-        assert "x-api-key" not in headers
+        assert headers["x-api-key"] == "my-key"
         assert "x-custom" in headers
+
+    @pytest.mark.asyncio
+    async def test_api_key_is_truncated_to_first_8_characters(self):
+        captured: list[RequestRecord] = []
+
+        async def _fake_log(record: RequestRecord):
+            captured.append(record)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            logger = build_request_logger(
+                log_dir=tmp,
+                github_token=None,
+            )
+        logger.log = _fake_log  # type: ignore[method-assign]
+
+        app = _build_app(logger)
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.get(
+                "/ping",
+                headers={"X-API-Key": "12345678abcdef"},
+            )
+
+        await asyncio.sleep(0.05)
+        assert len(captured) == 1
+        assert captured[0].headers["x-api-key"] == "12345678"
 
     @pytest.mark.asyncio
     async def test_request_body_is_captured(self):
