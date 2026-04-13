@@ -66,6 +66,14 @@ class Settings(BaseSettings):
         60 * 60 * 24 * 180, alias="FIRST_TIME_CACHE_TTL_SECONDS"
     )
 
+    # Request logging
+    request_log_dir: str = Field(
+        "./request_logs", alias="REQUEST_LOG_DIR"
+    )
+    github_database_repo: str = Field(
+        "mab-xyz/database", alias="GITHUB_DATABASE_REPO"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
