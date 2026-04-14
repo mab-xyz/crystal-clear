@@ -542,11 +542,8 @@ async def simulate_transaction(
             ok_reason = "EIP-7702 delegated EOA (verified delegate)"
         elif call_object.get("to") and not touched_addresses:
             ok_reason = "to EOA"
-<<<<<<< HEAD
         elif _has_allowlisted_verification(items):
             ok_reason = "allowlist"
-=======
->>>>>>> 184cb8b (feat: add eip7702 in details)
         else:
             ok_reason = None
     interaction_status = _build_interaction_status(
@@ -975,11 +972,8 @@ async def get_tx_risk_from_raw(
             ok_reason = "EIP-7702 delegated EOA (verified delegate)"
         elif call_object.get("to") and not touched_addresses:
             ok_reason = "to EOA"
-<<<<<<< HEAD
         elif _has_allowlisted_verification(items):
             ok_reason = "allowlist"
-=======
->>>>>>> 184cb8b (feat: add eip7702 in details)
         else:
             ok_reason = None
     interaction_status = _build_interaction_status(
