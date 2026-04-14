@@ -8,6 +8,9 @@ jobs:
   deploy:
     runs-on: [self-hosted, pellow]
     steps:
+      - name: Test connection
+        run: echo "Runner is working on pellow"
+
       - name: Pull latest code
         run: |
           cd /home/javier/crystal-clear
