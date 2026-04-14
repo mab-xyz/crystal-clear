@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, pellow]
+    runs-on: [self-hosted]
     steps:
       - name: Test connection
         run: echo "Runner is working on pellow"
