@@ -14,7 +14,7 @@ jobs:
 
       - name: Pull latest code
         run: |
-          sudo -u javier git -C /home/javier/crystal-clear pull
+          git -C /home/raphina/crystal-clear pull
 
       - name: Restart backfill
         run: sudo systemctl restart crystal-clear-backfill
