@@ -1,0 +1,17 @@
+on:
+  push:
+    branches: [main]
+    paths:
+      - "webapp/backend/tools/backfill**"
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, pellow]
+    steps:
+      - name: Pull latest code
+        run: |
+          cd /home/javier/crystal-clear
+          git pull
+
+      - name: Restart backfill
+        run: sudo systemctl restart crystal-clear-backfill
