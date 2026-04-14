@@ -1,8 +1,9 @@
 on:
   push:
-    branches: [main]
-    paths:
-      - "webapp/backend/tools/backfill**"
+    # branches: [main]
+    # paths:
+    #   - "webapp/backend/tools/backfill**"
+    branches: [chore/cd-for-backfill-pellow]
 
 jobs:
   deploy:
