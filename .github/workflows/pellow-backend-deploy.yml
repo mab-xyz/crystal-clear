@@ -1,7 +1,6 @@
 on:
   push:
-#    branches: [main]
-    branches: chore/pellow-backend-cd
+    branches: [main]
 
 jobs:
   deploy:
