@@ -16,4 +16,4 @@ jobs:
           git -C /home/crystal-clear-prod/crystal-clear pull
 
       - name: Restart backfill
-        run: /home/crystal-clear-prod/restart-backfill.sh 
+        run: sudo /home/crystal-clear-prod/restart-backfill.sh 
