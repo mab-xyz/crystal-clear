@@ -1,19 +1,19 @@
 on:
   push:
-    branches: [main]
-    paths:
+#    branches: [main]
+#    paths:
       - "webapp/backend/tools/backfill**"
-
+    branches: [chore/change-user-pellow]
 jobs:
   deploy:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, pellow-backfill-on-cc-prod]
     steps:
       - name: Test connection
         run: echo "Runner is working on pellow"
 
       - name: Pull latest code
         run: |
-          git -C /home/raphina/crystal-clear pull
+          git -C /home/crystal-clear-prod/crystal-clear pull
 
       - name: Restart backfill
-        run: sudo systemctl restart crystal-clear-backfill
+        run: /home/crystal-clear-prod/restart-backfill.sh
