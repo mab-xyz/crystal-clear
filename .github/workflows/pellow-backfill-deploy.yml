@@ -1,9 +1,9 @@
 on:
   push:
-#    branches: [main]
-#    paths:
-#      - "webapp/backend/tools/backfill**"
-    branches: [chore/change-user-pellow]
+    branches: [main]
+    paths:
+      - "webapp/backend/tools/backfill**"
+
 jobs:
   deploy:
     runs-on: [self-hosted, pellow-backfill-on-cc-prod]
@@ -16,4 +16,4 @@ jobs:
           git -C /home/crystal-clear-prod/crystal-clear pull
 
       - name: Restart backfill
-        run: sudo /home/crystal-clear-prod/restart-backfill.sh 
+        run: sudo /home/crystal-clear-prod/restart-backfill.sh
