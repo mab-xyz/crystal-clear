@@ -1,0 +1,15 @@
+on:
+  push:
+#    branches: [main]
+    branches: chore/pellow-backend-cd
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, pellow-backend-api-on-cc-prod]
+    steps:
+      - name: Pull latest code
+        run: |
+          git -C /home/crystal-clear-prod/crystal-clear pull
+
+      - name: Restart backend
+        run: sudo /home/crystal-clear-prod/restart-backend.sh
