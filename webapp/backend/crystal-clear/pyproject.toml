@@ -20,7 +20,7 @@ web3 = { version = ">=7.8.0,<8.0.0", extras = ["tester"] }
 click = ">=8.1.8,<9.0.0"
 eth-utils = ">=5.2.0,<6.0.0"
 rich = ">=14.1.0,<15.0.0"
-pytest = ">=8.4.2,<9.0.0"
+pytest = ">=8.4.2,<10.0.0"
 uschunter = "0.0.1"
 
 [tool.poetry.group.dev.dependencies]
