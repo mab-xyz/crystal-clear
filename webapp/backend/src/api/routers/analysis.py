@@ -573,6 +573,21 @@ def _validate_tx_hash(tx_hash: str) -> str:
     raise HTTPException(status_code=422, detail="Invalid tx_hash format")
 
 
+def _default_to_block_from_block_tag(block_tag: str | None) -> str | None:
+    tag = (block_tag or "").strip()
+    if not tag:
+        return None
+    if tag.startswith("0x"):
+        try:
+            int(tag, 16)
+        except ValueError:
+            return None
+        return tag
+    if tag.isdigit():
+        return tag
+    return None
+
+
 @router.get(
     "/tx-risk/{tx_hash}",
     response_model=SimulationResponse,
@@ -871,6 +886,8 @@ async def get_tx_risk_from_raw(
         if (body.to_block and body.to_block.strip() != "")
         else None
     )
+    if tb is None:
+        tb = _default_to_block_from_block_tag(body.block_tag)
 
     # Simulation step
     results = risk_engine.simulate_and_check(

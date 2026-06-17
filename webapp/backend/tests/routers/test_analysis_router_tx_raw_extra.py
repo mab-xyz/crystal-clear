@@ -453,6 +453,91 @@ async def test_tx_risk_raw_type1_rlp_decode_error(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_tx_risk_raw_uses_numeric_block_tag_as_default_to_block(monkeypatch):
+    _patch_interaction_helpers(monkeypatch)
+
+    class _TypedObj:
+        def as_dict(self):
+            return {
+                "type": 2,
+                "to": bytes.fromhex("22" * 20),
+                "data": b"\xde\xad\xbe\xef",
+                "value": 0,
+                "gas": 21000,
+            }
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            return _TypedObj()
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    monkeypatch.setattr(
+        analysis.Account, "recover_transaction", lambda _b: "0x" + "1" * 40
+    )
+    engine = _CaptureEngine(
+        {
+            "0x3333333333333333333333333333333333333333": {
+                "first_time": False,
+                "verification": {"verification": "verified"},
+            }
+        }
+    )
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x02aa", block_tag="12345"),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    _call_object, kwargs = engine.calls[0]
+    assert response.status == "OK"
+    assert kwargs["to_block"] == "12345"
+
+
+@pytest.mark.asyncio
+async def test_tx_risk_raw_keeps_explicit_to_block_over_block_tag(monkeypatch):
+    _patch_interaction_helpers(monkeypatch)
+
+    class _TypedObj:
+        def as_dict(self):
+            return {
+                "type": 2,
+                "to": bytes.fromhex("22" * 20),
+                "data": b"\xde\xad\xbe\xef",
+                "value": 0,
+                "gas": 21000,
+            }
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            return _TypedObj()
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    monkeypatch.setattr(
+        analysis.Account, "recover_transaction", lambda _b: "0x" + "1" * 40
+    )
+    engine = _CaptureEngine(
+        {
+            "0x3333333333333333333333333333333333333333": {
+                "first_time": False,
+                "verification": {"verification": "verified"},
+            }
+        }
+    )
+
+    await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x02aa", block_tag="12345", to_block="999"),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    _call_object, kwargs = engine.calls[0]
+    assert kwargs["to_block"] == "999"
+
+
+@pytest.mark.asyncio
 # Covers signed Type-1 fallback decode and downstream response validation error case.
 async def test_tx_risk_raw_type1_signed_rlp_branch(monkeypatch):
     _patch_interaction_helpers(monkeypatch)
