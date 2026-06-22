@@ -12,7 +12,6 @@ from typing import Optional
 import time
 
 import requests
-from sqlalchemy import tuple_
 from sqlmodel import SQLModel, Session, select
 from web3 import Web3
 
@@ -777,28 +776,14 @@ def _collect_processing_rows(
         fast_rows: list[InteractionScanState] = []
         hot_rows: list[InteractionScanState] = []
 
-        # Batch-fetch all hot records for the candidate set in one query.
-        keys = [
-            (
-                row.from_address,
-                row.to_address,
-                _normalize_interaction_type(row.interaction_type),
-            )
-            for row in candidates
-        ]
+        # Fetch only currently-active hot records in one query (typically O(1)
+        # rows) rather than joining against the full candidate list.
         hot_map: dict[tuple[str, str, str], InteractionScanHot] = {}
-        if keys:
-            hot_records = session.exec(
-                select(InteractionScanHot).where(
-                    tuple_(
-                        InteractionScanHot.from_address,
-                        InteractionScanHot.to_address,
-                        InteractionScanHot.interaction_type,
-                    ).in_(keys)
-                )
-            ).all()
-            for r in hot_records:
-                hot_map[(r.from_address, r.to_address, r.interaction_type)] = r
+        hot_records = session.exec(
+            select(InteractionScanHot).where(InteractionScanHot.hot_until > now)
+        ).all()
+        for r in hot_records:
+            hot_map[(r.from_address, r.to_address, r.interaction_type)] = r
 
         for row in candidates:
             normalized_type = _normalize_interaction_type(row.interaction_type)
