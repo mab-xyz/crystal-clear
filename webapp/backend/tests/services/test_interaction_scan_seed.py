@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from sqlmodel import select
 
+from src.api.models.address_metadata import AddressMetadata
 from src.api.models.interaction_scan_state import InteractionScanState
 from src.api.services.interaction_scan_seed import (
     seed_interaction_scan_state_from_tx,
@@ -52,4 +55,40 @@ def test_seed_interaction_scan_state_from_tx_skips_invalid_sender(session):
     assert inserted == 0
     rows = session.exec(select(InteractionScanState)).all()
     assert rows == []
+
+
+def test_seed_uses_contract_creation_block_as_from_block(session):
+    contract = "0x3333333333333333333333333333333333333333"
+    session.add(
+        AddressMetadata(
+            address=contract,
+            address_type="contract",
+            creation_block=12_000_000,
+            needs_retry=False,
+            checked_at=datetime.utcnow(),
+        )
+    )
+    session.commit()
+
+    seed_interaction_scan_state_from_tx(
+        session=session,
+        sender_address="0x1111111111111111111111111111111111111111",
+        root_contract=None,
+        touched_addresses=[contract],
+    )
+
+    rows = session.exec(select(InteractionScanState)).all()
+    assert all(row.from_block == 12_000_000 for row in rows)
+
+
+def test_seed_uses_zero_from_block_when_creation_block_unknown(session):
+    seed_interaction_scan_state_from_tx(
+        session=session,
+        sender_address="0x1111111111111111111111111111111111111111",
+        root_contract=None,
+        touched_addresses=["0x3333333333333333333333333333333333333333"],
+    )
+
+    rows = session.exec(select(InteractionScanState)).all()
+    assert all(row.from_block == 0 for row in rows)
 
