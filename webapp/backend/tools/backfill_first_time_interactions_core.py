@@ -135,12 +135,16 @@ def _seed_scan_rows_from_first_time(
         if existing:
             continue
 
+        am = session.get(AddressMetadata, to_addr)
+        to_creation = (
+            am.creation_block if am and am.creation_block is not None else 0
+        )
         session.add(
             InteractionScanState(
                 from_address=from_addr,
                 to_address=to_addr,
                 interaction_type=interaction_type,
-                from_block=0,
+                from_block=to_creation,
                 last_analyzed_block=None,
                 how_many_times=0,
                 first_time_interact=True,

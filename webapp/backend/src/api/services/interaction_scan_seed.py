@@ -6,6 +6,7 @@ from typing import Optional
 
 from sqlmodel import Session, select
 
+from src.api.models.address_metadata import AddressMetadata
 from src.api.models.interaction_scan_state import InteractionScanState
 
 
@@ -69,6 +70,8 @@ def seed_interaction_scan_state_from_tx(
         return 0
 
     now = datetime.utcnow()
+    # Cache to_address creation blocks: one DB lookup per unique to_address.
+    creation_block_cache: dict[str, int] = {}
     inserted = 0
     for from_address, to_address, interaction_type in candidates:
         existing = session.exec(
@@ -83,12 +86,18 @@ def seed_interaction_scan_state_from_tx(
             session.add(existing)
             continue
 
+        if to_address not in creation_block_cache:
+            am = session.get(AddressMetadata, to_address)
+            creation_block_cache[to_address] = (
+                am.creation_block if am and am.creation_block is not None else 0
+            )
+
         session.add(
             InteractionScanState(
                 from_address=from_address,
                 to_address=to_address,
                 interaction_type=interaction_type,
-                from_block=0,
+                from_block=creation_block_cache[to_address],
                 last_analyzed_block=None,
                 how_many_times=0,
                 first_time_interact=True,
