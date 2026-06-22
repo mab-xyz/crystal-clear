@@ -63,7 +63,6 @@ if str(API_ROOT) not in sys.path:
 
 from crystal_clear.traces.trace_collector import TraceCollector
 
-from src.api.clients.allium_client import AlliumClient
 from src.api.core.config import get_eth_node_url, settings
 from src.api.core.database import engine
 from src.api.crud import deployment as deployment_crud
@@ -196,25 +195,23 @@ def _has_code_at_block(
     return True
 
 
-def _find_creation_block_by_code(w3: Web3, address: str) -> Optional[int]:
+def _find_creation_block_by_ots(
+    w3: Web3, address: str
+) -> Optional[tuple[int, str, str]]:
+    """Return (block_number, tx_hash, creator) via ots_getContractCreator, or None."""
     try:
         checksum = Web3.to_checksum_address(address)
-        latest = int(w3.eth.block_number)
+        result = w3.provider.make_request("ots_getContractCreator", [checksum])
+        data = result.get("result")
+        if not data or not data.get("hash"):
+            return None
+        tx_hash = data["hash"]
+        creator = data.get("creator", "")
+        tx = w3.eth.get_transaction(tx_hash)
+        block = int(tx["blockNumber"])
+        return block, tx_hash, creator
     except Exception:
         return None
-
-    if latest < 0 or not _has_code_at_block(w3, checksum, latest):
-        return None
-
-    low = 0
-    high = latest
-    while low < high:
-        mid = (low + high) // 2
-        if _has_code_at_block(w3, checksum, mid):
-            high = mid
-        else:
-            low = mid + 1
-    return low
 
 
 def _upsert_address_metadata(
@@ -258,7 +255,6 @@ def _resolve_creation_block(
     session: Session,
     w3: Web3,
     address: str,
-    allium_client: Optional[AlliumClient],
     cache: dict[str, int],
     persist_deployment: bool = True,
 ) -> tuple[int, bool, str]:
@@ -302,49 +298,31 @@ def _resolve_creation_block(
         cache[normalized] = block
         return block, False, "deployment"
 
-    if allium_client:
-        data = allium_client.get_deployment(normalized)
-        if data:
+    ots = _find_creation_block_by_ots(w3, normalized)
+    if ots is not None:
+        block, tx_hash, creator = ots
+        entry = DeploymentCreate(
+            address=normalized,
+            deployer=creator,
+            deployer_eoa=creator,
+            tx_hash=tx_hash,
+            block_number=block,
+        )
+        if persist_deployment:
             try:
-                block = int(data.get("block_number"))
-            except (TypeError, ValueError):
-                block = None
-            if block is not None and block >= 0:
-                entry = DeploymentCreate(
-                    address=data.get("address", normalized).lower(),
-                    deployer=data.get("deployer", ""),
-                    deployer_eoa=data.get("deployer_eoa", ""),
-                    tx_hash=data.get("transaction_hash", ""),
-                    block_number=block,
-                )
-                if persist_deployment:
-                    try:
-                        deployment_crud.create_deployment(session, entry)
-                    except Exception:
-                        session.rollback()
-                _upsert_address_metadata(
-                    session,
-                    normalized,
-                    address_type="contract",
-                    creation_block=block,
-                    source="allium",
-                    needs_retry=False,
-                )
-                cache[normalized] = block
-                return block, False, "allium"
-
-    block = _find_creation_block_by_code(w3, normalized)
-    if block is not None:
+                deployment_crud.create_deployment(session, entry)
+            except Exception:
+                session.rollback()
         _upsert_address_metadata(
             session,
             normalized,
             address_type="contract",
             creation_block=block,
-            source="rpc_binary",
+            source="ots",
             needs_retry=False,
         )
         cache[normalized] = block
-        return block, False, "rpc_binary"
+        return block, False, "ots"
 
     _upsert_address_metadata(
         session,
@@ -482,7 +460,6 @@ def _resolve_address_lower_bound(
     address: str,
     cache: dict[str, int],
     *,
-    allium_client: Optional[AlliumClient] = None,
     etherscan_api_key: str | None = None,
     persist_deployment: bool = True,
 ) -> tuple[int, bool, str]:
@@ -536,7 +513,6 @@ def _resolve_address_lower_bound(
             session,
             w3,
             normalized,
-            allium_client,
             cache,
             persist_deployment=persist_deployment,
         )
@@ -1007,12 +983,6 @@ def main() -> None:
     trace_collector = TraceCollector(
         get_eth_node_url(), log_level=settings.log_level
     )
-    allium_client = (
-        AlliumClient(settings.allium_api_key)
-        if settings.allium_api_key
-        else None
-    )
-
     from_filter = (
         _normalize_address(args.from_address) if args.from_address else None
     )
@@ -1108,7 +1078,6 @@ def main() -> None:
                         trace_collector.w3,
                         row.to_address,
                         address_bound_cache,
-                        allium_client=allium_client,
                         etherscan_api_key=settings.etherscan_api_key,
                         persist_deployment=not args.dry_run,
                     )
@@ -1160,7 +1129,6 @@ def main() -> None:
                         trace_collector.w3,
                         row.from_address,
                         address_bound_cache,
-                        allium_client=allium_client,
                         etherscan_api_key=settings.etherscan_api_key,
                         persist_deployment=not args.dry_run,
                     )
