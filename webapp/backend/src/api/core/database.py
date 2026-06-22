@@ -3,8 +3,8 @@ from src.api.core.config import settings
 
 
 engine = create_engine(
-    settings.database_url, echo=True
-)  # Set echo=False to reduce logs
+    settings.database_url, echo=False
+)
 
 
 def get_session():

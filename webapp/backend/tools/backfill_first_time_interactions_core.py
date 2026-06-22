@@ -12,6 +12,7 @@ from typing import Optional
 import time
 
 import requests
+from sqlalchemy import tuple_
 from sqlmodel import SQLModel, Session, select
 from web3 import Web3
 
@@ -161,6 +162,7 @@ def _iter_scan_rows(
     only_retry: bool,
     from_filter: Optional[str],
     to_filter: Optional[str],
+    from_prefix: Optional[str] = None,
 ):
     stmt = select(InteractionScanState)
     if interaction_types:
@@ -173,6 +175,8 @@ def _iter_scan_rows(
         stmt = stmt.where(InteractionScanState.from_address == from_filter)
     if to_filter:
         stmt = stmt.where(InteractionScanState.to_address == to_filter)
+    if from_prefix:
+        stmt = stmt.where(InteractionScanState.from_address.like(from_prefix + "%"))
     stmt = stmt.order_by(
         InteractionScanState.last_requested_at.desc().nulls_last(),
         InteractionScanState.id,
@@ -772,6 +776,7 @@ def _collect_processing_rows(
     only_retry: bool,
     from_filter: Optional[str],
     to_filter: Optional[str],
+    from_prefix: Optional[str],
     include_hot: bool,
     fast_per_cycle: int,
     hot_per_cycle: int,
@@ -784,6 +789,7 @@ def _collect_processing_rows(
             only_retry=only_retry,
             from_filter=from_filter,
             to_filter=to_filter,
+            from_prefix=from_prefix,
         )
     )
     if include_hot:
@@ -794,14 +800,33 @@ def _collect_processing_rows(
         now = datetime.utcnow()
         fast_rows: list[InteractionScanState] = []
         hot_rows: list[InteractionScanState] = []
-        for row in candidates:
-            normalized_type = _normalize_interaction_type(row.interaction_type)
-            hot = _get_hot_record(
-                session,
+
+        # Batch-fetch all hot records for the candidate set in one query.
+        keys = [
+            (
                 row.from_address,
                 row.to_address,
-                normalized_type,
+                _normalize_interaction_type(row.interaction_type),
             )
+            for row in candidates
+        ]
+        hot_map: dict[tuple[str, str, str], InteractionScanHot] = {}
+        if keys:
+            hot_records = session.exec(
+                select(InteractionScanHot).where(
+                    tuple_(
+                        InteractionScanHot.from_address,
+                        InteractionScanHot.to_address,
+                        InteractionScanHot.interaction_type,
+                    ).in_(keys)
+                )
+            ).all()
+            for r in hot_records:
+                hot_map[(r.from_address, r.to_address, r.interaction_type)] = r
+
+        for row in candidates:
+            normalized_type = _normalize_interaction_type(row.interaction_type)
+            hot = hot_map.get((row.from_address, row.to_address, normalized_type))
             if _is_hot_active(hot, now):
                 hot_rows.append(row)
             else:
@@ -918,6 +943,15 @@ def _parse_args() -> argparse.Namespace:
         help="Restrict sender",
     )
     parser.add_argument(
+        "--from-address-prefix",
+        dest="from_address_prefix",
+        default=None,
+        help=(
+            "Restrict to from_address values starting with this prefix "
+            "(e.g. '0x3' or '0x3a'). Enables parallel sharded workers."
+        ),
+    )
+    parser.add_argument(
         "--to-address",
         dest="to_address",
         default=None,
@@ -1025,6 +1059,13 @@ def main() -> None:
     if args.to_address and not to_filter:
         raise SystemExit(f"Invalid --to-address value: {args.to_address}")
 
+    from_prefix: Optional[str] = None
+    if args.from_address_prefix:
+        raw = args.from_address_prefix.strip().lower()
+        if not raw.startswith("0x"):
+            raw = "0x" + raw
+        from_prefix = raw
+
     chunk_size = max(1, int(args.chunk_size))
     max_chunks_per_row = max(1, int(args.max_chunks_per_row))
     if args.round_robin_until_target:
@@ -1082,6 +1123,7 @@ def main() -> None:
                     only_retry=args.only_retry,
                     from_filter=from_filter,
                     to_filter=to_filter,
+                    from_prefix=from_prefix,
                     include_hot=args.include_hot,
                     fast_per_cycle=args.fast_per_cycle,
                     hot_per_cycle=args.hot_per_cycle,
