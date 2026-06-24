@@ -12,7 +12,7 @@ from typing import Optional
 import time
 
 import requests
-from sqlmodel import SQLModel, Session, select
+from sqlmodel import SQLModel, Session, select, or_
 from web3 import Web3
 
 
@@ -164,7 +164,7 @@ def _iter_scan_rows(
     only_retry: bool,
     from_filter: Optional[str],
     to_filter: Optional[str],
-    from_prefix: Optional[str] = None,
+    from_prefixes: list[str] | None = None,
 ):
     stmt = select(InteractionScanState)
     if interaction_types:
@@ -177,8 +177,10 @@ def _iter_scan_rows(
         stmt = stmt.where(InteractionScanState.from_address == from_filter)
     if to_filter:
         stmt = stmt.where(InteractionScanState.to_address == to_filter)
-    if from_prefix:
-        stmt = stmt.where(InteractionScanState.from_address.like(from_prefix + "%"))
+    if from_prefixes:
+        stmt = stmt.where(
+            or_(*(InteractionScanState.from_address.like(p + "%") for p in from_prefixes))
+        )
     stmt = stmt.order_by(
         InteractionScanState.last_requested_at.desc().nulls_last(),
         InteractionScanState.id,
@@ -755,7 +757,7 @@ def _collect_processing_rows(
     only_retry: bool,
     from_filter: Optional[str],
     to_filter: Optional[str],
-    from_prefix: Optional[str],
+    from_prefixes: list[str] | None,
     include_hot: bool,
     fast_per_cycle: int,
     hot_per_cycle: int,
@@ -768,7 +770,7 @@ def _collect_processing_rows(
             only_retry=only_retry,
             from_filter=from_filter,
             to_filter=to_filter,
-            from_prefix=from_prefix,
+            from_prefixes=from_prefixes,
         )
     )
     if include_hot:
@@ -910,10 +912,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--from-address-prefix",
         dest="from_address_prefix",
+        action="append",
         default=None,
         help=(
             "Restrict to from_address values starting with this prefix "
-            "(e.g. '0x3' or '0x3a'). Enables parallel sharded workers."
+            "(e.g. '0x3' or '0x3a'). Repeat to cover multiple prefixes. "
+            "Enables parallel sharded workers."
         ),
     )
     parser.add_argument(
@@ -1018,12 +1022,15 @@ def main() -> None:
     if args.to_address and not to_filter:
         raise SystemExit(f"Invalid --to-address value: {args.to_address}")
 
-    from_prefix: Optional[str] = None
+    from_prefixes: list[str] | None = None
     if args.from_address_prefix:
-        raw = args.from_address_prefix.strip().lower()
-        if not raw.startswith("0x"):
-            raw = "0x" + raw
-        from_prefix = raw
+        normalized = []
+        for raw in args.from_address_prefix:
+            raw = raw.strip().lower()
+            if not raw.startswith("0x"):
+                raw = "0x" + raw
+            normalized.append(raw)
+        from_prefixes = normalized
 
     chunk_size = max(1, int(args.chunk_size))
     max_chunks_per_row = max(1, int(args.max_chunks_per_row))
@@ -1082,7 +1089,7 @@ def main() -> None:
                     only_retry=args.only_retry,
                     from_filter=from_filter,
                     to_filter=to_filter,
-                    from_prefix=from_prefix,
+                    from_prefixes=from_prefixes,
                     include_hot=args.include_hot,
                     fast_per_cycle=args.fast_per_cycle,
                     hot_per_cycle=args.hot_per_cycle,
