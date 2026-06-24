@@ -79,6 +79,15 @@ class CrystalClearRiskEngine(RiskEngine):
             latest_offset=latest_offset,
         )
 
+    def get_transaction(self, tx_hash: str) -> dict[str, Any]:
+        sc = self._client.simulation_collector
+        if sc is None:
+            raise ValueError("SimulationCollector is not initialized.")
+        from hexbytes import HexBytes
+
+        tx = sc.w3.eth.get_transaction(HexBytes(tx_hash))
+        return dict(tx)
+
 
 @lru_cache(maxsize=1)
 def get_risk_engine() -> RiskEngine:
