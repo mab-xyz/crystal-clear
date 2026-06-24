@@ -74,6 +74,7 @@ from src.api.models.interaction_scan_hot import InteractionScanHot
 from src.api.models.interaction_scan_skipped_range import InteractionScanSkippedRange
 from src.api.models.interaction_scan_state import InteractionScanState
 import backfill_interaction_checks as interaction_checks
+import backfill_backward_helpers as _bwd
 
 
 def _normalize_address(address: str | None) -> Optional[str]:
@@ -106,49 +107,12 @@ def _ensure_state_table() -> None:
     )
 
 
-def _get_backward_progress(
-    session: Session,
-    from_address: str,
-    to_address: str,
-    interaction_type: str,
-) -> Optional[int]:
-    """Return last_backward_block for the pair, or None if not started."""
-    rec = session.exec(
-        select(InteractionScanBackwardProgress).where(
-            InteractionScanBackwardProgress.from_address == from_address,
-            InteractionScanBackwardProgress.to_address == to_address,
-            InteractionScanBackwardProgress.interaction_type == interaction_type,
-        )
-    ).first()
-    return rec.last_backward_block if rec else None
+def _get_backward_progress(session, from_address, to_address, interaction_type):
+    return _bwd.get_backward_progress(session, from_address, to_address, interaction_type)
 
 
-def _upsert_backward_progress(
-    session: Session,
-    from_address: str,
-    to_address: str,
-    interaction_type: str,
-    last_backward_block: int,
-) -> None:
-    rec = session.exec(
-        select(InteractionScanBackwardProgress).where(
-            InteractionScanBackwardProgress.from_address == from_address,
-            InteractionScanBackwardProgress.to_address == to_address,
-            InteractionScanBackwardProgress.interaction_type == interaction_type,
-        )
-    ).first()
-    if rec is None:
-        rec = InteractionScanBackwardProgress(
-            from_address=from_address,
-            to_address=to_address,
-            interaction_type=interaction_type,
-            last_backward_block=last_backward_block,
-            updated_at=datetime.utcnow(),
-        )
-    else:
-        rec.last_backward_block = last_backward_block
-        rec.updated_at = datetime.utcnow()
-    session.add(rec)
+def _upsert_backward_progress(session, from_address, to_address, interaction_type, last_backward_block):
+    _bwd.upsert_backward_progress(session, from_address, to_address, interaction_type, last_backward_block)
 
 
 def _seed_scan_rows_from_first_time(
@@ -744,37 +708,15 @@ def _is_first_time_interact(total_interactions: int) -> bool:
     return int(total_interactions) == 0
 
 
-def _resolve_scan_range_backward(
-    effective_start: int,
-    target_block: int,
-    last_backward_block: Optional[int],
-    chunk_size: int,
-) -> Optional[tuple[int, int]]:
-    """Return next (scan_start, scan_end) for the backward pass, or None when done."""
-    if last_backward_block is not None and last_backward_block <= effective_start:
-        return None
-    scan_end = (last_backward_block - 1) if last_backward_block is not None else target_block
-    if scan_end < effective_start:
-        return None
-    scan_start = max(effective_start, scan_end - chunk_size + 1)
-    return scan_start, scan_end
+def _resolve_scan_range_backward(effective_start, target_block, last_backward_block, chunk_size):
+    return _bwd.resolve_scan_range_backward(effective_start, target_block, last_backward_block, chunk_size)
 
 
-def _scan_chunk(
-    w3,
-    from_address: str,
-    to_address: str,
-    scan_start: int,
-    scan_end: int,
-    page_size: int,
-    normalized_type: str,
-) -> tuple[int, list[tuple[int, int]]]:
+def _scan_chunk(w3, from_address, to_address, scan_start, scan_end, page_size, normalized_type):
     """Dispatch one block-range scan for the given interaction type."""
     _sync_interaction_check_settings()
     if normalized_type in TRANSITIVE_INTERACTION_TYPES:
-        return _count_transitive_interactions(
-            w3, from_address, to_address, scan_start, scan_end, page_size
-        )
+        return _count_transitive_interactions(w3, from_address, to_address, scan_start, scan_end, page_size)
     if normalized_type == "sender_direct":
         return _count_direct_interactions(
             w3, from_address, to_address, scan_start, scan_end, page_size,
@@ -786,54 +728,8 @@ def _scan_chunk(
     )
 
 
-def _fill_skipped_ranges_for_row(
-    session: Session,
-    w3,
-    row: "InteractionScanState",
-    page_size: int,
-    normalized_type: str,
-    dry_run: bool,
-) -> tuple[int, int]:
-    """Retry recorded skipped ranges for a row. Returns (total_hits, ranges_filled)."""
-    holes = session.exec(
-        select(InteractionScanSkippedRange).where(
-            InteractionScanSkippedRange.from_address == row.from_address,
-            InteractionScanSkippedRange.to_address == row.to_address,
-            InteractionScanSkippedRange.interaction_type == normalized_type,
-        )
-    ).all()
-    if not holes:
-        return 0, 0
-    total_hits = 0
-    filled = 0
-    for hole in holes:
-        hits, still_skipped = _scan_chunk(
-            w3,
-            row.from_address,
-            row.to_address,
-            hole.range_start,
-            hole.range_end,
-            page_size,
-            normalized_type,
-        )
-        if not still_skipped:
-            total_hits += hits
-            filled += 1
-            print(
-                f"[fill-hole] id={row.id} type={normalized_type} "
-                f"{row.from_address}->{row.to_address} "
-                f"range={hole.range_start}-{hole.range_end} hits={hits}"
-            )
-            if not dry_run:
-                session.delete(hole)
-    if not dry_run and filled > 0:
-        new_total = max(0, int(row.how_many_times)) + total_hits
-        row.how_many_times = new_total
-        row.first_time_interact = _is_first_time_interact(new_total)
-        row.checked_at = datetime.utcnow()
-        session.add(row)
-        session.commit()
-    return total_hits, filled
+def _fill_skipped_ranges_for_row(session, w3, row, page_size, normalized_type, dry_run):
+    return _bwd.fill_skipped_ranges_for_row(session, _scan_chunk, w3, row, page_size, normalized_type, dry_run)
 
 
 def _get_hot_record(
