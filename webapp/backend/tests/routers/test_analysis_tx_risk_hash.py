@@ -81,25 +81,25 @@ def _patch_interaction_helpers(
     )
 
 
-def test_tx_risk_has_invalid_hash():
+def test_tx_risk_hash_invalid_hash():
     client = _build_client()
-    response = client.get("/v1/analysis/tx-risk-has/not-a-hash")
+    response = client.get("/v1/analysis/tx-risk-hash/not-a-hash")
     assert response.status_code == 422
     assert response.json()["detail"] == "Invalid tx_hash format"
 
 
-def test_tx_risk_has_get_transaction_failure():
+def test_tx_risk_hash_get_transaction_failure():
     engine = _FakeRiskEngine(raise_get_tx=True)
     client = _build_client(engine)
-    response = client.get(f"/v1/analysis/tx-risk-has/{_TX_HASH}")
+    response = client.get(f"/v1/analysis/tx-risk-hash/{_TX_HASH}")
     assert response.status_code == 422
     assert "Failed to fetch transaction" in response.json()["detail"]
 
 
-def test_tx_risk_has_ok_status(monkeypatch):
+def test_tx_risk_hash_ok_status(monkeypatch):
     _patch_interaction_helpers(monkeypatch)
     client = _build_client()
-    response = client.get(f"/v1/analysis/tx-risk-has/{_TX_HASH}")
+    response = client.get(f"/v1/analysis/tx-risk-hash/{_TX_HASH}")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "OK"
@@ -108,7 +108,7 @@ def test_tx_risk_has_ok_status(monkeypatch):
     assert data["details"][0]["address"] == _CONTRACT
 
 
-def test_tx_risk_has_dangerous_first_time(monkeypatch):
+def test_tx_risk_hash_dangerous_first_time(monkeypatch):
     _patch_interaction_helpers(
         monkeypatch,
         contract_dangerous_types=["contract_direct"],
@@ -116,14 +116,14 @@ def test_tx_risk_has_dangerous_first_time(monkeypatch):
         interaction_state={_CONTRACT.lower(): {"contract_direct": "FOUND"}},
     )
     client = _build_client()
-    response = client.get(f"/v1/analysis/tx-risk-has/{_TX_HASH}")
+    response = client.get(f"/v1/analysis/tx-risk-hash/{_TX_HASH}")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "DANGEROUS"
     assert data["danger_reason"] == "FIRST_TIME_INTERACTION"
 
 
-def test_tx_risk_has_dangerous_unverified(monkeypatch):
+def test_tx_risk_hash_dangerous_unverified(monkeypatch):
     engine = _FakeRiskEngine(
         simulate_result={
             _CONTRACT: {
@@ -137,28 +137,28 @@ def test_tx_risk_has_dangerous_unverified(monkeypatch):
     )
     _patch_interaction_helpers(monkeypatch)
     client = _build_client(engine)
-    response = client.get(f"/v1/analysis/tx-risk-has/{_TX_HASH}")
+    response = client.get(f"/v1/analysis/tx-risk-hash/{_TX_HASH}")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "DANGEROUS"
     assert data["danger_reason"] == "UNVERIFIED"
 
 
-def test_tx_risk_has_uses_tx_block_tag(monkeypatch):
+def test_tx_risk_hash_uses_tx_block_tag(monkeypatch):
     _patch_interaction_helpers(monkeypatch)
     engine = _FakeRiskEngine()
     client = _build_client(engine)
-    client.get(f"/v1/analysis/tx-risk-has/{_TX_HASH}")
+    client.get(f"/v1/analysis/tx-risk-hash/{_TX_HASH}")
     call_object, kwargs = engine._last_call
     assert kwargs["block_tag"] == hex(_BLOCK)
     assert kwargs["to_block"] == hex(_BLOCK - 1)
 
 
-def test_tx_risk_has_response_shape_matches_tx_risk_raw(monkeypatch):
+def test_tx_risk_hash_response_shape_matches_tx_risk_raw(monkeypatch):
     """Verify the response includes the same top-level fields as tx-risk-raw."""
     _patch_interaction_helpers(monkeypatch)
     client = _build_client()
-    response = client.get(f"/v1/analysis/tx-risk-has/{_TX_HASH}")
+    response = client.get(f"/v1/analysis/tx-risk-hash/{_TX_HASH}")
     assert response.status_code == 200
     data = response.json()
     for field in ("status", "interaction_status", "details", "dangerous_interaction_types", "danger_reason", "ok_reason"):
@@ -168,12 +168,12 @@ def test_tx_risk_has_response_shape_matches_tx_risk_raw(monkeypatch):
         assert field in item, f"Missing item field: {field}"
 
 
-def test_tx_risk_has_missing_block_number_uses_latest(monkeypatch):
+def test_tx_risk_hash_missing_block_number_uses_latest(monkeypatch):
     tx_no_block = {**_FAKE_TX, "blockNumber": None}
     engine = _FakeRiskEngine(tx=tx_no_block)
     _patch_interaction_helpers(monkeypatch)
     client = _build_client(engine)
-    response = client.get(f"/v1/analysis/tx-risk-has/{_TX_HASH}")
+    response = client.get(f"/v1/analysis/tx-risk-hash/{_TX_HASH}")
     assert response.status_code == 200
     _, kwargs = engine._last_call
     assert kwargs["block_tag"] == "latest"
