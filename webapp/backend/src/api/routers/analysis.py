@@ -35,7 +35,7 @@ from src.api.integrations.risk_engine import RiskEngine
 from eth_account import Account
 from eth_account.typed_transactions import TypedTransaction
 from hexbytes import HexBytes
-from typing import Optional, Any, Dict, List, Union
+from typing import Literal, Optional, Any, Dict, List, Union
 import rlp
 from loguru import logger
 
@@ -668,6 +668,205 @@ async def get_tx_risk(
     return SimulationResponse(
         status=status,
         details=items,
+        ok_reason=ok_reason,
+    )
+
+
+@router.get(
+    "/tx-risk-has/{tx_hash}",
+    response_model=SimulationResponse,
+    responses={
+        500: {
+            "description": "Internal server error",
+            "model": ErrorResponse,
+        },
+        422: {
+            "description": "Input validation error",
+            "model": ErrorResponse,
+        },
+    },
+    status_code=status.HTTP_200_OK,
+    summary="Transaction risk: from existing on-chain transaction",
+    description=(
+        "Fetch an existing mainnet transaction by hash, simulate it at its block, "
+        "list all touched contracts (including DELEGATECALL), and report risk identically to tx-risk-raw."
+    ),
+)
+async def get_tx_risk_has(
+    tx_hash: str,
+    interaction_type: Optional[
+        Literal[
+            "sender_direct",
+            "sender_transitive",
+            "contract_direct",
+            "contract_transitive",
+        ]
+    ] = Query(None, description="Interaction type to check"),
+    latest_offset: Optional[int] = Query(
+        100, description="Limit first-time checks to N latest blocks"
+    ),
+    risk_engine: RiskEngine = Depends(get_risk_engine),
+    session: Session = Depends(get_session),
+) -> SimulationResponse:
+    tx_hash = _validate_tx_hash(tx_hash)
+
+    try:
+        tx = risk_engine.get_transaction(tx_hash)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422, detail=f"Failed to fetch transaction: {exc}"
+        ) from exc
+
+    def _hex_field(val: Any) -> Optional[str]:
+        if val is None:
+            return None
+        if isinstance(val, (bytes, bytearray)):
+            return "0x" + val.hex()
+        if isinstance(val, int):
+            return hex(val)
+        return str(val)
+
+    sender = _hex_field(tx.get("from")) or ""
+    if not sender.startswith("0x"):
+        raise HTTPException(status_code=422, detail="Transaction has no sender")
+
+    call_object: Dict[str, Any] = {"from": sender}
+    to_val = tx.get("to")
+    if to_val is not None and to_val != b"":
+        call_object["to"] = _hex_field(to_val)
+    data_val = tx.get("input") or tx.get("data")
+    if data_val is not None:
+        call_object["data"] = _hex_field(data_val)
+    value_val = tx.get("value")
+    if value_val is not None:
+        call_object["value"] = hex(int(value_val))
+    gas_val = tx.get("gas")
+    if gas_val is not None:
+        call_object["gas"] = hex(int(gas_val))
+    gas_price_val = tx.get("gasPrice")
+    if gas_price_val is not None:
+        call_object["gasPrice"] = hex(int(gas_price_val))
+    mp_val = tx.get("maxPriorityFeePerGas")
+    if mp_val is not None:
+        call_object["maxPriorityFeePerGas"] = hex(int(mp_val))
+    mf_val = tx.get("maxFeePerGas")
+    if mf_val is not None:
+        call_object["maxFeePerGas"] = hex(int(mf_val))
+    tx_type_raw = tx.get("type")
+    if tx_type_raw is not None:
+        call_object["type"] = hex(int(tx_type_raw))
+
+    block_number: Optional[int] = tx.get("blockNumber")
+    block_tag: str = hex(block_number) if block_number else "latest"
+    to_block: Optional[str] = hex(block_number - 1) if block_number and block_number > 0 else None
+
+    results = risk_engine.simulate_and_check(
+        call_object,
+        block_tag=block_tag,
+        from_block=None,
+        to_block=to_block,
+        latest_offset=latest_offset,
+    )
+    touched_addresses = list(results.keys())
+    checked_interaction_types = _resolve_checked_interaction_types(
+        [interaction_type] if interaction_type else None,
+        call_object.get("to"),
+    )
+
+    items = [
+        {
+            "address": addr,
+            "verification": info.get("verification"),
+            "depth": info.get("depth"),
+            "types": info.get("types"),
+            "is_eip7702": info.get("is_eip7702", False),
+            "delegate_address": info.get("delegate_address"),
+        }
+        for addr, info in results.items()
+    ]
+
+    try:
+        seeded_rows = seed_interaction_scan_state_from_tx(
+            session=session,
+            sender_address=sender,
+            root_contract=call_object.get("to"),
+            touched_addresses=touched_addresses,
+        )
+        logger.info("tx-risk-has seeded interaction_scan_state rows: {}", seeded_rows)
+    except Exception as exc:
+        logger.warning("tx-risk-has failed to seed interaction_scan_state: {}", exc)
+
+    (
+        interaction_first_time,
+        interaction_state,
+        contract_dangerous_types,
+        sender_dangerous_types,
+        contract_missing_types,
+        sender_missing_types,
+    ) = _evaluate_interaction_scan_risk(
+        session=session,
+        sender_address=sender,
+        root_contract=call_object.get("to"),
+        touched_addresses=touched_addresses,
+        checked_interaction_types=checked_interaction_types,
+    )
+    for item in items:
+        normalized = _normalize_address(item["address"]) or ""
+        first_time_by_type = interaction_first_time.get(normalized, {})
+        item["interaction_first_time"] = first_time_by_type
+        item["interaction_state"] = interaction_state.get(normalized, {})
+        item["first_time"] = any(first_time_by_type.values())
+
+    eip7702_unverified = any(
+        item.get("is_eip7702")
+        and item.get("verification", {}).get("verification") == "not-verified"
+        for item in items
+    )
+    eip7702_verified = any(
+        item.get("is_eip7702")
+        and item.get("verification", {}).get("verification") != "not-verified"
+        for item in items
+    )
+
+    if _has_unverified_dangerous(items):
+        status_val = "DANGEROUS"
+        danger_reason = "UNVERIFIED"
+        ok_reason = None
+    elif eip7702_unverified:
+        status_val = "DANGEROUS"
+        danger_reason = "EIP_7702_UNVERIFIED_DELEGATE"
+        ok_reason = None
+    elif contract_dangerous_types:
+        status_val = "DANGEROUS"
+        danger_reason = "FIRST_TIME_INTERACTION"
+        ok_reason = None
+    elif contract_missing_types:
+        status_val = "POTENTIAL_DANGEROUS"
+        danger_reason = "MISSING_HISTORY"
+        ok_reason = None
+    else:
+        status_val = "OK"
+        danger_reason = None
+        if eip7702_verified:
+            ok_reason = "EIP-7702 delegated EOA (verified delegate)"
+        elif call_object.get("to") and not touched_addresses:
+            ok_reason = "to EOA"
+        elif _has_allowlisted_verification(items):
+            ok_reason = "allowlist"
+        else:
+            ok_reason = None
+
+    interaction_status = _build_interaction_status(
+        checked_interaction_types,
+        contract_dangerous_types + sender_dangerous_types,
+        contract_missing_types + sender_missing_types,
+    )
+    return SimulationResponse(
+        status=status_val,
+        interaction_status=interaction_status,
+        details=items,
+        dangerous_interaction_types=contract_dangerous_types,
+        danger_reason=danger_reason,
         ok_reason=ok_reason,
     )
 

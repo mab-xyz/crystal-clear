@@ -35,3 +35,6 @@ class RiskEngine(Protocol):
         latest_offset: int | None = None,
     ) -> dict[str, Any]:
         """Simulate an on-chain transaction by hash."""
+
+    def get_transaction(self, tx_hash: str) -> dict[str, Any]:
+        """Fetch a transaction from the chain by hash and return its fields."""
