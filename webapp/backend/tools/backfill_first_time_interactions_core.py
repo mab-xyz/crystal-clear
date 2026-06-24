@@ -69,6 +69,7 @@ from src.api.crud import deployment as deployment_crud
 from src.api.models.address_metadata import AddressMetadata
 from src.api.models.deployment import Deployment, DeploymentCreate
 from src.api.models.first_interaction import FirstInteraction
+from src.api.models.interaction_scan_backward_progress import InteractionScanBackwardProgress
 from src.api.models.interaction_scan_hot import InteractionScanHot
 from src.api.models.interaction_scan_skipped_range import InteractionScanSkippedRange
 from src.api.models.interaction_scan_state import InteractionScanState
@@ -100,8 +101,54 @@ def _ensure_state_table() -> None:
             AddressMetadata.__table__,
             InteractionScanHot.__table__,
             InteractionScanSkippedRange.__table__,
+            InteractionScanBackwardProgress.__table__,
         ],
     )
+
+
+def _get_backward_progress(
+    session: Session,
+    from_address: str,
+    to_address: str,
+    interaction_type: str,
+) -> Optional[int]:
+    """Return last_backward_block for the pair, or None if not started."""
+    rec = session.exec(
+        select(InteractionScanBackwardProgress).where(
+            InteractionScanBackwardProgress.from_address == from_address,
+            InteractionScanBackwardProgress.to_address == to_address,
+            InteractionScanBackwardProgress.interaction_type == interaction_type,
+        )
+    ).first()
+    return rec.last_backward_block if rec else None
+
+
+def _upsert_backward_progress(
+    session: Session,
+    from_address: str,
+    to_address: str,
+    interaction_type: str,
+    last_backward_block: int,
+) -> None:
+    rec = session.exec(
+        select(InteractionScanBackwardProgress).where(
+            InteractionScanBackwardProgress.from_address == from_address,
+            InteractionScanBackwardProgress.to_address == to_address,
+            InteractionScanBackwardProgress.interaction_type == interaction_type,
+        )
+    ).first()
+    if rec is None:
+        rec = InteractionScanBackwardProgress(
+            from_address=from_address,
+            to_address=to_address,
+            interaction_type=interaction_type,
+            last_backward_block=last_backward_block,
+            updated_at=datetime.utcnow(),
+        )
+    else:
+        rec.last_backward_block = last_backward_block
+        rec.updated_at = datetime.utcnow()
+    session.add(rec)
 
 
 def _seed_scan_rows_from_first_time(
@@ -697,6 +744,98 @@ def _is_first_time_interact(total_interactions: int) -> bool:
     return int(total_interactions) == 0
 
 
+def _resolve_scan_range_backward(
+    effective_start: int,
+    target_block: int,
+    last_backward_block: Optional[int],
+    chunk_size: int,
+) -> Optional[tuple[int, int]]:
+    """Return next (scan_start, scan_end) for the backward pass, or None when done."""
+    if last_backward_block is not None and last_backward_block <= effective_start:
+        return None
+    scan_end = (last_backward_block - 1) if last_backward_block is not None else target_block
+    if scan_end < effective_start:
+        return None
+    scan_start = max(effective_start, scan_end - chunk_size + 1)
+    return scan_start, scan_end
+
+
+def _scan_chunk(
+    w3,
+    from_address: str,
+    to_address: str,
+    scan_start: int,
+    scan_end: int,
+    page_size: int,
+    normalized_type: str,
+) -> tuple[int, list[tuple[int, int]]]:
+    """Dispatch one block-range scan for the given interaction type."""
+    _sync_interaction_check_settings()
+    if normalized_type in TRANSITIVE_INTERACTION_TYPES:
+        return _count_transitive_interactions(
+            w3, from_address, to_address, scan_start, scan_end, page_size
+        )
+    if normalized_type == "sender_direct":
+        return _count_direct_interactions(
+            w3, from_address, to_address, scan_start, scan_end, page_size,
+            root_only=True, mode_name="sender_direct",
+        )
+    return _count_direct_interactions(
+        w3, from_address, to_address, scan_start, scan_end, page_size,
+        root_only=False, mode_name="contract_direct",
+    )
+
+
+def _fill_skipped_ranges_for_row(
+    session: Session,
+    w3,
+    row: "InteractionScanState",
+    page_size: int,
+    normalized_type: str,
+    dry_run: bool,
+) -> tuple[int, int]:
+    """Retry recorded skipped ranges for a row. Returns (total_hits, ranges_filled)."""
+    holes = session.exec(
+        select(InteractionScanSkippedRange).where(
+            InteractionScanSkippedRange.from_address == row.from_address,
+            InteractionScanSkippedRange.to_address == row.to_address,
+            InteractionScanSkippedRange.interaction_type == normalized_type,
+        )
+    ).all()
+    if not holes:
+        return 0, 0
+    total_hits = 0
+    filled = 0
+    for hole in holes:
+        hits, still_skipped = _scan_chunk(
+            w3,
+            row.from_address,
+            row.to_address,
+            hole.range_start,
+            hole.range_end,
+            page_size,
+            normalized_type,
+        )
+        if not still_skipped:
+            total_hits += hits
+            filled += 1
+            print(
+                f"[fill-hole] id={row.id} type={normalized_type} "
+                f"{row.from_address}->{row.to_address} "
+                f"range={hole.range_start}-{hole.range_end} hits={hits}"
+            )
+            if not dry_run:
+                session.delete(hole)
+    if not dry_run and filled > 0:
+        new_total = max(0, int(row.how_many_times)) + total_hits
+        row.how_many_times = new_total
+        row.first_time_interact = _is_first_time_interact(new_total)
+        row.checked_at = datetime.utcnow()
+        session.add(row)
+        session.commit()
+    return total_hits, filled
+
+
 def _get_hot_record(
     session: Session,
     from_address: str,
@@ -982,6 +1121,19 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Process one chunk per row per round until target block is reached",
     )
+    parser.add_argument(
+        "--scan-backwards",
+        action="store_true",
+        help=(
+            "Scan from the latest block backwards toward the creation block. "
+            "Progress is tracked in interaction_scan_backward_progress."
+        ),
+    )
+    parser.add_argument(
+        "--fill-holes",
+        action="store_true",
+        help="After scanning each row, retry any ranges recorded in interaction_scan_skipped_range.",
+    )
     return parser.parse_args()
 
 
@@ -1100,11 +1252,13 @@ def main() -> None:
                 break
 
             for row in processing_rows:
-                if row.last_analyzed_block is not None and int(
-                    row.last_analyzed_block
-                ) >= int(target_block):
-                    round_skipped_done += 1
-                    continue
+                # Forward-mode done check: already reached target block.
+                if not args.scan_backwards:
+                    if row.last_analyzed_block is not None and int(
+                        row.last_analyzed_block
+                    ) >= int(target_block):
+                        round_skipped_done += 1
+                        continue
                 round_remaining += 1
                 processed += 1
 
@@ -1194,6 +1348,19 @@ def main() -> None:
                 if row.last_analyzed_block is None:
                     row.from_block = effective_start
 
+                # Backward-mode: load persisted progress from the separate table.
+                if args.scan_backwards:
+                    last_backward_block = _get_backward_progress(
+                        session,
+                        row.from_address,
+                        row.to_address,
+                        normalized_type,
+                    )
+                    before_last_backward = last_backward_block
+                else:
+                    last_backward_block = None
+                    before_last_backward = None
+
                 row_started = time.perf_counter()
                 while chunks_done < max_chunks_per_row:
                     row_runtime_sec = time.perf_counter() - row_started
@@ -1218,62 +1385,60 @@ def main() -> None:
                         if not args.dry_run:
                             session.commit()
                         break
-                    scan_start = _resolve_scan_start(
-                        row.from_block,
-                        from_lower_bound,
-                        row.last_analyzed_block,
-                        args.override_start,
-                    )
-                    if scan_start < row.from_block:
-                        print(
-                            f"[warn] scan_start below creation id={row.id} "
-                            f"scan_start={scan_start} from_block={row.from_block}"
-                        )
-                        scan_start = row.from_block
 
-                    if scan_start > target_block:
-                        round_remaining -= 1
-                        round_skipped_done += 1
-                        print(
-                            f"[skip] scan start beyond target id={row.id} type={normalized_type} "
-                            f"scan_start={scan_start} target={target_block}"
+                    if args.scan_backwards:
+                        bwd = _resolve_scan_range_backward(
+                            effective_start,
+                            target_block,
+                            last_backward_block,
+                            chunk_size,
                         )
-                        break
+                        if bwd is None:
+                            round_remaining -= 1
+                            round_skipped_done += 1
+                            print(
+                                f"[skip] backward scan complete id={row.id} "
+                                f"type={normalized_type} "
+                                f"{row.from_address}->{row.to_address}"
+                            )
+                            break
+                        scan_start, scan_end = bwd
+                    else:
+                        scan_start = _resolve_scan_start(
+                            row.from_block,
+                            from_lower_bound,
+                            row.last_analyzed_block,
+                            args.override_start,
+                        )
+                        if scan_start < row.from_block:
+                            print(
+                                f"[warn] scan_start below creation id={row.id} "
+                                f"scan_start={scan_start} from_block={row.from_block}"
+                            )
+                            scan_start = row.from_block
 
-                    scan_end = min(target_block, scan_start + chunk_size - 1)
+                        if scan_start > target_block:
+                            round_remaining -= 1
+                            round_skipped_done += 1
+                            print(
+                                f"[skip] scan start beyond target id={row.id} type={normalized_type} "
+                                f"scan_start={scan_start} target={target_block}"
+                            )
+                            break
+
+                        scan_end = min(target_block, scan_start + chunk_size - 1)
+
                     chunk_started = time.perf_counter()
 
-                    if normalized_type in TRANSITIVE_INTERACTION_TYPES:
-                        hits, chunk_skipped = _count_transitive_interactions(
-                            trace_collector.w3,
-                            row.from_address,
-                            row.to_address,
-                            scan_start,
-                            scan_end,
-                            page_size,
-                        )
-                    elif normalized_type == "sender_direct":
-                        hits, chunk_skipped = _count_direct_interactions(
-                            trace_collector.w3,
-                            row.from_address,
-                            row.to_address,
-                            scan_start,
-                            scan_end,
-                            page_size,
-                            root_only=True,
-                            mode_name="sender_direct",
-                        )
-                    else:
-                        hits, chunk_skipped = _count_direct_interactions(
-                            trace_collector.w3,
-                            row.from_address,
-                            row.to_address,
-                            scan_start,
-                            scan_end,
-                            page_size,
-                            root_only=False,
-                            mode_name="contract_direct",
-                        )
+                    hits, chunk_skipped = _scan_chunk(
+                        trace_collector.w3,
+                        row.from_address,
+                        row.to_address,
+                        scan_start,
+                        scan_end,
+                        page_size,
+                        normalized_type,
+                    )
 
                     if chunk_skipped and not args.dry_run:
                         for range_start, range_end in chunk_skipped:
@@ -1339,8 +1504,20 @@ def main() -> None:
                     row.first_time_interact = _is_first_time_interact(
                         new_total
                     )
-                    row.last_analyzed_block = scan_end
                     row.checked_at = datetime.utcnow()
+
+                    if args.scan_backwards:
+                        last_backward_block = scan_start
+                        if not args.dry_run:
+                            _upsert_backward_progress(
+                                session,
+                                row.from_address,
+                                row.to_address,
+                                normalized_type,
+                                scan_start,
+                            )
+                    else:
+                        row.last_analyzed_block = scan_end
 
                     if not args.dry_run:
                         session.add(row)
@@ -1349,11 +1526,31 @@ def main() -> None:
 
                     chunks_done += 1
 
-                if row.last_analyzed_block is not None and (
-                    before_last_analyzed is None
-                    or int(row.last_analyzed_block) > int(before_last_analyzed)
-                ):
-                    round_advanced += 1
+                if args.fill_holes:
+                    fill_hits, fill_count = _fill_skipped_ranges_for_row(
+                        session,
+                        trace_collector.w3,
+                        row,
+                        page_size,
+                        normalized_type,
+                        args.dry_run,
+                    )
+                    total_hits += fill_hits
+                    if fill_count > 0:
+                        updated += 1
+
+                if args.scan_backwards:
+                    if last_backward_block is not None and (
+                        before_last_backward is None
+                        or int(last_backward_block) < int(before_last_backward)
+                    ):
+                        round_advanced += 1
+                else:
+                    if row.last_analyzed_block is not None and (
+                        before_last_analyzed is None
+                        or int(row.last_analyzed_block) > int(before_last_analyzed)
+                    ):
+                        round_advanced += 1
 
             print(
                 f"[round-summary] round={rounds} target={target_block} "
