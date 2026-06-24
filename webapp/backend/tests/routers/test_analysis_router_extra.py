@@ -111,8 +111,8 @@ def test_tx_risk_by_hash_marks_dangerous_for_not_verified():
     assert response.json()["status"] == "DANGEROUS"
 
 
-# Enforces sender requirement for unsigned raw Type-1/2 transactions.
-def test_tx_risk_raw_unsigned_requires_sender(monkeypatch):
+# Unsigned raw Type-1/2 transactions without sender_address use the zero address.
+def test_tx_risk_raw_unsigned_no_sender_uses_zero_address(monkeypatch):
     class _TypedTx:
         @staticmethod
         def from_bytes(_b):
@@ -120,11 +120,17 @@ def test_tx_risk_raw_unsigned_requires_sender(monkeypatch):
 
     monkeypatch.setattr(analysis, "TypedTransaction", _TypedTx)
     monkeypatch.setattr(analysis.rlp, "decode", lambda _b: [b""] * 8)
+    monkeypatch.setattr(analysis, "seed_interaction_scan_state_from_tx", lambda **_k: 0)
+    monkeypatch.setattr(
+        analysis,
+        "_evaluate_interaction_scan_risk",
+        lambda **_k: ({}, {}, [], [], [], []),
+    )
 
     response = _client().post(
         "/v1/analysis/tx-risk-raw",
         json={"raw_tx": "0x01" + "00" * 10},
     )
 
-    assert response.status_code == 422
-    assert "sender_address" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json()["status"] == "OK"

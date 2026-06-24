@@ -1129,3 +1129,117 @@ async def test_seed_failures_are_swallowed_in_both_endpoints(monkeypatch):
 
     assert sim_resp.status == "OK"
     assert raw_resp.status == "OK"
+
+
+@pytest.mark.asyncio
+# Unsigned Type-2 (9 RLP elements) without sender_address → zero address used as sender.
+async def test_tx_risk_raw_unsigned_type2_no_sender_uses_zero_address(monkeypatch):
+    _patch_interaction_helpers(monkeypatch)
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            raise RuntimeError("typed fail")
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    # 9 elements = unsigned EIP-1559 layout: chainId nonce maxPrio maxFee gas to value data accessList
+    monkeypatch.setattr(
+        analysis.rlp,
+        "decode",
+        lambda _b: [b"", b"", b"\x01", b"\x02", b"\x52\x08", b"\x33" * 20, b"", b"\xca\xfe", []],
+    )
+    engine = _CaptureEngine(
+        {
+            "0x3333333333333333333333333333333333333333": {
+                "first_time": False,
+                "verification": {"verification": "verified"},
+            }
+        }
+    )
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x02aa"),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    call_object, _kwargs = engine.calls[0]
+    assert response.status == "OK"
+    assert call_object["from"] == "0x0000000000000000000000000000000000000000"
+    assert call_object["type"] == "0x2"
+
+
+@pytest.mark.asyncio
+# Unsigned Type-1 (8 RLP elements) without sender_address → zero address used as sender.
+async def test_tx_risk_raw_unsigned_type1_no_sender_uses_zero_address(monkeypatch):
+    _patch_interaction_helpers(monkeypatch)
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            raise RuntimeError("typed fail")
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    # 8 elements = unsigned EIP-2930 layout: chainId nonce gasPrice gas to value data accessList
+    monkeypatch.setattr(
+        analysis.rlp,
+        "decode",
+        lambda _b: [b"", b"", b"\x05", b"\x52\x08", b"\x44" * 20, b"", b"\xbe\xef", []],
+    )
+    engine = _CaptureEngine(
+        {
+            "0x4444444444444444444444444444444444444444": {
+                "first_time": False,
+                "verification": {"verification": "verified"},
+            }
+        }
+    )
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x01aa"),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    call_object, _kwargs = engine.calls[0]
+    assert response.status == "OK"
+    assert call_object["from"] == "0x0000000000000000000000000000000000000000"
+    assert call_object["type"] == "0x1"
+
+
+@pytest.mark.asyncio
+# Unsigned legacy (6 RLP elements) without sender_address → zero address used as sender.
+async def test_tx_risk_raw_unsigned_legacy_no_sender_uses_zero_address(monkeypatch):
+    _patch_interaction_helpers(monkeypatch)
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            raise RuntimeError("typed fail")
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    # 6 elements = unsigned legacy layout: nonce gasPrice gas to value data
+    monkeypatch.setattr(
+        analysis.rlp,
+        "decode",
+        lambda _b: [b"", b"\x03", b"\x52\x08", b"\x55" * 20, b"", b"\xde\xad"],
+    )
+    engine = _CaptureEngine(
+        {
+            "0x5555555555555555555555555555555555555555": {
+                "first_time": False,
+                "verification": {"verification": "verified"},
+            }
+        }
+    )
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x80aa"),
+        risk_engine=engine,
+        session=object(),
+    )
+
+    call_object, _kwargs = engine.calls[0]
+    assert response.status == "OK"
+    assert call_object["from"] == "0x0000000000000000000000000000000000000000"
+    assert call_object["type"] == "0x0"

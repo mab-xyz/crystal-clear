@@ -824,16 +824,9 @@ async def get_tx_risk_from_raw(
             # Recover sender from signature when no explicit sender is provided.
             sender = Account.recover_transaction(txn_bytes)
         else:
-            # Requires explicit sender address for unsigned transactions
-            if not body.sender_address or not body.sender_address.startswith(
-                "0x"
-            ):
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"Transaction Error: This transaction appears to be unsigned, Type {tx_type_val} transaction has unexpected RLP length: {len(elems)}(expect 12 for Type1 and Type2, expect 9 for Type0). 'sender_address' must be provided in the request body for simulation.",
-                )
-            # Use the provided sender address
-            sender = body.sender_address
+            # Unsigned transaction with no explicit sender — fall back to the zero address
+            # so callers can analyse a transaction payload before signing it.
+            sender = "0x0000000000000000000000000000000000000000"
     except Exception as e:
         raise HTTPException(
             status_code=422,
