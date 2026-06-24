@@ -673,7 +673,7 @@ async def get_tx_risk(
 
 
 @router.get(
-    "/tx-risk-has/{tx_hash}",
+    "/tx-risk-hash/{tx_hash}",
     response_model=SimulationResponse,
     responses={
         500: {
@@ -692,7 +692,7 @@ async def get_tx_risk(
         "list all touched contracts (including DELEGATECALL), and report risk identically to tx-risk-raw."
     ),
 )
-async def get_tx_risk_has(
+async def get_tx_risk_hash(
     tx_hash: str,
     interaction_type: Optional[
         Literal[
@@ -792,9 +792,9 @@ async def get_tx_risk_has(
             root_contract=call_object.get("to"),
             touched_addresses=touched_addresses,
         )
-        logger.info("tx-risk-has seeded interaction_scan_state rows: {}", seeded_rows)
+        logger.info("tx-risk-hash seeded interaction_scan_state rows: {}", seeded_rows)
     except Exception as exc:
-        logger.warning("tx-risk-has failed to seed interaction_scan_state: {}", exc)
+        logger.warning("tx-risk-hash failed to seed interaction_scan_state: {}", exc)
 
     (
         interaction_first_time,
