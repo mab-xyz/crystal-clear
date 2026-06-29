@@ -1,0 +1,138 @@
+"""Command-line entrypoint."""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import os
+import sys
+
+from .config import IndexerConfig, POST_MERGE_START_BLOCK, parse_bool
+from .ingest import Ingestor
+from .logging_config import configure_logging
+from .rpc import JsonRpcClient
+
+LOGGER = logging.getLogger(__name__)
+
+
+def _boolean(value: str) -> bool:
+    try:
+        return parse_bool(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="eth-graph-indexer")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    ingest = subparsers.add_parser(
+        "ingest", help="Index an Ethereum block range"
+    )
+    ingest.add_argument(
+        "--rpc-url",
+        default=os.getenv("ERIGON_RPC_URL", "http://localhost:8545"),
+    )
+    ingest.add_argument(
+        "--neo4j-uri",
+        default=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+    )
+    ingest.add_argument(
+        "--neo4j-user", default=os.getenv("NEO4J_USER", "neo4j")
+    )
+    ingest.add_argument(
+        "--neo4j-password", default=os.getenv("NEO4J_PASSWORD")
+    )
+    ingest.add_argument(
+        "--start-block",
+        type=int,
+        default=POST_MERGE_START_BLOCK,
+        help=(
+            "First block to index when no checkpoint is used "
+            f"(default: {POST_MERGE_START_BLOCK}, first post-Merge block)"
+        ),
+    )
+    ingest.add_argument("--end-block", type=int)
+    ingest.add_argument("--batch-size", type=int, default=100)
+    ingest.add_argument("--receipt-batch-size", type=int, default=100)
+    ingest.add_argument("--concurrent-blocks", type=int, default=4)
+    ingest.add_argument(
+        "--trace-mode",
+        choices=["none", "trace_block", "debug_traceBlockByNumber"],
+        default="trace_block",
+    )
+    ingest.add_argument("--resume", type=_boolean, default=True)
+    ingest.add_argument(
+        "--continue-on-error", type=_boolean, default=False
+    )
+    ingest.add_argument(
+        "--continue-on-trace-error", type=_boolean, default=False
+    )
+    ingest.add_argument("--follow", type=_boolean, default=False)
+    ingest.add_argument("--poll-interval", type=float, default=12.0)
+    ingest.add_argument("--request-timeout", type=float, default=60.0)
+    ingest.add_argument("--max-retries", type=int, default=4)
+    ingest.add_argument("--retry-backoff", type=float, default=0.5)
+    ingest.add_argument("--progress-interval", type=int, default=10)
+    ingest.add_argument("--checkpoint-id", default="default")
+    ingest.add_argument("--log-level", default="INFO")
+    ingest.add_argument("--json-logs", type=_boolean, default=False)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    configure_logging(args.log_level, json_logs=args.json_logs)
+    try:
+        if not args.neo4j_password:
+            raise ValueError(
+                "Neo4j password is required; pass --neo4j-password or set "
+                "NEO4J_PASSWORD"
+            )
+        config = IndexerConfig(
+            rpc_url=args.rpc_url,
+            neo4j_uri=args.neo4j_uri,
+            neo4j_user=args.neo4j_user,
+            neo4j_password=args.neo4j_password,
+            start_block=args.start_block,
+            end_block=args.end_block,
+            batch_size=args.batch_size,
+            receipt_batch_size=args.receipt_batch_size,
+            concurrent_blocks=args.concurrent_blocks,
+            trace_mode=args.trace_mode,
+            resume=args.resume,
+            continue_on_error=args.continue_on_error,
+            continue_on_trace_error=args.continue_on_trace_error,
+            follow=args.follow,
+            poll_interval=args.poll_interval,
+            request_timeout=args.request_timeout,
+            max_retries=args.max_retries,
+            retry_backoff=args.retry_backoff,
+            progress_interval=args.progress_interval,
+            checkpoint_id=args.checkpoint_id,
+        )
+        with JsonRpcClient(
+            config.rpc_url,
+            timeout=config.request_timeout,
+            max_retries=config.max_retries,
+            retry_backoff=config.retry_backoff,
+        ) as rpc:
+            from .neo4j_store import Neo4jStore
+
+            with Neo4jStore(
+                config.neo4j_uri,
+                config.neo4j_user,
+                config.neo4j_password,
+            ) as store:
+                Ingestor(config, rpc, store).run()
+        return 0
+    except (ValueError, RuntimeError) as exc:
+        LOGGER.error("%s", exc)
+        return 2
+    except KeyboardInterrupt:
+        LOGGER.warning("Interrupted")
+        return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main())

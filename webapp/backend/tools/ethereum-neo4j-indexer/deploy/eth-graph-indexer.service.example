@@ -1,0 +1,22 @@
+[Unit]
+Description=Ethereum Neo4j graph indexer
+Wants=network-online.target
+After=network-online.target neo4j.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/javier/crystal-clear/webapp/backend/tools/ethereum-neo4j-indexer
+EnvironmentFile=/etc/eth-graph-indexer.env
+ExecStart=/home/javier/crystal-clear/webapp/backend/tools/ethereum-neo4j-indexer/.venv/bin/eth-graph-indexer ingest \
+  --neo4j-uri ${NEO4J_URI} \
+  --neo4j-user ${NEO4J_USER} \
+  --trace-mode trace_block \
+  --concurrent-blocks 4 \
+  --resume true \
+  --follow true \
+  --poll-interval 12
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

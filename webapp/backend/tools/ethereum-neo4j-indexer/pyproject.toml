@@ -1,0 +1,39 @@
+[project]
+name = "eth-graph-indexer"
+version = "0.1.0"
+description = "Resumable Ethereum address interaction graph indexer for Erigon and Neo4j"
+readme = "README.md"
+requires-python = ">=3.12,<4"
+dependencies = [
+    "httpx>=0.27,<1",
+    "neo4j>=5.20,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.8,<1",
+]
+
+[project.scripts]
+eth-graph-indexer = "eth_graph_indexer.cli:main"
+eth-graph-indexer-monitor = "eth_graph_indexer.monitor:main"
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eth_graph_indexer"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = ["E501"]
