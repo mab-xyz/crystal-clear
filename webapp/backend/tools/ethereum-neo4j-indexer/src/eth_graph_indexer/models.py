@@ -51,8 +51,17 @@ class InteractionEdge:
         return self.tx_hash, self.from_address, self.to_address
 
     def to_record(self) -> dict:
+        edge_id = f"{self.from_address}:{self.to_address}:{self.block_number}"
         return {
+            "id": edge_id,
             "blockNumber": self.block_number,
             "from": address_to_bytes(self.from_address),
             "to": address_to_bytes(self.to_address),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class BlockWrite:
+    edges: list[InteractionEdge]
+    block_number: int
+    block_hash: str

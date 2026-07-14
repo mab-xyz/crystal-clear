@@ -7,7 +7,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any, Iterable, Protocol
 
 import httpx
 
@@ -33,6 +33,12 @@ class JsonRpcError(RuntimeError):
 class RpcCall:
     method: str
     params: list[Any]
+
+
+class RpcClient(Protocol):
+    def call(self, method: str, params: list[Any] | None = None) -> Any: ...
+
+    def batch_call(self, calls: Iterable[RpcCall]) -> list[Any]: ...
 
 
 class JsonRpcClient:
@@ -158,3 +164,52 @@ class JsonRpcClient:
     def _next_id(self) -> int:
         with self._id_lock:
             return next(self._ids)
+
+
+class MultiJsonRpcClient:
+    def __init__(self, clients: Iterable[JsonRpcClient]) -> None:
+        self.clients = tuple(clients)
+        if not self.clients:
+            raise ValueError("at least one RPC client is required")
+        self._next_client = itertools.count()
+        self._client_lock = threading.Lock()
+
+    def close(self) -> None:
+        for client in self.clients:
+            client.close()
+
+    def __enter__(self) -> MultiJsonRpcClient:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.close()
+
+    def call(self, method: str, params: list[Any] | None = None) -> Any:
+        return self._try_clients(lambda client: client.call(method, params))
+
+    def batch_call(self, calls: Iterable[RpcCall]) -> list[Any]:
+        pending = list(calls)
+        if not pending:
+            return []
+        return self._try_clients(lambda client: client.batch_call(pending))
+
+    def _try_clients(self, operation):
+        start = self._next_index()
+        last_error: Exception | None = None
+        for offset in range(len(self.clients)):
+            client = self.clients[(start + offset) % len(self.clients)]
+            try:
+                return operation(client)
+            except JsonRpcError as exc:
+                last_error = exc
+                LOGGER.warning(
+                    "RPC endpoint failed; trying next endpoint",
+                    extra={"rpc_url": client.url},
+                )
+        raise JsonRpcError(
+            f"all {len(self.clients)} RPC endpoints failed: {last_error}"
+        ) from last_error
+
+    def _next_index(self) -> int:
+        with self._client_lock:
+            return next(self._next_client) % len(self.clients)

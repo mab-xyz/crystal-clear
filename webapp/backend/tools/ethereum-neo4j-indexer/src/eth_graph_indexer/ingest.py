@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from concurrent.futures import Future, ThreadPoolExecutor
 import logging
 import time
+from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Protocol
 
 from .address_filter import normalize_address
 from .checkpoint import resolve_start_block
 from .config import IndexerConfig
-from .models import BlockData, InteractionEdge, hex_to_int
+from .models import BlockData, BlockWrite, InteractionEdge, hex_to_int
 from .receipts import ReceiptLoader
-from .rpc import JsonRpcClient
+from .rpc import RpcClient
 from .traces import TraceLoader
 
 LOGGER = logging.getLogger(__name__)
@@ -36,6 +36,14 @@ class Store(Protocol):
         batch_size: int,
     ) -> tuple[int, int]: ...
 
+    def write_blocks(
+        self,
+        blocks: list[BlockWrite],
+        *,
+        checkpoint_id: str,
+        batch_size: int,
+    ) -> tuple[int, int]: ...
+
 
 @dataclass(slots=True)
 class IngestStats:
@@ -44,18 +52,30 @@ class IngestStats:
     nodes_upserted: int = 0
     relationships_upserted: int = 0
     started_at: float = 0.0
+    rpc_block_seconds: float = 0.0
+    receipt_seconds: float = 0.0
+    trace_seconds: float = 0.0
+    neo4j_write_seconds: float = 0.0
 
     def add(self, other: IngestStats) -> None:
         self.blocks_processed += other.blocks_processed
         self.transactions_processed += other.transactions_processed
         self.nodes_upserted += other.nodes_upserted
         self.relationships_upserted += other.relationships_upserted
+        self.rpc_block_seconds += other.rpc_block_seconds
+        self.receipt_seconds += other.receipt_seconds
+        self.trace_seconds += other.trace_seconds
+        self.neo4j_write_seconds += other.neo4j_write_seconds
 
 
 @dataclass(frozen=True, slots=True)
 class ProcessedBlock:
     block: BlockData
     edges: list[InteractionEdge]
+    rpc_block_seconds: float = 0.0
+    receipt_seconds: float = 0.0
+    trace_seconds: float = 0.0
+    skipped: bool = False
 
 
 def _safe_normalize(value: object) -> str | None:
@@ -119,7 +139,7 @@ class Ingestor:
     def __init__(
         self,
         config: IndexerConfig,
-        rpc: JsonRpcClient,
+        rpc: RpcClient,
         store: Store,
         *,
         receipt_loader: ReceiptLoader | None = None,
@@ -132,6 +152,8 @@ class Ingestor:
             rpc, batch_size=config.receipt_batch_size
         )
         self.traces = trace_loader or TraceLoader(rpc, config.trace_mode)
+        self._custom_receipt_loader = receipt_loader
+        self._custom_trace_loader = trace_loader
 
     def run(self) -> IngestStats:
         self.store.verify_connectivity()
@@ -178,48 +200,75 @@ class Ingestor:
             "Starting ingestion",
             extra={"start_block": start, "end_block": end, "head": head},
         )
-        with ThreadPoolExecutor(
-            max_workers=self.config.concurrent_blocks
-        ) as executor:
-            futures: dict[int, Future[ProcessedBlock]] = {}
+        with _EndpointExecutors(
+            self._build_endpoint_worker_groups()
+        ) as executors:
+            futures: dict[int, tuple[Future[ProcessedBlock], int]] = {}
             next_to_submit = start
+            commit_batch: list[ProcessedBlock] = []
 
             def submit_available() -> None:
                 nonlocal next_to_submit
                 while (
                     next_to_submit <= end
-                    and len(futures) < self.config.concurrent_blocks
+                    and len(futures) < executors.total_capacity
                 ):
-                    futures[next_to_submit] = executor.submit(
-                        self._process_block, next_to_submit
+                    endpoint_index = executors.next_available_index()
+                    if endpoint_index is None:
+                        return
+                    endpoint_rpc = executors.endpoint_rpc(endpoint_index)
+                    future = executors.submit(
+                        endpoint_index,
+                        self._process_block,
+                        next_to_submit,
+                        endpoint_rpc,
                     )
+                    futures[next_to_submit] = (future, endpoint_index)
                     next_to_submit += 1
 
             submit_available()
             for block_number in range(start, end + 1):
-                future = futures.pop(block_number)
+                future, endpoint_index = futures.pop(block_number)
+                executors.mark_completed(endpoint_index)
                 submit_available()
-                self._commit_processed_block(
+                processed = self._resolve_processed_block(
                     future,
                     block_number=block_number,
-                    stats=stats,
-                    head=head,
-                    end=end,
                 )
+                commit_batch.append(processed)
+                if (
+                    len(commit_batch) >= self.config.commit_batch_size
+                    or block_number == end
+                ):
+                    self._commit_processed_blocks(
+                        commit_batch,
+                        stats=stats,
+                        head=head,
+                        end=end,
+                    )
+                    commit_batch = []
         return stats
 
-    def _process_block(self, block_number: int) -> ProcessedBlock:
-        block = self._get_block(block_number)
+    def _process_block(
+        self, block_number: int, rpc: RpcClient | None = None
+    ) -> ProcessedBlock:
+        rpc_client = rpc or self.rpc
+        block_start = time.monotonic()
+        block = self._get_block(block_number, rpc_client)
+        block_end = time.monotonic()
+        receipt_start = time.monotonic()
+        receipt_loader = self._receipt_loader_for(rpc_client)
         receipts = (
-            self.receipts.get_for_block(block.number, block.transactions)
+            receipt_loader.get_for_block(block.number, block.transactions)
             if needs_receipts(block)
             else {}
         )
+        receipt_end = time.monotonic()
         edges = parse_external_interactions(block, receipts)
+        trace_start = time.monotonic()
+        trace_loader = self._trace_loader_for(rpc_client)
         try:
-            edges.extend(
-                self.traces.get_for_block(block.number, block.transactions)
-            )
+            edges.extend(trace_loader.get_for_block(block.number, block.transactions))
         except Exception:
             LOGGER.exception(
                 "Trace processing failed",
@@ -227,31 +276,23 @@ class Ingestor:
             )
             if not self.config.continue_on_trace_error:
                 raise
-        return ProcessedBlock(block, edges)
+        trace_end = time.monotonic()
+        return ProcessedBlock(
+            block,
+            edges,
+            rpc_block_seconds=block_end - block_start,
+            receipt_seconds=receipt_end - receipt_start,
+            trace_seconds=trace_end - trace_start,
+        )
 
-    def _commit_processed_block(
+    def _resolve_processed_block(
         self,
         future: Future[ProcessedBlock],
         *,
         block_number: int,
-        stats: IngestStats,
-        head: int,
-        end: int,
-    ) -> None:
+    ) -> ProcessedBlock:
         try:
-            processed = future.result()
-            block = processed.block
-            nodes, relationships = self.store.write_block(
-                edges=processed.edges,
-                block_number=block.number,
-                block_hash=block.block_hash,
-                checkpoint_id=self.config.checkpoint_id,
-                batch_size=self.config.batch_size,
-            )
-            stats.blocks_processed += 1
-            stats.transactions_processed += len(block.transactions)
-            stats.nodes_upserted += nodes
-            stats.relationships_upserted += relationships
+            return future.result()
         except Exception:
             LOGGER.exception(
                 "Block processing failed",
@@ -261,22 +302,55 @@ class Ingestor:
                 raise
             # Deliberately checkpoint a skipped block so continue-on-error
             # can make progress. The gap is explicit in the error log.
-            self.store.write_block(
-                edges=[],
-                block_number=block_number,
-                block_hash="ERROR_SKIPPED",
-                checkpoint_id=self.config.checkpoint_id,
-                batch_size=self.config.batch_size,
+            return ProcessedBlock(
+                BlockData(block_number, "ERROR_SKIPPED", ()),
+                [],
+                skipped=True,
             )
 
+    def _commit_processed_blocks(
+        self,
+        blocks: list[ProcessedBlock],
+        *,
+        stats: IngestStats,
+        head: int,
+        end: int,
+    ) -> None:
+        write_start = time.monotonic()
+        nodes, relationships = self.store.write_blocks(
+            [
+                BlockWrite(
+                    edges=processed.edges,
+                    block_number=processed.block.number,
+                    block_hash=processed.block.block_hash,
+                )
+                for processed in blocks
+            ],
+            checkpoint_id=self.config.checkpoint_id,
+            batch_size=self.config.batch_size,
+        )
+        write_end = time.monotonic()
+        stats.neo4j_write_seconds += write_end - write_start
+        stats.nodes_upserted += nodes
+        stats.relationships_upserted += relationships
+        for processed in blocks:
+            if processed.skipped:
+                continue
+            stats.blocks_processed += 1
+            stats.transactions_processed += len(processed.block.transactions)
+            stats.rpc_block_seconds += processed.rpc_block_seconds
+            stats.receipt_seconds += processed.receipt_seconds
+            stats.trace_seconds += processed.trace_seconds
+
+        current_block = blocks[-1].block.number
         if (
             stats.blocks_processed % self.config.progress_interval == 0
-            or block_number == end
+            or current_block == end
         ):
-            self._log_progress(stats, block_number, head)
+            self._log_progress(stats, current_block, head)
 
-    def _get_block(self, block_number: int) -> BlockData:
-        payload = self.rpc.call(
+    def _get_block(self, block_number: int, rpc: RpcClient) -> BlockData:
+        payload = rpc.call(
             "eth_getBlockByNumber", [hex(block_number), True]
         )
         if payload is None:
@@ -287,6 +361,31 @@ class Ingestor:
                 f"requested block {block_number}, received block {block.number}"
             )
         return block
+
+    def _build_endpoint_worker_groups(self) -> list[tuple[RpcClient, int]]:
+        if (
+            self.config.endpoint_concurrency is not None
+            and hasattr(self.rpc, "clients")
+        ):
+            clients = tuple(self.rpc.clients)
+            if len(clients) != len(self.config.endpoint_concurrency):
+                raise ValueError(
+                    "endpoint concurrency does not match RPC client count"
+                )
+            return list(
+                zip(clients, self.config.endpoint_concurrency, strict=True)
+            )
+        return [(self.rpc, self.config.concurrent_blocks)]
+
+    def _receipt_loader_for(self, rpc: RpcClient):
+        if rpc is self.rpc or self._custom_receipt_loader is not None:
+            return self.receipts
+        return ReceiptLoader(rpc, batch_size=self.config.receipt_batch_size)
+
+    def _trace_loader_for(self, rpc: RpcClient):
+        if rpc is self.rpc or self._custom_trace_loader is not None:
+            return self.traces
+        return TraceLoader(rpc, self.config.trace_mode)
 
     @staticmethod
     def _log_progress(
@@ -306,5 +405,55 @@ class Ingestor:
                 "blocks_per_second": round(
                     stats.blocks_processed / elapsed, 3
                 ),
+                "rpc_block_seconds": round(stats.rpc_block_seconds, 3),
+                "receipt_seconds": round(stats.receipt_seconds, 3),
+                "trace_seconds": round(stats.trace_seconds, 3),
+                "neo4j_write_seconds": round(stats.neo4j_write_seconds, 3),
             },
         )
+
+
+class _EndpointExecutors:
+    def __init__(self, groups: list[tuple[RpcClient, int]]) -> None:
+        self._groups = groups
+        self._executors: list[Executor] = []
+        self._inflight: list[int] = [0 for _ in groups]
+        self._next_index = 0
+
+    @property
+    def total_capacity(self) -> int:
+        return sum(capacity for _rpc, capacity in self._groups)
+
+    def __enter__(self) -> _EndpointExecutors:
+        self._executors = [
+            ThreadPoolExecutor(max_workers=capacity)
+            for _rpc, capacity in self._groups
+        ]
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        for executor in self._executors:
+            executor.shutdown(wait=True)
+
+    def endpoint_rpc(self, index: int) -> RpcClient:
+        return self._groups[index][0]
+
+    def next_available_index(self) -> int | None:
+        for offset in range(len(self._groups)):
+            index = (self._next_index + offset) % len(self._groups)
+            if self._inflight[index] < self._groups[index][1]:
+                self._inflight[index] += 1
+                self._next_index = (index + 1) % len(self._groups)
+                return index
+        return None
+
+    def submit(
+        self,
+        index: int,
+        fn,
+        *args: object,
+    ) -> Future[ProcessedBlock]:
+        return self._executors[index].submit(fn, *args)
+
+    def mark_completed(self, index: int) -> None:
+        self._inflight[index] -= 1

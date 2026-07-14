@@ -7,7 +7,7 @@ from typing import Any
 
 from .address_filter import normalize_address
 from .models import InteractionEdge, hex_to_int
-from .rpc import JsonRpcClient
+from .rpc import RpcClient
 
 
 def _safe_address(value: Any) -> str | None:
@@ -155,7 +155,7 @@ def parse_debug_traces(
 
 
 class TraceLoader:
-    def __init__(self, rpc: JsonRpcClient, mode: str) -> None:
+    def __init__(self, rpc: RpcClient, mode: str) -> None:
         self.rpc = rpc
         self.mode = mode
 

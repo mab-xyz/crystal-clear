@@ -4,9 +4,30 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 TRACE_MODES = {"none", "trace_block", "debug_traceBlockByNumber"}
 POST_MERGE_START_BLOCK = 15_537_394
+
+
+def parse_rpc_urls(value: str) -> tuple[str, ...]:
+    urls = tuple(url.strip() for url in value.split(",") if url.strip())
+    if not urls:
+        raise ValueError("at least one RPC URL is required")
+    return urls
+
+
+def parse_endpoint_concurrency(
+    value: str | None,
+) -> tuple[int, ...] | None:
+    if value is None:
+        return None
+    counts = tuple(
+        int(item.strip()) for item in value.split(",") if item.strip()
+    )
+    if not counts:
+        raise ValueError("at least one endpoint concurrency value is required")
+    if any(count < 1 for count in counts):
+        raise ValueError("endpoint concurrency values must be positive")
+    return counts
 
 
 def parse_bool(value: str | bool) -> bool:
@@ -26,10 +47,12 @@ class IndexerConfig:
     neo4j_uri: str
     neo4j_user: str
     neo4j_password: str
+    endpoint_concurrency: tuple[int, ...] | None = None
     start_block: int = POST_MERGE_START_BLOCK
     end_block: int | None = None
-    batch_size: int = 100
+    batch_size: int = 1000
     receipt_batch_size: int = 100
+    commit_batch_size: int = 10
     concurrent_blocks: int = 4
     trace_mode: str = "trace_block"
     resume: bool = True
@@ -44,16 +67,30 @@ class IndexerConfig:
     checkpoint_id: str = "default"
 
     def __post_init__(self) -> None:
+        rpc_urls = parse_rpc_urls(self.rpc_url)
         if self.start_block < 0:
             raise ValueError("start block must be non-negative")
         if self.end_block is not None and self.end_block < self.start_block:
             raise ValueError("end block must be greater than or equal to start block")
         if self.follow and self.end_block is not None:
             raise ValueError("follow mode cannot be used with end block")
-        if self.batch_size < 1 or self.receipt_batch_size < 1:
+        if (
+            self.batch_size < 1
+            or self.receipt_batch_size < 1
+            or self.commit_batch_size < 1
+        ):
             raise ValueError("batch sizes must be positive")
         if self.concurrent_blocks < 1:
             raise ValueError("concurrent blocks must be positive")
+        if self.endpoint_concurrency is not None:
+            if len(self.endpoint_concurrency) != len(rpc_urls):
+                raise ValueError(
+                    "endpoint concurrency count must match the number of RPC URLs"
+                )
+            if sum(self.endpoint_concurrency) != self.concurrent_blocks:
+                raise ValueError(
+                    "endpoint concurrency must sum to concurrent blocks"
+                )
         if self.trace_mode not in TRACE_MODES:
             choices = ", ".join(sorted(TRACE_MODES))
             raise ValueError(f"trace mode must be one of: {choices}")

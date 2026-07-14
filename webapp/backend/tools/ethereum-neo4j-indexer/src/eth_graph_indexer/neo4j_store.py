@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from neo4j import Driver
 else:
     Driver = Any
 
-from .models import InteractionEdge
+from .models import BlockWrite, InteractionEdge
 
 ADDRESS_CONSTRAINT_QUERY = """
 CREATE CONSTRAINT address_unique IF NOT EXISTS
@@ -18,17 +18,21 @@ FOR (a:Address) REQUIRE a.address IS UNIQUE
 """.strip()
 
 RELATIONSHIP_CONSTRAINT_QUERY = """
-// No relationship uniqueness constraint is created because INTERACTION stores
-// only blockNumber, which is not globally unique.
+CREATE CONSTRAINT interaction_unique IF NOT EXISTS
+FOR ()-[r:INTERACTION]-() REQUIRE r.id IS UNIQUE
 """.strip()
 
 INTERACTION_UPSERT_QUERY = """
 UNWIND $edges AS edge
-MERGE (source:Address {address: edge.from})
-MERGE (target:Address {address: edge.to})
-MERGE (source)-[rel:INTERACTION {
-  blockNumber: edge.blockNumber
-}]->(target)
+MATCH (source:Address {address: edge.from})
+MATCH (target:Address {address: edge.to})
+MERGE (source)-[rel:INTERACTION {id: edge.id}]->(target)
+SET rel.blockNumber = edge.blockNumber
+""".strip()
+
+ADDRESS_UPSERT_QUERY = """
+UNWIND $addresses AS address
+MERGE (:Address {address: address})
 """.strip()
 
 CHECKPOINT_QUERY = """
@@ -80,6 +84,7 @@ class Neo4jStore:
 
     def ensure_schema(self) -> None:
         self._driver.execute_query(ADDRESS_CONSTRAINT_QUERY)
+        self._driver.execute_query(RELATIONSHIP_CONSTRAINT_QUERY)
 
     def get_checkpoint(self, checkpoint_id: str) -> Checkpoint | None:
         records, _, _ = self._driver.execute_query(
@@ -106,21 +111,49 @@ class Neo4jStore:
         checkpoint_id: str,
         batch_size: int,
     ) -> tuple[int, int]:
+        return self.write_blocks(
+            [
+                BlockWrite(
+                    edges=edges,
+                    block_number=block_number,
+                    block_hash=block_hash,
+                )
+            ],
+            checkpoint_id=checkpoint_id,
+            batch_size=batch_size,
+        )
+
+    def write_blocks(
+        self,
+        blocks: list[BlockWrite],
+        *,
+        checkpoint_id: str,
+        batch_size: int,
+    ) -> tuple[int, int]:
+        if not blocks:
+            return 0, 0
         records_by_identity = {
-            (record["from"], record["to"], record["blockNumber"]): record
-            for edge in edges
+            record["id"]: record
+            for block in blocks
+            for edge in block.edges
             if (record := edge.to_record())
         }
         records = list(records_by_identity.values())
         touched = sorted(
             {
                 address
-                for edge in edges
-                for address in (edge.from_address, edge.to_address)
+                for record in records
+                for address in (record["from"], record["to"])
             }
         )
+        checkpoint_block = blocks[-1]
 
         def write(tx: Any) -> None:
+            for offset in range(0, len(touched), batch_size):
+                tx.run(
+                    ADDRESS_UPSERT_QUERY,
+                    addresses=touched[offset : offset + batch_size],
+                ).consume()
             for offset in range(0, len(records), batch_size):
                 tx.run(
                     INTERACTION_UPSERT_QUERY,
@@ -129,8 +162,8 @@ class Neo4jStore:
             tx.run(
                 CHECKPOINT_QUERY,
                 id=checkpoint_id,
-                blockNumber=block_number,
-                blockHash=block_hash,
+                blockNumber=checkpoint_block.block_number,
+                blockHash=checkpoint_block.block_hash,
             ).consume()
 
         with self._driver.session() as session:
