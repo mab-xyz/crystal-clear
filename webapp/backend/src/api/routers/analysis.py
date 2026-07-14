@@ -26,6 +26,10 @@ from src.api.services.analysis_service import (
 from src.api.services.interaction_scan_seed import (
     seed_interaction_scan_state_from_tx,
 )
+from src.api.services.neo4j_interaction_history import (
+    InteractionKey,
+    get_neo4j_interaction_history,
+)
 from src.api.services.tx_risk_assessment import (
     _has_allowlisted_verification,
     _has_unverified_dangerous,
@@ -66,6 +70,24 @@ def _normalize_address(value: str | None) -> str | None:
     return normalized
 
 
+def _block_number_to_int(value: str | int | None) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    block = value.strip()
+    if not block or block == "latest":
+        return None
+    if block.startswith("0x"):
+        try:
+            return int(block, 16)
+        except ValueError:
+            return None
+    if block.isdigit():
+        return int(block)
+    return None
+
+
 def _resolve_checked_interaction_types(
     requested_types: list[str] | None,
     root_contract: str | None,
@@ -94,6 +116,7 @@ def _evaluate_interaction_scan_risk(
     root_contract: str | None,
     touched_addresses: list[str],
     checked_interaction_types: list[str],
+    history_to_block: int | None = None,
 ) -> tuple[
     dict[str, dict[str, bool]],
     dict[str, dict[str, str]],
@@ -142,6 +165,30 @@ def _evaluate_interaction_scan_risk(
         for row in rows
     }
 
+    graph_history: dict[InteractionKey, bool] = {}
+    try:
+        graph = get_neo4j_interaction_history()
+        graph_entries: set[InteractionKey] = set()
+        for target in normalized_targets:
+            for interaction_type in checked_interaction_types:
+                from_addr = sender_norm
+                if interaction_type.startswith("contract_"):
+                    from_addr = root_norm
+                if not from_addr or from_addr == target:
+                    continue
+                mode = (
+                    "transitive"
+                    if interaction_type.endswith("_transitive")
+                    else "direct"
+                )
+                graph_entries.add((from_addr, target, mode))
+        graph_history = graph.has_interactions_many(
+            graph_entries,
+            to_block=history_to_block,
+        )
+    except Exception as exc:
+        logger.debug("Neo4j interaction history lookup skipped: {}", exc)
+
     # Targets for which contract_direct scanning has skipped block ranges.
     # If a (root_contract -> target, contract_direct) pair is recorded here,
     # the scanner gave up on some range, so prior interactions likely existed
@@ -182,13 +229,24 @@ def _evaluate_interaction_scan_risk(
                 state_map[target][interaction_type] = "FOUND"
                 continue
 
-            row = row_index.get((from_addr, target, interaction_type))
-            if row is None:
-                first_time_val = True
-                state_val = "MISSING"
-            else:
-                first_time_val = bool(row.first_time_interact)
+            mode = (
+                "transitive"
+                if interaction_type.endswith("_transitive")
+                else "direct"
+            )
+            graph_key: InteractionKey = (from_addr, target, mode)
+            graph_sourced = graph_key in graph_history
+            if graph_sourced:
+                first_time_val = not graph_history[graph_key]
                 state_val = "FOUND"
+            else:
+                row = row_index.get((from_addr, target, interaction_type))
+                if row is None:
+                    first_time_val = True
+                    state_val = "MISSING"
+                else:
+                    first_time_val = bool(row.first_time_interact)
+                    state_val = "FOUND"
 
             # contract_direct override: a skipped scan range means interactions
             # likely existed but were not recorded — do not flag as first-time.
@@ -196,6 +254,7 @@ def _evaluate_interaction_scan_risk(
                 interaction_type == "contract_direct"
                 and first_time_val
                 and target in skipped_contract_direct
+                and not graph_sourced
             ):
                 first_time_val = False
                 state_val = "FOUND"
@@ -479,6 +538,7 @@ async def simulate_transaction(
         root_contract=call_object.get("to"),
         touched_addresses=touched_addresses,
         checked_interaction_types=checked_interaction_types,
+        history_to_block=_block_number_to_int(tb),
     )
 
     items = [
@@ -809,6 +869,7 @@ async def get_tx_risk_hash(
         root_contract=call_object.get("to"),
         touched_addresses=touched_addresses,
         checked_interaction_types=checked_interaction_types,
+        history_to_block=_block_number_to_int(to_block),
     )
     for item in items:
         normalized = _normalize_address(item["address"]) or ""
@@ -1088,6 +1149,7 @@ async def get_tx_risk_from_raw(
         from_block=fb,
         to_block=tb,
         latest_offset=body.latest_offset,
+        check_first_time=False,
     )
     touched_addresses = list(results.keys())
     checked_interaction_types = _resolve_checked_interaction_types(
@@ -1138,6 +1200,7 @@ async def get_tx_risk_from_raw(
         root_contract=call_object.get("to"),
         touched_addresses=touched_addresses,
         checked_interaction_types=checked_interaction_types,
+        history_to_block=_block_number_to_int(tb),
     )
     for item in items:
         normalized = _normalize_address(item["address"]) or ""

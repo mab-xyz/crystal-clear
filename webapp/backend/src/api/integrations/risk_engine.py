@@ -23,6 +23,7 @@ class RiskEngine(Protocol):
         from_block: str | int | None = None,
         to_block: str | int | None = None,
         latest_offset: int | None = None,
+        check_first_time: bool = True,
     ) -> dict[str, Any]:
         """Simulate calldata and return touched-contract results."""
 
