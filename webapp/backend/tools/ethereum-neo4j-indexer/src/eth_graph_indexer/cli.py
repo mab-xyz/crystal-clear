@@ -7,10 +7,16 @@ import logging
 import os
 import sys
 
-from .config import IndexerConfig, POST_MERGE_START_BLOCK, parse_bool
+from .config import (
+    POST_MERGE_START_BLOCK,
+    IndexerConfig,
+    parse_bool,
+    parse_endpoint_concurrency,
+    parse_rpc_urls,
+)
 from .ingest import Ingestor
 from .logging_config import configure_logging
-from .rpc import JsonRpcClient
+from .rpc import JsonRpcClient, MultiJsonRpcClient, RpcClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +36,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ingest.add_argument(
         "--rpc-url",
-        default=os.getenv("ERIGON_RPC_URL", "http://localhost:8545"),
+        default=os.getenv(
+            "ERIGON_RPC_URLS",
+            os.getenv("ERIGON_RPC_URL", "http://localhost:8545"),
+        ),
+        help=(
+            "Ethereum JSON-RPC URL. Use a comma-separated list to load-balance "
+            "across multiple endpoints."
+        ),
     )
     ingest.add_argument(
         "--neo4j-uri",
@@ -52,9 +65,19 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     ingest.add_argument("--end-block", type=int)
-    ingest.add_argument("--batch-size", type=int, default=100)
+    ingest.add_argument("--batch-size", type=int, default=1000)
     ingest.add_argument("--receipt-batch-size", type=int, default=100)
+    ingest.add_argument("--commit-batch-size", type=int, default=10)
     ingest.add_argument("--concurrent-blocks", type=int, default=4)
+    ingest.add_argument(
+        "--endpoint-concurrency",
+        default=os.getenv("ERIGON_ENDPOINT_CONCURRENCY"),
+        help=(
+            "Comma-separated worker counts aligned with the --rpc-url list, "
+            "for example '12,20'. The values must sum to "
+            "--concurrent-blocks."
+        ),
+    )
     ingest.add_argument(
         "--trace-mode",
         choices=["none", "trace_block", "debug_traceBlockByNumber"],
@@ -79,6 +102,27 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_rpc_client(
+    rpc_url: str,
+    *,
+    timeout: float,
+    max_retries: int,
+    retry_backoff: float,
+) -> RpcClient:
+    clients = tuple(
+        JsonRpcClient(
+            url,
+            timeout=timeout,
+            max_retries=max_retries,
+            retry_backoff=retry_backoff,
+        )
+        for url in parse_rpc_urls(rpc_url)
+    )
+    if len(clients) == 1:
+        return clients[0]
+    return MultiJsonRpcClient(clients)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -91,6 +135,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         config = IndexerConfig(
             rpc_url=args.rpc_url,
+            endpoint_concurrency=parse_endpoint_concurrency(
+                args.endpoint_concurrency
+            ),
             neo4j_uri=args.neo4j_uri,
             neo4j_user=args.neo4j_user,
             neo4j_password=args.neo4j_password,
@@ -98,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
             end_block=args.end_block,
             batch_size=args.batch_size,
             receipt_batch_size=args.receipt_batch_size,
+            commit_batch_size=args.commit_batch_size,
             concurrent_blocks=args.concurrent_blocks,
             trace_mode=args.trace_mode,
             resume=args.resume,
@@ -111,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
             progress_interval=args.progress_interval,
             checkpoint_id=args.checkpoint_id,
         )
-        with JsonRpcClient(
+        with build_rpc_client(
             config.rpc_url,
             timeout=config.request_timeout,
             max_retries=config.max_retries,

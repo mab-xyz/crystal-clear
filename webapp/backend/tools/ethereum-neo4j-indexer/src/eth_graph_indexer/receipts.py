@@ -5,14 +5,14 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 
-from .rpc import JsonRpcClient, JsonRpcError, RpcCall
+from .rpc import JsonRpcError, RpcCall, RpcClient
 
 LOGGER = logging.getLogger(__name__)
 
 
 class ReceiptLoader:
     def __init__(
-        self, rpc: JsonRpcClient, *, batch_size: int = 100
+        self, rpc: RpcClient, *, batch_size: int = 100
     ) -> None:
         self.rpc = rpc
         self.batch_size = batch_size
@@ -65,4 +65,3 @@ class ReceiptLoader:
                 raise ValueError("receipt response is missing transactionHash")
             result[tx_hash.lower()] = dict(receipt)
         return result
-

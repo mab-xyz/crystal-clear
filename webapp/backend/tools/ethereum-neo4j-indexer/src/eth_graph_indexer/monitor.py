@@ -16,7 +16,6 @@ from typing import Any
 
 import httpx
 
-
 DEFAULT_MONITOR_ENV_FILE = Path("/etc/eth-graph-indexer-monitor.env")
 DEFAULT_SERVICE_ENV_FILE = Path("/etc/eth-graph-indexer.env")
 DEFAULT_SERVICE = "eth-graph-indexer.service"
@@ -32,6 +31,7 @@ class MonitorConfig:
     rpc_url: str | None
     checkpoint_id: str
     service_name: str
+    user_service: bool
     neo4j_data_path: Path
     state_file: Path
     include_counts: bool = False
@@ -91,6 +91,7 @@ def load_config(
     *,
     checkpoint_id: str,
     service_name: str,
+    user_service: bool = False,
     neo4j_data_path: Path | None = None,
     state_file: Path | None = None,
     include_counts: bool = False,
@@ -116,6 +117,7 @@ def load_config(
         rpc_url=values.get("ERIGON_RPC_URL"),
         checkpoint_id=checkpoint_id,
         service_name=service_name,
+        user_service=user_service,
         neo4j_data_path=neo4j_data_path
         or Path(values.get("NEO4J_DATA_PATH", DEFAULT_NEO4J_DATA_PATH)),
         state_file=(state_file or DEFAULT_STATE_FILE).expanduser(),
@@ -123,10 +125,18 @@ def load_config(
     )
 
 
-def get_service_state(service_name: str) -> str:
+def service_state_command(service_name: str, *, user_service: bool) -> list[str]:
+    command = ["systemctl"]
+    if user_service:
+        command.append("--user")
+    command.extend(["is-active", service_name])
+    return command
+
+
+def get_service_state(service_name: str, *, user_service: bool = False) -> str:
     try:
         result = subprocess.run(
-            ["systemctl", "is-active", service_name],
+            service_state_command(service_name, user_service=user_service),
             check=False,
             capture_output=True,
             text=True,
@@ -248,7 +258,10 @@ def _scalar(record: Any, key: str, default: Any = None) -> Any:
 def collect_snapshot(config: MonitorConfig) -> Snapshot:
     timestamp = time.time()
     previous = load_previous_sample(config.state_file)
-    service_state = get_service_state(config.service_name)
+    service_state = get_service_state(
+        config.service_name,
+        user_service=config.user_service,
+    )
     disk = get_disk_snapshot(config.neo4j_data_path)
     head_block: int | None = None
     error: str | None = None
@@ -460,6 +473,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--checkpoint-id", default="default")
     parser.add_argument("--service-name", default=DEFAULT_SERVICE)
+    parser.add_argument(
+        "--user-service",
+        action="store_true",
+        help="Check the indexer with systemctl --user instead of systemctl.",
+    )
     parser.add_argument("--neo4j-data-path", type=Path)
     parser.add_argument("--state-file", type=Path)
     parser.add_argument(
@@ -482,6 +500,7 @@ def main(argv: list[str] | None = None) -> int:
             args.env_file,
             checkpoint_id=args.checkpoint_id,
             service_name=args.service_name,
+            user_service=args.user_service,
             neo4j_data_path=args.neo4j_data_path,
             state_file=args.state_file,
             include_counts=args.counts,

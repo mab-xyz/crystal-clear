@@ -33,13 +33,20 @@ export NEO4J_PASSWORD='replace-with-your-password'
 export ERIGON_RPC_URL='http://localhost:8545'
 ```
 
+To distribute JSON-RPC requests across multiple equivalent nodes, provide a
+comma-separated list through `ERIGON_RPC_URLS` or `--rpc-url`:
+
+```bash
+export ERIGON_RPC_URLS='http://node-a:8545,http://node-b:8545'
+```
+
 Verify that Erigon and Neo4j are reachable before running a large range.
 
 ## Usage
 
 ```bash
 eth-graph-indexer ingest \
-  --rpc-url http://localhost:8545 \
+  --rpc-url http://localhost:8545,http://localhost:8546 \
   --neo4j-uri bolt://localhost:7687 \
   --neo4j-user neo4j \
   --end-block 18001000 \
@@ -197,6 +204,9 @@ Erigon or Neo4j services.
   supervisord, or another service manager to restart the process if it exits.
 - Remote archive/trace RPC backfills benefit from `--concurrent-blocks`; tune
   it against provider rate limits and observed throughput.
+- Multiple RPC URLs are used round-robin per JSON-RPC request. If one endpoint
+  fails after its configured retries, the request is attempted against the next
+  endpoint before the indexer gives up.
 - Tracing every block is expensive. Start with a small block range and measure
   throughput before indexing a large range.
 - `eth_getBlockReceipts` is preferred. If Erigon reports that method as
@@ -222,7 +232,7 @@ Create an environment file such as `/etc/eth-graph-indexer.env`:
 
 ```bash
 NEO4J_PASSWORD=replace-with-your-password
-ERIGON_RPC_URL=http://localhost:8545
+ERIGON_RPC_URLS=http://localhost:8545,http://localhost:8546
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 ```

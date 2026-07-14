@@ -13,6 +13,7 @@ from eth_graph_indexer.monitor import (
     parse_env_file,
     render,
     save_sample,
+    service_state_command,
 )
 
 
@@ -51,6 +52,7 @@ def test_load_config_reads_env_file(tmp_path, monkeypatch) -> None:
 
     assert config.neo4j_uri == "bolt://db:7687"
     assert config.neo4j_password == "secret"
+    assert config.user_service is False
     assert config.include_counts is False
 
 
@@ -116,6 +118,18 @@ def test_calculate_blocks_per_second() -> None:
         )
         == 2
     )
+
+
+def test_service_state_command_supports_user_services() -> None:
+    assert service_state_command(
+        "eth-graph-indexer.service",
+        user_service=True,
+    ) == [
+        "systemctl",
+        "--user",
+        "is-active",
+        "eth-graph-indexer.service",
+    ]
 
 
 def test_sample_state_round_trip(tmp_path) -> None:
