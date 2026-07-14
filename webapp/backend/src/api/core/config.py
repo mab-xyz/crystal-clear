@@ -66,6 +66,12 @@ class Settings(BaseSettings):
         60 * 60 * 24 * 180, alias="FIRST_TIME_CACHE_TTL_SECONDS"
     )
 
+    # Neo4j interaction graph
+    neo4j_uri: str | None = Field(default=None, alias="NEO4J_URI")
+    neo4j_user: str = Field("neo4j", alias="NEO4J_USER")
+    neo4j_password: str | None = Field(default=None, alias="NEO4J_PASSWORD")
+    neo4j_database: str | None = Field(default=None, alias="NEO4J_DATABASE")
+
     # Request logging
     request_log_dir: str = Field(
         "./request_logs", alias="REQUEST_LOG_DIR"

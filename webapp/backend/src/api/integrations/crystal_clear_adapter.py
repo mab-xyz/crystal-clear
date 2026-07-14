@@ -1,4 +1,5 @@
 from functools import lru_cache
+from threading import RLock
 from typing import Any, Mapping
 
 from crystal_clear import CrystalClear
@@ -13,6 +14,17 @@ from src.api.services.verification_cache import (
 )
 
 
+class _NoFirstTimeCache:
+    def get_many(self, entries):
+        return {entry: False for entry in entries}
+
+    def get(self, *_args, **_kwargs):
+        return False
+
+    def set(self, *_args, **_kwargs):
+        return None
+
+
 class CrystalClearRiskEngine(RiskEngine):
     """Concrete adapter that delegates to the Crystal Clear SDK."""
 
@@ -21,6 +33,7 @@ class CrystalClearRiskEngine(RiskEngine):
             ContractVerificationCache()
         )
         self._first_time_cache = FirstInteractionCache()
+        self._simulate_lock = RLock()
         self._client = CrystalClear(
             url=get_eth_node_url(),
             allium_api_key=settings.allium_api_key,
@@ -54,14 +67,30 @@ class CrystalClearRiskEngine(RiskEngine):
         from_block: str | int | None = None,
         to_block: str | int | None = None,
         latest_offset: int | None = None,
+        check_first_time: bool = True,
     ) -> dict[str, Any]:
-        return self._client.simulate_and_check(
-            dict(call_object),
-            block_tag=block_tag,
-            from_block=from_block,
-            to_block=to_block,
-            latest_offset=latest_offset,
-        )
+        if check_first_time:
+            return self._client.simulate_and_check(
+                dict(call_object),
+                block_tag=block_tag,
+                from_block=from_block,
+                to_block=to_block,
+                latest_offset=latest_offset,
+            )
+
+        with self._simulate_lock:
+            original_cache = getattr(self._client, "first_time_cache", None)
+            self._client.first_time_cache = _NoFirstTimeCache()
+            try:
+                return self._client.simulate_and_check(
+                    dict(call_object),
+                    block_tag=block_tag,
+                    from_block=from_block,
+                    to_block=to_block,
+                    latest_offset=latest_offset,
+                )
+            finally:
+                self._client.first_time_cache = original_cache
 
     def simulate_from_tx(
         self,
