@@ -30,6 +30,10 @@ from src.api.services.neo4j_interaction_history import (
     InteractionKey,
     get_neo4j_interaction_history,
 )
+from src.api.services.pair_seen_interaction_history import (
+    PairKey,
+    get_pair_seen_interaction_history,
+)
 from src.api.services.tx_risk_assessment import (
     _has_allowlisted_verification,
     _has_unverified_dangerous,
@@ -117,12 +121,26 @@ def _evaluate_interaction_scan_risk(
     touched_addresses: list[str],
     checked_interaction_types: list[str],
     history_to_block: int | None = None,
+    direct_pairs: set[PairKey] | None = None,
+    transitive_pairs: set[PairKey] | None = None,
 ) -> tuple[
     dict[str, dict[str, bool]],
     dict[str, dict[str, str]],
     list[str],
     list[str],
+    list[str],
+    list[str],
 ]:
+    if direct_pairs is not None and transitive_pairs is not None:
+        return _evaluate_pair_seen_risk(
+            sender_address=sender_address,
+            touched_addresses=touched_addresses,
+            checked_interaction_types=checked_interaction_types,
+            history_to_block=history_to_block,
+            direct_pairs=direct_pairs,
+            transitive_pairs=transitive_pairs,
+        )
+
     sender_norm = _normalize_address(sender_address)
     root_norm = _normalize_address(root_contract)
     normalized_targets: list[str] = []
@@ -319,6 +337,152 @@ def _evaluate_interaction_scan_risk(
                 interaction_type not in sender_dangerous_types
             ):
                 sender_dangerous_types.append(interaction_type)
+
+    return (
+        first_time_map,
+        state_map,
+        contract_dangerous_types,
+        sender_dangerous_types,
+        contract_missing_types,
+        sender_missing_types,
+    )
+
+
+def _build_transaction_interaction_candidates(
+    *,
+    sender_address: str,
+    root_contract: str | None,
+    call_edges: list[tuple[str, str]],
+) -> tuple[set[PairKey], set[PairKey]]:
+    """Build directed edges and their non-reflexive transitive closure."""
+    direct_pairs: set[PairKey] = set()
+    for source, target in call_edges:
+        source_norm = _normalize_address(source)
+        target_norm = _normalize_address(target)
+        if source_norm and target_norm and source_norm != target_norm:
+            direct_pairs.add((source_norm, target_norm))
+
+    sender_norm = _normalize_address(sender_address)
+    root_norm = _normalize_address(root_contract)
+    if sender_norm and root_norm and sender_norm != root_norm:
+        direct_pairs.add((sender_norm, root_norm))
+
+    adjacency: dict[str, set[str]] = {}
+    for source, target in direct_pairs:
+        adjacency.setdefault(source, set()).add(target)
+
+    transitive_pairs: set[PairKey] = set()
+    for source in adjacency:
+        pending = list(adjacency[source])
+        reached: set[str] = set()
+        while pending:
+            target = pending.pop()
+            if target in reached:
+                continue
+            reached.add(target)
+            pending.extend(adjacency.get(target, ()))
+        transitive_pairs.update(
+            (source, target) for target in reached if source != target
+        )
+    return direct_pairs, transitive_pairs
+
+
+def _evaluate_pair_seen_risk(
+    *,
+    sender_address: str,
+    touched_addresses: list[str],
+    checked_interaction_types: list[str],
+    history_to_block: int | None,
+    direct_pairs: set[PairKey],
+    transitive_pairs: set[PairKey],
+) -> tuple[
+    dict[str, dict[str, bool]],
+    dict[str, dict[str, str]],
+    list[str],
+    list[str],
+    list[str],
+    list[str],
+]:
+    sender_norm = _normalize_address(sender_address)
+    normalized_targets = list(
+        dict.fromkeys(
+            address
+            for address in (_normalize_address(item) for item in touched_addresses)
+            if address
+        )
+    )
+    if not sender_norm or not normalized_targets or not checked_interaction_types:
+        return {}, {}, [], [], [], []
+
+    all_candidates = direct_pairs | transitive_pairs
+    pair_history: dict[PairKey, bool] = {}
+    history_available = history_to_block is not None
+    if history_available and all_candidates:
+        try:
+            pair_history = get_pair_seen_interaction_history().has_pairs_seen(
+                all_candidates,
+                block=history_to_block,
+            )
+        except Exception as exc:
+            history_available = False
+            logger.warning("Pair-seen interaction history lookup failed: {}", exc)
+
+    first_time_map: dict[str, dict[str, bool]] = {}
+    state_map: dict[str, dict[str, str]] = {}
+    contract_dangerous_types: list[str] = []
+    sender_dangerous_types: list[str] = []
+    contract_missing_types: list[str] = []
+    sender_missing_types: list[str] = []
+
+    for target in normalized_targets:
+        first_time_map[target] = {}
+        state_map[target] = {}
+        for interaction_type in checked_interaction_types:
+            candidates = (
+                transitive_pairs
+                if interaction_type.endswith("_transitive")
+                else direct_pairs
+            )
+            if interaction_type.startswith("sender_"):
+                relevant = {(sender_norm, target)} & candidates
+            else:
+                relevant = {
+                    pair
+                    for pair in candidates
+                    if pair[1] == target and pair[0] != sender_norm
+                }
+
+            if not relevant:
+                is_first_time = False
+                state = "FOUND"
+            elif not history_available:
+                is_first_time = True
+                state = "MISSING"
+            else:
+                is_first_time = any(
+                    not pair_history[pair] for pair in relevant
+                )
+                state = "FOUND"
+
+            first_time_map[target][interaction_type] = is_first_time
+            state_map[target][interaction_type] = state
+            if not is_first_time:
+                continue
+
+            if state == "MISSING":
+                destination = (
+                    sender_missing_types
+                    if interaction_type.startswith("sender_")
+                    else contract_missing_types
+                )
+            else:
+                destination = (
+                    sender_dangerous_types
+                    if interaction_type.startswith("sender_")
+                    else contract_dangerous_types
+                )
+            if interaction_type not in destination:
+                destination.append(interaction_type)
 
     return (
         first_time_map,
@@ -1142,15 +1306,31 @@ async def get_tx_risk_from_raw(
     if tb is None:
         tb = _default_to_block_from_block_tag(body.block_tag)
 
-    # Simulation step
-    results = risk_engine.simulate_and_check(
-        call_object,
-        block_tag=body.block_tag or "latest",
-        from_block=fb,
-        to_block=tb,
-        latest_offset=body.latest_offset,
-        check_first_time=False,
+    # Simulate once and preserve the directed call edges used to build the
+    # transaction-local reachability graph.
+    simulation_kwargs = {
+        "block_tag": body.block_tag or "latest",
+        "from_block": fb,
+        "to_block": tb,
+        "latest_offset": body.latest_offset,
+        "check_first_time": False,
+    }
+    simulate_with_edges = getattr(
+        risk_engine,
+        "simulate_and_check_with_edges",
+        None,
     )
+    if callable(simulate_with_edges):
+        results, call_edges = simulate_with_edges(
+            call_object,
+            **simulation_kwargs,
+        )
+    else:
+        results = risk_engine.simulate_and_check(
+            call_object,
+            **simulation_kwargs,
+        )
+        call_edges = []
     touched_addresses = list(results.keys())
     checked_interaction_types = _resolve_checked_interaction_types(
         [body.interaction_type] if body.interaction_type else None,
@@ -1169,23 +1349,23 @@ async def get_tx_risk_from_raw(
         for addr, info in results.items()
     ]
 
-    # Seed scan-state rows from this request so backfill can process observed pairs.
-    try:
-        seeded_rows = seed_interaction_scan_state_from_tx(
-            session=session,
-            sender_address=sender,
-            root_contract=call_object.get("to"),
-            touched_addresses=touched_addresses,
+    direct_pairs, transitive_pairs = _build_transaction_interaction_candidates(
+        sender_address=sender,
+        root_contract=call_object.get("to"),
+        call_edges=call_edges,
+    )
+    history_to_block = _block_number_to_int(tb)
+    if history_to_block is None:
+        get_latest_block_number = getattr(
+            risk_engine,
+            "get_latest_block_number",
+            None,
         )
-        logger.info(
-            "tx-risk-raw seeded interaction_scan_state rows: {}",
-            seeded_rows,
-        )
-    except Exception as exc:
-        logger.warning(
-            "tx-risk-raw failed to seed interaction_scan_state: {}",
-            exc,
-        )
+        if callable(get_latest_block_number):
+            try:
+                history_to_block = int(get_latest_block_number())
+            except Exception as exc:
+                logger.warning("Failed to resolve latest history block: {}", exc)
 
     (
         interaction_first_time,
@@ -1200,7 +1380,9 @@ async def get_tx_risk_from_raw(
         root_contract=call_object.get("to"),
         touched_addresses=touched_addresses,
         checked_interaction_types=checked_interaction_types,
-        history_to_block=_block_number_to_int(tb),
+        history_to_block=history_to_block,
+        direct_pairs=direct_pairs,
+        transitive_pairs=transitive_pairs,
     )
     for item in items:
         normalized = _normalize_address(item["address"]) or ""

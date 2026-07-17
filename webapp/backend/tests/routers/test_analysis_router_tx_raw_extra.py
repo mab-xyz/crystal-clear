@@ -496,6 +496,75 @@ async def test_tx_risk_raw_uses_numeric_block_tag_as_default_to_block(monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_tx_risk_raw_builds_candidates_and_resolves_latest_block(monkeypatch):
+    sender = "0x" + "1" * 40
+    root = "0x" + "2" * 40
+    target = "0x" + "3" * 40
+    captured = {}
+
+    class _TypedObj:
+        def as_dict(self):
+            return {
+                "type": 2,
+                "to": bytes.fromhex("2" * 40),
+                "data": b"",
+                "value": 0,
+                "gas": 21000,
+            }
+
+    class _Typed:
+        @staticmethod
+        def from_bytes(_b):
+            return _TypedObj()
+
+    class _GraphEngine:
+        def simulate_and_check_with_edges(self, _call_object, **_kwargs):
+            return (
+                {
+                    root: {
+                        "verification": {"verification": "verified"},
+                        "depth": 0,
+                    },
+                    target: {
+                        "verification": {"verification": "verified"},
+                        "depth": 1,
+                    },
+                },
+                [(root, target)],
+            )
+
+        def get_latest_block_number(self):
+            return 222
+
+    def evaluate(**kwargs):
+        captured.update(kwargs)
+        return ({}, {}, [], [], [], [])
+
+    monkeypatch.setattr(analysis, "TypedTransaction", _Typed)
+    monkeypatch.setattr(
+        analysis.Account,
+        "recover_transaction",
+        lambda _b: sender,
+    )
+    monkeypatch.setattr(analysis, "_evaluate_interaction_scan_risk", evaluate)
+
+    response = await analysis.get_tx_risk_from_raw(
+        RawTxRiskRequest(raw_tx="0x02aa"),
+        risk_engine=_GraphEngine(),
+        session=object(),
+    )
+
+    assert response.status == "OK"
+    assert captured["history_to_block"] == 222
+    assert captured["direct_pairs"] == {(sender, root), (root, target)}
+    assert captured["transitive_pairs"] == {
+        (sender, root),
+        (root, target),
+        (sender, target),
+    }
+
+
+@pytest.mark.asyncio
 async def test_tx_risk_raw_keeps_explicit_to_block_over_block_tag(monkeypatch):
     _patch_interaction_helpers(monkeypatch)
 

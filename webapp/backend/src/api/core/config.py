@@ -72,6 +72,20 @@ class Settings(BaseSettings):
     neo4j_password: str | None = Field(default=None, alias="NEO4J_PASSWORD")
     neo4j_database: str | None = Field(default=None, alias="NEO4J_DATABASE")
 
+    # Pre-indexed directed interaction history service
+    pair_seen_service_url: str = Field(
+        ...,
+        alias="PAIR_SEEN_SERVICE_URL",
+    )
+    pair_seen_timeout_seconds: float = Field(
+        10.0,
+        alias="PAIR_SEEN_TIMEOUT_SECONDS",
+    )
+    pair_seen_batch_size: int = Field(
+        1000,
+        alias="PAIR_SEEN_BATCH_SIZE",
+    )
+
     # Request logging
     request_log_dir: str = Field(
         "./request_logs", alias="REQUEST_LOG_DIR"
