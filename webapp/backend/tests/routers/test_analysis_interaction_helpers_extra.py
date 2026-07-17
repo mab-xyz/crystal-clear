@@ -43,6 +43,120 @@ def test_normalize_address_and_resolve_checked_types():
     assert resolved == ["sender_direct"]
 
 
+def test_build_transaction_candidates_computes_directed_closure():
+    sender = "0x" + "1" * 40
+    root = "0x" + "2" * 40
+    middle = "0x" + "3" * 40
+    target = "0x" + "4" * 40
+
+    direct, transitive = analysis._build_transaction_interaction_candidates(
+        sender_address=sender,
+        root_contract=root,
+        call_edges=[
+            (root, middle),
+            (middle, target),
+            (target, root),
+            (root, root),
+        ],
+    )
+
+    assert direct == {
+        (sender, root),
+        (root, middle),
+        (middle, target),
+        (target, root),
+    }
+    assert (sender, target) in transitive
+    assert (root, target) in transitive
+    assert (target, middle) in transitive
+    assert (target, sender) not in transitive
+    assert all(source != destination for source, destination in transitive)
+
+
+def test_evaluate_pair_seen_risk_checks_exact_candidate_pairs(monkeypatch):
+    sender = "0x" + "1" * 40
+    root = "0x" + "2" * 40
+    target = "0x" + "3" * 40
+    direct = {(sender, root), (root, target)}
+    transitive = direct | {(sender, target)}
+
+    class _History:
+        def has_pairs_seen(self, entries, *, block):
+            assert set(entries) == transitive
+            assert block == 100
+            return {
+                (sender, root): True,
+                (root, target): False,
+                (sender, target): True,
+            }
+
+    monkeypatch.setattr(
+        analysis,
+        "get_pair_seen_interaction_history",
+        lambda: _History(),
+    )
+    (
+        first_map,
+        state_map,
+        contract_dangerous,
+        sender_dangerous,
+        contract_missing,
+        sender_missing,
+    ) = analysis._evaluate_pair_seen_risk(
+        sender_address=sender,
+        touched_addresses=[root, target],
+        checked_interaction_types=[
+            "sender_direct",
+            "sender_transitive",
+            "contract_direct",
+            "contract_transitive",
+        ],
+        history_to_block=100,
+        direct_pairs=direct,
+        transitive_pairs=transitive,
+    )
+
+    assert first_map[root]["sender_direct"] is False
+    assert first_map[target]["sender_direct"] is False
+    assert first_map[target]["sender_transitive"] is False
+    assert first_map[target]["contract_direct"] is True
+    assert first_map[target]["contract_transitive"] is True
+    assert state_map[target]["contract_direct"] == "FOUND"
+    assert contract_dangerous == ["contract_direct", "contract_transitive"]
+    assert sender_dangerous == []
+    assert contract_missing == []
+    assert sender_missing == []
+
+
+def test_evaluate_pair_seen_risk_marks_lookup_failure_missing(monkeypatch):
+    sender = "0x" + "1" * 40
+    root = "0x" + "2" * 40
+    target = "0x" + "3" * 40
+
+    class _History:
+        def has_pairs_seen(self, *_args, **_kwargs):
+            raise TimeoutError("history unavailable")
+
+    monkeypatch.setattr(
+        analysis,
+        "get_pair_seen_interaction_history",
+        lambda: _History(),
+    )
+    result = analysis._evaluate_pair_seen_risk(
+        sender_address=sender,
+        touched_addresses=[root, target],
+        checked_interaction_types=["contract_direct"],
+        history_to_block=100,
+        direct_pairs={(sender, root), (root, target)},
+        transitive_pairs={(sender, root), (root, target), (sender, target)},
+    )
+
+    first_map, state_map, _, _, contract_missing, _ = result
+    assert first_map[target]["contract_direct"] is True
+    assert state_map[target]["contract_direct"] == "MISSING"
+    assert contract_missing == ["contract_direct"]
+
+
 def test_resolve_checked_types_default_contract_when_not_provided():
     root = "0x1111111111111111111111111111111111111111"
     resolved = analysis._resolve_checked_interaction_types(

@@ -92,6 +92,51 @@ class CrystalClearRiskEngine(RiskEngine):
             finally:
                 self._client.first_time_cache = original_cache
 
+    def simulate_and_check_with_edges(
+        self,
+        call_object: Mapping[str, Any],
+        block_tag: str | int = "latest",
+        from_block: str | int | None = None,
+        to_block: str | int | None = None,
+        latest_offset: int | None = None,
+        check_first_time: bool = True,
+    ) -> tuple[dict[str, Any], list[tuple[str, str]]]:
+        collector = self._client.simulation_collector
+        if collector is None:
+            raise ValueError("SimulationCollector is not initialized.")
+
+        captured_edges: list[tuple[str, str]] = []
+        original_get_edges = collector.get_edges_from_simulation
+
+        def capture_edges(*args, **kwargs):
+            edges = original_get_edges(*args, **kwargs)
+            captured_edges.extend((edge.source, edge.target) for edge in edges)
+            return edges
+
+        with self._simulate_lock:
+            original_cache = getattr(self._client, "first_time_cache", None)
+            collector.get_edges_from_simulation = capture_edges
+            if not check_first_time:
+                self._client.first_time_cache = _NoFirstTimeCache()
+            try:
+                results = self._client.simulate_and_check(
+                    dict(call_object),
+                    block_tag=block_tag,
+                    from_block=from_block,
+                    to_block=to_block,
+                    latest_offset=latest_offset,
+                )
+            finally:
+                collector.get_edges_from_simulation = original_get_edges
+                self._client.first_time_cache = original_cache
+        return results, captured_edges
+
+    def get_latest_block_number(self) -> int:
+        collector = self._client.simulation_collector
+        if collector is None:
+            raise ValueError("SimulationCollector is not initialized.")
+        return int(collector.w3.eth.block_number)
+
     def simulate_from_tx(
         self,
         tx_hash: str,

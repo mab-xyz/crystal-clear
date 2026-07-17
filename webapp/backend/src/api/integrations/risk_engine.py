@@ -27,6 +27,20 @@ class RiskEngine(Protocol):
     ) -> dict[str, Any]:
         """Simulate calldata and return touched-contract results."""
 
+    def simulate_and_check_with_edges(
+        self,
+        call_object: Mapping[str, Any],
+        block_tag: str | int = "latest",
+        from_block: str | int | None = None,
+        to_block: str | int | None = None,
+        latest_offset: int | None = None,
+        check_first_time: bool = True,
+    ) -> tuple[dict[str, Any], list[tuple[str, str]]]:
+        """Simulate once and return both contract results and directed edges."""
+
+    def get_latest_block_number(self) -> int:
+        """Return the latest block number visible to the simulation node."""
+
     def simulate_from_tx(
         self,
         tx_hash: str,
