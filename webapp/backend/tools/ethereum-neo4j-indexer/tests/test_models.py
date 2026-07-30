@@ -43,11 +43,12 @@ def test_interaction_record_uses_binary_addresses_and_block_number() -> None:
     )
     record = edge.to_record()
     assert record == {
-        "id": (
+        "pairId": (
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:"
-            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:1"
+            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
         ),
-        "blockNumber": 1,
+        "firstBlockNumber": 1,
+        "lastBlockNumber": 1,
         "from": bytes.fromhex("a" * 40),
         "to": bytes.fromhex("b" * 40),
     }

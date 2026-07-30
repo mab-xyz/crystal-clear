@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True, slots=True)
+class Checkpoint:
+    last_processed_block: int
+    last_processed_block_hash: str
+
 
 def resolve_start_block(
     configured_start: int,
@@ -16,4 +24,3 @@ def resolve_start_block(
     ):
         return checkpoint_last_processed + 1
     return configured_start
-

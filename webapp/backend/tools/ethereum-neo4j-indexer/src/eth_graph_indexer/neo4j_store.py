@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -10,6 +9,7 @@ if TYPE_CHECKING:
 else:
     Driver = Any
 
+from .checkpoint import Checkpoint
 from .models import BlockWrite, InteractionEdge
 
 ADDRESS_CONSTRAINT_QUERY = """
@@ -18,16 +18,29 @@ FOR (a:Address) REQUIRE a.address IS UNIQUE
 """.strip()
 
 RELATIONSHIP_CONSTRAINT_QUERY = """
-CREATE CONSTRAINT interaction_unique IF NOT EXISTS
-FOR ()-[r:INTERACTION]-() REQUIRE r.id IS UNIQUE
+CREATE CONSTRAINT interaction_pair_unique IF NOT EXISTS
+FOR ()-[r:INTERACTION]-() REQUIRE r.pairId IS UNIQUE
 """.strip()
 
 INTERACTION_UPSERT_QUERY = """
 UNWIND $edges AS edge
 MATCH (source:Address {address: edge.from})
 MATCH (target:Address {address: edge.to})
-MERGE (source)-[rel:INTERACTION {id: edge.id}]->(target)
-SET rel.blockNumber = edge.blockNumber
+MERGE (source)-[rel:INTERACTION {pairId: edge.pairId}]->(target)
+ON CREATE SET rel.firstBlockNumber = edge.firstBlockNumber,
+              rel.lastBlockNumber = edge.lastBlockNumber
+ON MATCH SET rel.firstBlockNumber = CASE
+                  WHEN rel.firstBlockNumber IS NULL
+                       OR edge.firstBlockNumber < rel.firstBlockNumber
+                  THEN edge.firstBlockNumber
+                  ELSE rel.firstBlockNumber
+              END,
+              rel.lastBlockNumber = CASE
+                  WHEN rel.lastBlockNumber IS NULL
+                       OR edge.lastBlockNumber > rel.lastBlockNumber
+                  THEN edge.lastBlockNumber
+                  ELSE rel.lastBlockNumber
+              END
 """.strip()
 
 ADDRESS_UPSERT_QUERY = """
@@ -41,12 +54,6 @@ SET checkpoint.lastProcessedBlock = $blockNumber,
     checkpoint.lastProcessedBlockHash = $blockHash,
     checkpoint.updatedAt = datetime()
 """.strip()
-
-
-@dataclass(frozen=True, slots=True)
-class Checkpoint:
-    last_processed_block: int
-    last_processed_block_hash: str
 
 
 class Neo4jStore:
@@ -84,7 +91,28 @@ class Neo4jStore:
 
     def ensure_schema(self) -> None:
         self._driver.execute_query(ADDRESS_CONSTRAINT_QUERY)
+        if self._relationship_pair_schema_exists():
+            return
         self._driver.execute_query(RELATIONSHIP_CONSTRAINT_QUERY)
+
+    def _relationship_pair_schema_exists(self) -> bool:
+        constraints, _, _ = self._driver.execute_query(
+            """
+            SHOW CONSTRAINTS YIELD name
+            WHERE name = 'interaction_pair_unique'
+            RETURN name
+            """
+        )
+        if constraints:
+            return True
+        indexes, _, _ = self._driver.execute_query(
+            """
+            SHOW INDEXES YIELD name
+            WHERE name = 'interaction_pair_unique'
+            RETURN name
+            """
+        )
+        return bool(indexes)
 
     def get_checkpoint(self, checkpoint_id: str) -> Checkpoint | None:
         records, _, _ = self._driver.execute_query(
@@ -132,13 +160,23 @@ class Neo4jStore:
     ) -> tuple[int, int]:
         if not blocks:
             return 0, 0
-        records_by_identity = {
-            record["id"]: record
-            for block in blocks
-            for edge in block.edges
-            if (record := edge.to_record())
-        }
-        records = list(records_by_identity.values())
+        records_by_pair: dict[str, dict[str, Any]] = {}
+        for block in blocks:
+            for edge in block.edges:
+                record = edge.to_record()
+                if not record:
+                    continue
+                existing = records_by_pair.get(record["pairId"])
+                if existing is None:
+                    records_by_pair[record["pairId"]] = record
+                    continue
+                existing["firstBlockNumber"] = min(
+                    existing["firstBlockNumber"], record["firstBlockNumber"]
+                )
+                existing["lastBlockNumber"] = max(
+                    existing["lastBlockNumber"], record["lastBlockNumber"]
+                )
+        records = list(records_by_pair.values())
         touched = sorted(
             {
                 address

@@ -33,6 +33,26 @@ def test_ingest_parser_accepts_follow_mode() -> None:
     assert args.poll_interval == 6
 
 
+def test_ingest_parser_accepts_sqlite_only_mode() -> None:
+    args = build_parser().parse_args(
+        [
+            "ingest",
+            "--sqlite-shard-dir",
+            "/tmp/pairs",
+            "--sqlite-bootstrap-block",
+            "100",
+            "--sqlite-bootstrap-hash",
+            "0xhash",
+            "--sqlite-only",
+            "true",
+        ]
+    )
+    assert args.sqlite_shard_dir.as_posix() == "/tmp/pairs"
+    assert args.sqlite_bootstrap_block == 100
+    assert args.sqlite_bootstrap_hash == "0xhash"
+    assert args.sqlite_only is True
+
+
 def test_ingest_parser_defaults_to_four_concurrent_blocks() -> None:
     args = build_parser().parse_args(["ingest"])
     assert args.concurrent_blocks == 4

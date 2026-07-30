@@ -18,6 +18,9 @@ dev = [
 [project.scripts]
 eth-graph-indexer = "eth_graph_indexer.cli:main"
 eth-graph-indexer-monitor = "eth_graph_indexer.monitor:main"
+eth-graph-indexer-migrate-pair-schema = "eth_graph_indexer.migrate_pair_schema:main"
+eth-graph-indexer-external-pair-aggregation = "eth_graph_indexer.external_pair_aggregation:main"
+eth-graph-pair-server = "eth_graph_indexer.pair_server:main"
 
 [build-system]
 requires = ["hatchling>=1.26"]

@@ -17,6 +17,10 @@ def address_to_bytes(address: str) -> bytes:
     return bytes.fromhex(address.removeprefix("0x"))
 
 
+def address_bytes_to_hex(address: bytes) -> str:
+    return "0x" + address.hex()
+
+
 @dataclass(frozen=True, slots=True)
 class BlockData:
     number: int
@@ -47,14 +51,18 @@ class InteractionEdge:
     value_wei: str
 
     @property
-    def identity(self) -> tuple[str, str, str]:
-        return self.tx_hash, self.from_address, self.to_address
+    def pair_id(self) -> str:
+        return f"{self.from_address}:{self.to_address}"
+
+    @property
+    def identity(self) -> tuple[str, str]:
+        return self.from_address, self.to_address
 
     def to_record(self) -> dict:
-        edge_id = f"{self.from_address}:{self.to_address}:{self.block_number}"
         return {
-            "id": edge_id,
-            "blockNumber": self.block_number,
+            "pairId": self.pair_id,
+            "firstBlockNumber": self.block_number,
+            "lastBlockNumber": self.block_number,
             "from": address_to_bytes(self.from_address),
             "to": address_to_bytes(self.to_address),
         }
