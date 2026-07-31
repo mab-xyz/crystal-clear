@@ -13,9 +13,7 @@ from eth_graph_indexer.rpc import MultiJsonRpcClient
 def test_config_defaults_to_first_post_merge_block() -> None:
     config = IndexerConfig(
         rpc_url="http://localhost:8545",
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="secret",
+        postgres_dsn="postgresql://localhost/cc",
     )
     assert config.start_block == POST_MERGE_START_BLOCK
 
@@ -33,24 +31,15 @@ def test_ingest_parser_accepts_follow_mode() -> None:
     assert args.poll_interval == 6
 
 
-def test_ingest_parser_accepts_sqlite_only_mode() -> None:
+def test_ingest_parser_accepts_postgres_dsn() -> None:
     args = build_parser().parse_args(
         [
             "ingest",
-            "--sqlite-shard-dir",
-            "/tmp/pairs",
-            "--sqlite-bootstrap-block",
-            "100",
-            "--sqlite-bootstrap-hash",
-            "0xhash",
-            "--sqlite-only",
-            "true",
+            "--postgres-dsn",
+            "postgresql://indexer@localhost/cc",
         ]
     )
-    assert args.sqlite_shard_dir.as_posix() == "/tmp/pairs"
-    assert args.sqlite_bootstrap_block == 100
-    assert args.sqlite_bootstrap_hash == "0xhash"
-    assert args.sqlite_only is True
+    assert args.postgres_dsn == "postgresql://indexer@localhost/cc"
 
 
 def test_ingest_parser_defaults_to_four_concurrent_blocks() -> None:
@@ -107,9 +96,7 @@ def test_config_rejects_invalid_concurrent_blocks() -> None:
     with pytest.raises(ValueError, match="concurrent blocks"):
         IndexerConfig(
             rpc_url="http://localhost:8545",
-            neo4j_uri="bolt://localhost:7687",
-            neo4j_user="neo4j",
-            neo4j_password="secret",
+            postgres_dsn="postgresql://localhost/cc",
             concurrent_blocks=0,
         )
 
@@ -119,9 +106,7 @@ def test_config_rejects_endpoint_concurrency_count_mismatch() -> None:
         IndexerConfig(
             rpc_url="http://a:8545,http://b:8545",
             endpoint_concurrency=(24,),
-            neo4j_uri="bolt://localhost:7687",
-            neo4j_user="neo4j",
-            neo4j_password="secret",
+            postgres_dsn="postgresql://localhost/cc",
             concurrent_blocks=24,
         )
 
@@ -131,9 +116,7 @@ def test_config_rejects_endpoint_concurrency_sum_mismatch() -> None:
         IndexerConfig(
             rpc_url="http://a:8545,http://b:8545",
             endpoint_concurrency=(12, 20),
-            neo4j_uri="bolt://localhost:7687",
-            neo4j_user="neo4j",
-            neo4j_password="secret",
+            postgres_dsn="postgresql://localhost/cc",
             concurrent_blocks=24,
         )
 
@@ -142,9 +125,7 @@ def test_config_rejects_follow_mode_with_end_block() -> None:
     with pytest.raises(ValueError, match="follow mode cannot be used"):
         IndexerConfig(
             rpc_url="http://localhost:8545",
-            neo4j_uri="bolt://localhost:7687",
-            neo4j_user="neo4j",
-            neo4j_password="secret",
+            postgres_dsn="postgresql://localhost/cc",
             end_block=POST_MERGE_START_BLOCK,
             follow=True,
         )

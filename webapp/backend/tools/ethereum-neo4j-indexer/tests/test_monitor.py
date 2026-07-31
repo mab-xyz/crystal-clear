@@ -23,9 +23,8 @@ def test_parse_env_file_strips_quotes_and_comments(tmp_path) -> None:
         "\n".join(
             [
                 "# comment",
-                "NEO4J_URI=bolt://localhost:7687",
-                "NEO4J_USER='neo4j'",
-                'NEO4J_PASSWORD="secret"',
+                "INDEXER_DATABASE_URL='postgresql:///cc'",
+                'POSTGRES_DATA_PATH="/var/lib/postgresql"',
                 "ERIGON_RPC_URL=http://localhost:8545",
             ]
         ),
@@ -34,15 +33,17 @@ def test_parse_env_file_strips_quotes_and_comments(tmp_path) -> None:
 
     values = parse_env_file(path)
 
-    assert values["NEO4J_USER"] == "neo4j"
-    assert values["NEO4J_PASSWORD"] == "secret"
+    assert values["INDEXER_DATABASE_URL"] == "postgresql:///cc"
+    assert values["POSTGRES_DATA_PATH"] == "/var/lib/postgresql"
 
 
 def test_load_config_reads_env_file(tmp_path, monkeypatch) -> None:
-    monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
+    monkeypatch.delenv("INDEXER_DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
     path = tmp_path / "indexer.env"
     path.write_text(
-        "NEO4J_PASSWORD=secret\nNEO4J_URI=bolt://db:7687\n",
+        "INDEXER_DATABASE_URL=postgresql://indexer@db/cc\n"
+        "POSTGRES_DATA_PATH=/postgres-data\n",
         encoding="utf-8",
     )
 
@@ -50,8 +51,8 @@ def test_load_config_reads_env_file(tmp_path, monkeypatch) -> None:
         path, checkpoint_id="default", service_name="indexer.service"
     )
 
-    assert config.neo4j_uri == "bolt://db:7687"
-    assert config.neo4j_password == "secret"
+    assert config.postgres_dsn == "postgresql://indexer@db/cc"
+    assert config.postgres_data_path == Path("/postgres-data")
     assert config.user_service is False
     assert config.include_counts is False
 
@@ -60,8 +61,11 @@ def test_load_config_defaults_to_monitor_env_file(
     tmp_path, monkeypatch
 ) -> None:
     monitor_env = tmp_path / "monitor.env"
-    monitor_env.write_text("NEO4J_PASSWORD=monitor-secret\n", encoding="utf-8")
-    monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
+    monitor_env.write_text(
+        "INDEXER_DATABASE_URL=postgresql:///monitor\n", encoding="utf-8"
+    )
+    monkeypatch.delenv("INDEXER_DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(
         "eth_graph_indexer.monitor.DEFAULT_MONITOR_ENV_FILE",
         monitor_env,
@@ -75,15 +79,14 @@ def test_load_config_defaults_to_monitor_env_file(
         None, checkpoint_id="default", service_name="indexer.service"
     )
 
-    assert config.neo4j_password == "monitor-secret"
+    assert config.postgres_dsn == "postgresql:///monitor"
 
 
 def disk_snapshot() -> DiskSnapshot:
     return DiskSnapshot(
-        data_path=Path("/var/lib/neo4j/data"),
-        data_bytes=1024 * 1024 * 2,
-        database_bytes=1024,
-        transaction_bytes=2048,
+        data_path=Path("/var/lib/postgresql"),
+        database_bytes=1024 * 1024 * 2,
+        pair_table_bytes=1024,
         filesystem_total_bytes=100,
         filesystem_used_bytes=25,
         filesystem_free_bytes=75,
@@ -91,7 +94,9 @@ def disk_snapshot() -> DiskSnapshot:
 
 
 def test_snapshot_lag_never_negative() -> None:
-    snapshot = Snapshot("active", 20, None, 10, 1, 2, 20, disk_snapshot())
+    snapshot = Snapshot(
+        "active", 20, None, 10, 2, False, 20, disk_snapshot()
+    )
     assert snapshot.lag == 0
 
 
@@ -144,9 +149,9 @@ def test_render_includes_core_fields() -> None:
         checkpoint_block=100,
         checkpoint_updated_at="2026-06-26T14:40:04Z",
         head_block=112,
-        address_count=20,
-        interaction_count=30,
-        max_interaction_block=100,
+        pair_count=30,
+        pair_count_exact=False,
+        max_pair_block=100,
         disk=disk_snapshot(),
         blocks_per_second=2.5,
     )
@@ -160,4 +165,6 @@ def test_render_includes_core_fields() -> None:
     assert "Checkpoint         100" in output
     assert "Lag                12 blocks" in output
     assert "Rate               2.50 blocks/s" in output
-    assert "Neo4j data         2.0 MiB" in output
+    assert "Directed pairs     30" in output
+    assert "Count type         estimated" in output
+    assert "Database           2.0 MiB" in output

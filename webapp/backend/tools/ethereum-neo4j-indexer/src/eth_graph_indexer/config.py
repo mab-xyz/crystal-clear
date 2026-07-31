@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
 TRACE_MODES = {"none", "trace_block", "debug_traceBlockByNumber"}
 POST_MERGE_START_BLOCK = 15_537_394
@@ -45,9 +44,7 @@ def parse_bool(value: str | bool) -> bool:
 @dataclass(frozen=True, slots=True)
 class IndexerConfig:
     rpc_url: str
-    neo4j_uri: str
-    neo4j_user: str
-    neo4j_password: str
+    postgres_dsn: str
     endpoint_concurrency: tuple[int, ...] | None = None
     start_block: int = POST_MERGE_START_BLOCK
     end_block: int | None = None
@@ -66,14 +63,11 @@ class IndexerConfig:
     retry_backoff: float = 0.5
     progress_interval: int = 10
     checkpoint_id: str = "default"
-    sqlite_shard_dir: Path | None = None
-    sqlite_partitions: int = 16
-    sqlite_bootstrap_block: int | None = None
-    sqlite_bootstrap_hash: str | None = None
-    sqlite_only: bool = False
 
     def __post_init__(self) -> None:
         rpc_urls = parse_rpc_urls(self.rpc_url)
+        if not self.postgres_dsn.strip():
+            raise ValueError("PostgreSQL DSN is required")
         if self.start_block < 0:
             raise ValueError("start block must be non-negative")
         if self.end_block is not None and self.end_block < self.start_block:
@@ -108,18 +102,3 @@ class IndexerConfig:
             raise ValueError("max retries must be non-negative")
         if self.progress_interval < 1:
             raise ValueError("progress interval must be positive")
-        if self.sqlite_partitions < 1:
-            raise ValueError("SQLite partitions must be positive")
-        if self.sqlite_only and self.sqlite_shard_dir is None:
-            raise ValueError("SQLite-only mode requires a SQLite shard directory")
-        if (self.sqlite_bootstrap_block is None) != (
-            self.sqlite_bootstrap_hash is None
-        ):
-            raise ValueError(
-                "SQLite bootstrap block and hash must be provided together"
-            )
-        if (
-            self.sqlite_bootstrap_block is not None
-            and self.sqlite_bootstrap_block < 0
-        ):
-            raise ValueError("SQLite bootstrap block must be non-negative")

@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+
+service=eth-graph-indexer.service
+
+systemctl restart "$service"
+sleep 3
+
+if ! systemctl is-active --quiet "$service"; then
+  journalctl -u "$service" --no-pager -n 50
+  exit 1
+fi
+
+systemctl --no-pager --full status "$service"

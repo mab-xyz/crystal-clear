@@ -1,22 +1,22 @@
-# Ethereum Neo4j Indexer
+# Ethereum Interaction Pair Indexer
 
-A resumable Python 3.12 batch indexer that reads Ethereum blocks and traces
-from a local Erigon JSON-RPC endpoint and writes an address interaction graph
-to a local Neo4j database.
+A resumable Python 3.12 indexer that reads Ethereum blocks and execution traces
+from Erigon and updates directed interaction-pair ranges in PostgreSQL.
 
-The indexer reads only from Ethereum RPC and writes only to Neo4j. It does not
-use public RPC providers or external APIs.
+Live ingestion writes only to PostgreSQL. The package retains the previous
+Neo4j migration and SQLite shard tools for completed migration maintenance, but
+`eth-graph-indexer ingest` does not use either store.
 
-## Setup
+## Requirements
 
-Prerequisites:
-
-- A local, archive-capable Erigon node with `eth`, `trace`, and/or `debug`
-  JSON-RPC APIs enabled.
-- A local Neo4j 5.x or 6.x installation. Docker is not required.
 - Python 3.12 or newer.
+- An archive-capable Erigon node with the `eth`, `trace`, and/or `debug` APIs.
+- PostgreSQL containing the migrated `pair_ranges` and
+  `indexer_checkpoints` tables.
+- A PostgreSQL role with `SELECT`, `INSERT`, and `UPDATE` privileges on both
+  tables.
 
-From this directory:
+Install the live indexer:
 
 ```bash
 python3.12 -m venv .venv
@@ -24,241 +24,183 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 ```
 
-Start Neo4j using the normal service or Neo4j Desktop mechanism for your
-installation. Configure the password through an environment variable to avoid
-putting it in shell history:
+## PostgreSQL schema
+
+The indexer expects:
+
+```sql
+CREATE TABLE public.pair_ranges (
+    source bytea NOT NULL,
+    target bytea NOT NULL,
+    first_block_number bigint NOT NULL,
+    last_block_number bigint NOT NULL,
+    PRIMARY KEY (source, target),
+    CHECK (octet_length(source) = 20 AND octet_length(target) = 20),
+    CHECK (
+        first_block_number >= 0
+        AND last_block_number >= first_block_number
+    )
+);
+
+CREATE TABLE public.indexer_checkpoints (
+    id text PRIMARY KEY,
+    last_processed_block bigint NOT NULL,
+    last_processed_block_hash text NOT NULL,
+    updated_at timestamptz NOT NULL
+);
+```
+
+`pair_ranges` may be partitioned as long as `(source, target)` remains a valid
+conflict target. Ethereum addresses are stored as 20-byte `bytea` values.
+
+Each ordered pair has one row. A repeated interaction updates the range using:
+
+```text
+first_block_number = min(existing, observed)
+last_block_number  = max(existing, observed)
+```
+
+This supports the historical predicate:
+
+```text
+seen at or before block B = first_block_number <= B
+```
+
+## Running
+
+Use a dedicated connection string so the indexer does not accidentally inherit
+an application role with read-only permissions:
 
 ```bash
-export NEO4J_PASSWORD='replace-with-your-password'
+export INDEXER_DATABASE_URL='postgresql://indexer:password@localhost:5432/cc'
 export ERIGON_RPC_URL='http://localhost:8545'
-```
 
-To distribute JSON-RPC requests across multiple equivalent nodes, provide a
-comma-separated list through `ERIGON_RPC_URLS` or `--rpc-url`:
-
-```bash
-export ERIGON_RPC_URLS='http://node-a:8545,http://node-b:8545'
-```
-
-Verify that Erigon and Neo4j are reachable before running a large range.
-
-## Usage
-
-```bash
 eth-graph-indexer ingest \
-  --rpc-url http://localhost:8545,http://localhost:8546 \
-  --neo4j-uri bolt://localhost:7687 \
-  --neo4j-user neo4j \
-  --end-block 18001000 \
-  --batch-size 100 \
-  --concurrent-blocks 4 \
   --trace-mode trace_block \
+  --concurrent-blocks 4 \
   --resume true
 ```
 
+The DSN can also be passed with `--postgres-dsn`. The CLI checks
+`INDEXER_DATABASE_URL` first and then `DATABASE_URL`.
+
 By default, ingestion starts at Ethereum block `15537394`, the first
-proof-of-stake block after The Merge. The indexer writes interactions for all
-addresses in every processed block.
+proof-of-stake block after The Merge. With `--resume true`, an existing
+checkpoint at or after that block causes ingestion to continue at
+`last_processed_block + 1`.
 
-Use `--start-block` only when you intentionally want to repair or backfill from
-a different block:
-
-```bash
-eth-graph-indexer ingest \
-  --start-block 18000000 \
-  --end-block 18001000
-```
-
-When `--end-block` is omitted, the run stops at the chain head observed when
-the job starts. Run it again with `--resume true` to process a newer head.
-
-To run continuously and index new blocks as they arrive, enable follow mode:
+Without `--end-block`, a non-follow run stops at the chain head observed when
+the run starts. Continuous operation uses:
 
 ```bash
 eth-graph-indexer ingest \
-  --neo4j-uri bolt://localhost:7687 \
-  --neo4j-user neo4j \
-  --trace-mode trace_block \
-  --concurrent-blocks 4 \
-  --resume true \
   --follow true \
-  --poll-interval 12
+  --poll-interval 12 \
+  --resume true
 ```
 
-Follow mode cannot be combined with `--end-block`. It processes up to the
-current chain head, sleeps for `--poll-interval` seconds, then resumes from the
-Neo4j checkpoint.
+Follow mode cannot be combined with `--end-block`.
 
-`--concurrent-blocks` controls how many blocks are fetched and parsed in
-parallel. The default is `4`. Neo4j writes and checkpoint commits still happen
-in block-number order.
+## Interaction extraction
 
-### Trace modes
+For every block, the indexer records:
 
-- `trace_block` uses Erigon's Parity-style `trace_block` response.
-- `debug_traceBlockByNumber` uses `callTracer` and recursively parses internal
-  call frames.
-- `none` indexes external transactions and contract creations only.
+- Top-level transaction `from -> to` interactions.
+- Successful contract-creation addresses obtained from receipts.
+- Internal calls from `trace_block` or `debug_traceBlockByNumber`.
+- Internal contract creations and self-destruct beneficiaries.
 
-By default a trace failure stops the run. Use
-`--continue-on-trace-error true` to retain external interactions and checkpoint
-the block despite missing traces.
+The trace modes are:
 
-`--continue-on-error true` skips and checkpoints a failed block with the hash
-`ERROR_SKIPPED`. This permits forward progress but creates an intentional data
-gap that must be repaired separately. The safe default is `false`.
+- `trace_block`: Erigon Parity-style block traces; this is the default.
+- `debug_traceBlockByNumber`: recursive `callTracer` frames.
+- `none`: top-level transactions and contract creations only.
 
-## Graph schema
+Only direct execution edges are indexed. The indexer does not materialize a
+transitive closure.
 
-Address node:
+## Commit and checkpoint guarantees
 
-```cypher
-(:Address {
-  address: byte array
-})
+Blocks can be fetched and traced concurrently, but commits remain ordered.
+The default commit batch contains 10 contiguous blocks.
+
+Pair-range updates and the PostgreSQL checkpoint update happen in one database
+transaction. The store rejects:
+
+- A non-contiguous commit batch.
+- A checkpoint gap.
+- A block marked `ERROR_SKIPPED`.
+- A replayed checkpoint block with a different hash.
+
+Upserts are idempotent, so replaying a range after an interrupted run is safe.
+Canonical-chain reorganization detection beyond an overlapping checkpoint is
+still not implemented.
+
+## RPC behavior
+
+Multiple comma-separated RPC URLs are supported through `ERIGON_RPC_URLS` or
+`--rpc-url`. Requests use timeouts, exponential-backoff retries, and endpoint
+failover. `--endpoint-concurrency` can assign explicit worker counts to each
+endpoint.
+
+Receipt lookup prefers `eth_getBlockReceipts` and falls back to batched
+`eth_getTransactionReceipt` calls when necessary.
+
+## Legacy migration utilities
+
+The following commands are retained for the completed Neo4j-to-pair-range and
+SQLite-shard migration workflow:
+
+- `eth-graph-indexer-migrate-pair-schema`
+- `eth-graph-indexer-external-pair-aggregation`
+- `eth-graph-pair-server`
+
+Install their Neo4j dependency only when running those tools:
+
+```bash
+python -m pip install -e '.[legacy]'
 ```
 
-Interaction relationship:
+They are not part of live PostgreSQL ingestion.
 
-```cypher
-(:Address)-[:INTERACTION {
-  blockNumber: integer
-}]->(:Address)
+## Monitoring
+
+The terminal monitor uses the same PostgreSQL DSN and Erigon RPC settings as
+the indexer:
+
+```bash
+export INDEXER_DATABASE_URL='postgresql://indexer:password@localhost:5432/cc'
+export ERIGON_RPC_URL='http://localhost:8545'
+
+eth-graph-indexer-monitor
 ```
 
-The indexer keeps Ethereum addresses as normalized `0x` strings while parsing,
-then converts them to 20-byte values before writing to Neo4j.
+It reports service state, checkpoint and chain-head lag, ingestion rate,
+estimated directed-pair rows, PostgreSQL database and pair-partition sizes, and
+filesystem capacity. Set `POSTGRES_DATA_PATH` when PostgreSQL is stored on a
+different filesystem. Pass `--counts` only when an exact `pair_ranges` row
+count is needed; on a large database that scan can be slow.
 
-An address uniqueness constraint is created at startup. Relationships are
-merged by ordered source address, target address, and `blockNumber`, so repeated
-interactions between the same ordered address pair in one block collapse into
-one relationship.
+## Continuous deployment
 
-## Checkpointing and idempotency
+Changes under this tool are deployed from `main` by
+`.github/workflows/pellow-indexer-deploy.yml`. The self-hosted production
+runner:
 
-After each successfully written block, the same Neo4j transaction updates:
+1. Fast-forwards `/home/crystal-clear-prod/crystal-clear`.
+2. Installs the package into the tool's dedicated `.venv`.
+3. Calls the root-owned `/usr/local/sbin/restart-eth-graph-indexer` helper.
 
-```cypher
-(:IndexerCheckpoint {
-  id: "default",
-  lastProcessedBlock: integer,
-  lastProcessedBlockHash: string,
-  updatedAt: datetime
-})
-```
+The systemd service and PostgreSQL peer-auth role both run as
+`crystal-clear-prod`. The runner has passwordless sudo access only to the
+root-owned restart helper.
 
-With `--resume true`, a checkpoint at or after the configured start block
-causes the next run to start at `lastProcessedBlock + 1`. With
-`--resume false`, processing starts exactly at `--start-block`.
-
-Address and relationship writes use `MERGE`. Each block's graph changes and
-checkpoint update are committed atomically, so normal `--resume true` runs do
-not reprocess checkpointed blocks.
-
-Reorganization handling is deliberately deferred. `lastProcessedBlockHash` is
-stored so a future implementation can compare canonical ancestry.
-
-## Example Cypher queries
-
-Find all counterparties of an address:
-
-```cypher
-MATCH (a:Address {address: $addressBytes})-[r:INTERACTION]-(other:Address)
-RETURN other.address, count(r) AS interactions
-ORDER BY interactions DESC
-```
-
-Find top addresses by degree:
-
-```cypher
-MATCH (a:Address)-[r:INTERACTION]-()
-RETURN a.address, count(r) AS degree
-ORDER BY degree DESC
-LIMIT 25
-```
-
-Find paths between two addresses:
-
-```cypher
-MATCH path = shortestPath(
-  (source:Address {address: $sourceBytes})-[:INTERACTION*..8]-
-  (target:Address {address: $targetBytes})
-)
-RETURN path
-```
-
-## Tests and linting
+## Verification
 
 ```bash
 pytest
 ruff check .
 ```
 
-The test suite uses fake RPC and Neo4j store objects. It does not require live
-Erigon or Neo4j services.
-
-## Operational notes
-
-- Historical tracing requires a local archive-capable Erigon node.
-- Long-running service mode is enabled with `--follow true`; use systemd,
-  supervisord, or another service manager to restart the process if it exits.
-- Remote archive/trace RPC backfills benefit from `--concurrent-blocks`; tune
-  it against provider rate limits and observed throughput.
-- Multiple RPC URLs are used round-robin per JSON-RPC request. If one endpoint
-  fails after its configured retries, the request is attempted against the next
-  endpoint before the indexer gives up.
-- Tracing every block is expensive. Start with a small block range and measure
-  throughput before indexing a large range.
-- `eth_getBlockReceipts` is preferred. If Erigon reports that method as
-  unavailable, the indexer falls back to batched
-  `eth_getTransactionReceipt` calls.
-- Receipt, graph-write, and HTTP request batch sizes are independently
-  configurable.
-- RPC requests use timeouts and exponential-backoff retries.
-- Passwords are never logged. Prefer `NEO4J_PASSWORD` over the command-line
-  password flag.
-- Contract creations in processed blocks are derived from transaction
-  receipts. Otterscan creator lookup is not needed for block-by-block
-  ingestion.
-
-## Deliberately deferred
-
-- TODO: Detect chain reorganizations by validating the checkpoint block hash
-  against the current canonical chain and rolling back affected graph data.
-
-## systemd example
-
-Create an environment file such as `/etc/eth-graph-indexer.env`:
-
-```bash
-NEO4J_PASSWORD=replace-with-your-password
-ERIGON_RPC_URLS=http://localhost:8545,http://localhost:8546
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-```
-
-Then adapt `deploy/eth-graph-indexer.service.example` for your local checkout
-and virtualenv paths.
-
-## Terminal monitor
-
-The package installs `eth-graph-indexer-monitor`, a minimal terminal dashboard
-that reads `/etc/eth-graph-indexer-monitor.env` when present, otherwise
-`/etc/eth-graph-indexer.env`. It checks the systemd service, reads the Neo4j
-checkpoint, and compares it with the current Erigon head.
-It also reports Neo4j data directory usage, database store size, transaction
-log size, free space on the underlying filesystem, and the recent checkpoint
-processing rate in blocks per second.
-Exact graph counts can be slow on large databases, so they are disabled by
-default. Add `--counts` when you explicitly want address and relationship
-counts.
-
-```bash
-sudo eth-graph-indexer-monitor
-```
-
-Use `--once` for a single snapshot:
-
-```bash
-sudo eth-graph-indexer-monitor --once
-```
+The unit test suite does not require live Erigon, PostgreSQL, Neo4j, or SQLite
+services.

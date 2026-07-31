@@ -6,8 +6,6 @@ import argparse
 import logging
 import os
 import sys
-from contextlib import ExitStack
-from pathlib import Path
 
 from .config import (
     POST_MERGE_START_BLOCK,
@@ -48,14 +46,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     ingest.add_argument(
-        "--neo4j-uri",
-        default=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-    )
-    ingest.add_argument(
-        "--neo4j-user", default=os.getenv("NEO4J_USER", "neo4j")
-    )
-    ingest.add_argument(
-        "--neo4j-password", default=os.getenv("NEO4J_PASSWORD")
+        "--postgres-dsn",
+        default=os.getenv("INDEXER_DATABASE_URL", os.getenv("DATABASE_URL")),
+        help=(
+            "PostgreSQL connection string. Defaults to INDEXER_DATABASE_URL, "
+            "then DATABASE_URL."
+        ),
     )
     ingest.add_argument(
         "--start-block",
@@ -99,34 +95,6 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("--retry-backoff", type=float, default=0.5)
     ingest.add_argument("--progress-interval", type=int, default=10)
     ingest.add_argument("--checkpoint-id", default="default")
-    ingest.add_argument(
-        "--sqlite-shard-dir",
-        type=Path,
-        default=(
-            Path(os.environ["PAIR_SQLITE_SHARD_DIR"])
-            if os.getenv("PAIR_SQLITE_SHARD_DIR")
-            else None
-        ),
-    )
-    ingest.add_argument(
-        "--sqlite-partitions",
-        type=int,
-        default=int(os.getenv("PAIR_SQLITE_PARTITIONS", "16")),
-    )
-    ingest.add_argument(
-        "--sqlite-bootstrap-block",
-        type=int,
-        default=(
-            int(os.environ["PAIR_SQLITE_BOOTSTRAP_BLOCK"])
-            if os.getenv("PAIR_SQLITE_BOOTSTRAP_BLOCK")
-            else None
-        ),
-    )
-    ingest.add_argument(
-        "--sqlite-bootstrap-hash",
-        default=os.getenv("PAIR_SQLITE_BOOTSTRAP_HASH"),
-    )
-    ingest.add_argument("--sqlite-only", type=_boolean, default=False)
     ingest.add_argument("--log-level", default="INFO")
     ingest.add_argument("--json-logs", type=_boolean, default=False)
     return parser
@@ -158,19 +126,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     configure_logging(args.log_level, json_logs=args.json_logs)
     try:
-        if not args.sqlite_only and not args.neo4j_password:
+        if not args.postgres_dsn:
             raise ValueError(
-                "Neo4j password is required; pass --neo4j-password or set "
-                "NEO4J_PASSWORD"
+                "PostgreSQL DSN is required; pass --postgres-dsn or set "
+                "INDEXER_DATABASE_URL"
             )
         config = IndexerConfig(
             rpc_url=args.rpc_url,
             endpoint_concurrency=parse_endpoint_concurrency(
                 args.endpoint_concurrency
             ),
-            neo4j_uri=args.neo4j_uri,
-            neo4j_user=args.neo4j_user,
-            neo4j_password=args.neo4j_password,
+            postgres_dsn=args.postgres_dsn,
             start_block=args.start_block,
             end_block=args.end_block,
             batch_size=args.batch_size,
@@ -188,11 +154,6 @@ def main(argv: list[str] | None = None) -> int:
             retry_backoff=args.retry_backoff,
             progress_interval=args.progress_interval,
             checkpoint_id=args.checkpoint_id,
-            sqlite_shard_dir=args.sqlite_shard_dir,
-            sqlite_partitions=args.sqlite_partitions,
-            sqlite_bootstrap_block=args.sqlite_bootstrap_block,
-            sqlite_bootstrap_hash=args.sqlite_bootstrap_hash,
-            sqlite_only=args.sqlite_only,
         )
         with build_rpc_client(
             config.rpc_url,
@@ -200,47 +161,9 @@ def main(argv: list[str] | None = None) -> int:
             max_retries=config.max_retries,
             retry_backoff=config.retry_backoff,
         ) as rpc:
-            from .checkpoint import Checkpoint
-            from .neo4j_store import Neo4jStore
-            from .sqlite_pair_store import MirroredStore, SQLitePairStore
+            from .postgres_store import PostgresStore
 
-            with ExitStack() as stack:
-                sqlite_store = None
-                if config.sqlite_shard_dir is not None:
-                    bootstrap_checkpoint = None
-                    if config.sqlite_bootstrap_block is not None:
-                        bootstrap_checkpoint = Checkpoint(
-                            config.sqlite_bootstrap_block,
-                            config.sqlite_bootstrap_hash or "",
-                        )
-                    sqlite_store = stack.enter_context(
-                        SQLitePairStore(
-                            config.sqlite_shard_dir,
-                            partitions=config.sqlite_partitions,
-                            bootstrap_checkpoint=bootstrap_checkpoint,
-                            checkpoint_id=config.checkpoint_id,
-                        )
-                    )
-
-                if config.sqlite_only:
-                    if sqlite_store is None:
-                        raise ValueError(
-                            "SQLite-only mode requires --sqlite-shard-dir"
-                        )
-                    store = sqlite_store
-                else:
-                    neo4j_store = stack.enter_context(
-                        Neo4jStore(
-                            config.neo4j_uri,
-                            config.neo4j_user,
-                            config.neo4j_password,
-                        )
-                    )
-                    store = (
-                        MirroredStore(neo4j_store, sqlite_store)
-                        if sqlite_store is not None
-                        else neo4j_store
-                    )
+            with PostgresStore(config.postgres_dsn) as store:
                 Ingestor(config, rpc, store).run()
         return 0
     except (ValueError, RuntimeError) as exc:

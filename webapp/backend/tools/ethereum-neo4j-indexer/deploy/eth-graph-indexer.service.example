@@ -1,17 +1,18 @@
 [Unit]
-Description=Ethereum Neo4j graph indexer
+Description=Ethereum PostgreSQL interaction-pair indexer
 Wants=network-online.target
-After=network-online.target neo4j.service
+After=network-online.target postgresql.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/javier/crystal-clear/webapp/backend/tools/ethereum-neo4j-indexer
+User=crystal-clear-prod
+Group=crystal-clear-prod
+WorkingDirectory=/home/crystal-clear-prod/crystal-clear/webapp/backend/tools/ethereum-neo4j-indexer
 EnvironmentFile=/etc/eth-graph-indexer.env
-ExecStart=/home/javier/crystal-clear/webapp/backend/tools/ethereum-neo4j-indexer/.venv/bin/eth-graph-indexer ingest \
-  --neo4j-uri ${NEO4J_URI} \
-  --neo4j-user ${NEO4J_USER} \
+Environment=INDEXER_DATABASE_URL=postgresql:///cc
+ExecStart=/home/crystal-clear-prod/crystal-clear/webapp/backend/tools/ethereum-neo4j-indexer/.venv/bin/eth-graph-indexer ingest \
   --trace-mode trace_block \
-  --concurrent-blocks 4 \
+  --concurrent-blocks 1 \
   --resume true \
   --follow true \
   --poll-interval 12

@@ -252,9 +252,7 @@ class FakeStore:
 def test_ingestor_resumes_and_processes_blocks_in_order() -> None:
     config = IndexerConfig(
         rpc_url="http://localhost:8545",
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="secret",
+        postgres_dsn="postgresql://localhost/cc",
         start_block=1,
         end_block=5,
         progress_interval=1,
@@ -277,9 +275,7 @@ def test_ingestor_resumes_and_processes_blocks_in_order() -> None:
 def test_ingestor_commits_concurrent_blocks_in_order() -> None:
     config = IndexerConfig(
         rpc_url="http://localhost:8545",
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="secret",
+        postgres_dsn="postgresql://localhost/cc",
         start_block=1,
         end_block=5,
         concurrent_blocks=2,
@@ -301,9 +297,7 @@ def test_ingestor_honors_per_endpoint_worker_limits() -> None:
     config = IndexerConfig(
         rpc_url="http://a:8545,http://b:8545",
         endpoint_concurrency=(1, 2),
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="secret",
+        postgres_dsn="postgresql://localhost/cc",
         start_block=1,
         end_block=6,
         concurrent_blocks=3,
@@ -329,9 +323,7 @@ def test_ingestor_honors_per_endpoint_worker_limits() -> None:
 def test_ingestor_batches_ordered_commits() -> None:
     config = IndexerConfig(
         rpc_url="http://localhost:8545",
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="secret",
+        postgres_dsn="postgresql://localhost/cc",
         start_block=1,
         end_block=5,
         commit_batch_size=2,
@@ -352,9 +344,7 @@ def test_ingestor_batches_ordered_commits() -> None:
 def test_ingestor_indexes_untracked_addresses() -> None:
     config = IndexerConfig(
         rpc_url="http://localhost:8545",
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="secret",
+        postgres_dsn="postgresql://localhost/cc",
         start_block=4,
         end_block=4,
         resume=False,
@@ -377,9 +367,7 @@ def test_ingestor_skips_receipts_when_block_has_no_creation() -> None:
     receipts = FakeReceipts()
     config = IndexerConfig(
         rpc_url="http://localhost:8545",
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="secret",
+        postgres_dsn="postgresql://localhost/cc",
         start_block=4,
         end_block=4,
         resume=False,

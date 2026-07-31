@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from eth_graph_indexer.external_pair_aggregation import (
-    AggregateConfig,
-    AggregateState,
     LoadConfig,
     LoadState,
+    RepartitionConfig,
+    RepartitionState,
     connect_sqlite,
     fetch_sqlite_rows,
     flush_pair_rows,
@@ -13,8 +13,6 @@ from eth_graph_indexer.external_pair_aggregation import (
     partition_index,
     resolve_source_paths,
     run_repartition,
-    RepartitionConfig,
-    RepartitionState,
 )
 
 

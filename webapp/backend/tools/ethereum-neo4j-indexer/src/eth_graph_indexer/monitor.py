@@ -1,4 +1,4 @@
-"""Terminal monitor for the Ethereum Neo4j indexer."""
+"""Terminal monitor for the Ethereum PostgreSQL interaction-pair indexer."""
 
 from __future__ import annotations
 
@@ -12,27 +12,25 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 import httpx
+import psycopg
 
 DEFAULT_MONITOR_ENV_FILE = Path("/etc/eth-graph-indexer-monitor.env")
 DEFAULT_SERVICE_ENV_FILE = Path("/etc/eth-graph-indexer.env")
 DEFAULT_SERVICE = "eth-graph-indexer.service"
-DEFAULT_NEO4J_DATA_PATH = Path("/var/lib/neo4j/data")
+DEFAULT_POSTGRES_DATA_PATH = Path("/var/lib/postgresql")
 DEFAULT_STATE_FILE = Path("~/.cache/eth-graph-indexer-monitor/state.json")
 
 
 @dataclass(frozen=True, slots=True)
 class MonitorConfig:
-    neo4j_uri: str
-    neo4j_user: str
-    neo4j_password: str
+    postgres_dsn: str
     rpc_url: str | None
     checkpoint_id: str
     service_name: str
     user_service: bool
-    neo4j_data_path: Path
+    postgres_data_path: Path
     state_file: Path
     include_counts: bool = False
 
@@ -40,9 +38,8 @@ class MonitorConfig:
 @dataclass(frozen=True, slots=True)
 class DiskSnapshot:
     data_path: Path
-    data_bytes: int | None
     database_bytes: int | None
-    transaction_bytes: int | None
+    pair_table_bytes: int | None
     filesystem_total_bytes: int | None
     filesystem_used_bytes: int | None
     filesystem_free_bytes: int | None
@@ -61,9 +58,9 @@ class Snapshot:
     checkpoint_block: int | None
     checkpoint_updated_at: str | None
     head_block: int | None
-    address_count: int | None
-    interaction_count: int | None
-    max_interaction_block: int | None
+    pair_count: int | None
+    pair_count_exact: bool
+    max_pair_block: int | None
     disk: DiskSnapshot
     blocks_per_second: float | None = None
     error: str | None = None
@@ -92,7 +89,7 @@ def load_config(
     checkpoint_id: str,
     service_name: str,
     user_service: bool = False,
-    neo4j_data_path: Path | None = None,
+    postgres_data_path: Path | None = None,
     state_file: Path | None = None,
     include_counts: bool = False,
 ) -> MonitorConfig:
@@ -105,21 +102,24 @@ def load_config(
         )
     if env_file.exists():
         values.update(parse_env_file(env_file))
-    password = values.get("NEO4J_PASSWORD")
-    if not password:
+    postgres_dsn = values.get("INDEXER_DATABASE_URL") or values.get(
+        "DATABASE_URL"
+    )
+    if not postgres_dsn:
         raise ValueError(
-            f"NEO4J_PASSWORD is required in environment or {env_file}"
+            "INDEXER_DATABASE_URL or DATABASE_URL is required in "
+            f"environment or {env_file}"
         )
     return MonitorConfig(
-        neo4j_uri=values.get("NEO4J_URI", "bolt://localhost:7687"),
-        neo4j_user=values.get("NEO4J_USER", "neo4j"),
-        neo4j_password=password,
+        postgres_dsn=postgres_dsn,
         rpc_url=values.get("ERIGON_RPC_URL"),
         checkpoint_id=checkpoint_id,
         service_name=service_name,
         user_service=user_service,
-        neo4j_data_path=neo4j_data_path
-        or Path(values.get("NEO4J_DATA_PATH", DEFAULT_NEO4J_DATA_PATH)),
+        postgres_data_path=postgres_data_path
+        or Path(
+            values.get("POSTGRES_DATA_PATH", DEFAULT_POSTGRES_DATA_PATH)
+        ),
         state_file=(state_file or DEFAULT_STATE_FILE).expanduser(),
         include_counts=include_counts,
     )
@@ -162,33 +162,18 @@ def get_head_block(rpc_url: str | None) -> int | None:
     return int(result, 16) if isinstance(result, str) else None
 
 
-def directory_size(path: Path) -> int:
-    total = 0
-    for root, _, filenames in os.walk(path):
-        root_path = Path(root)
-        for filename in filenames:
-            file_path = root_path / filename
-            try:
-                total += file_path.stat().st_size
-            except OSError:
-                continue
-    return total
-
-
-def get_disk_snapshot(data_path: Path) -> DiskSnapshot:
+def get_disk_snapshot(
+    data_path: Path,
+    *,
+    database_bytes: int | None = None,
+    pair_table_bytes: int | None = None,
+) -> DiskSnapshot:
     try:
         usage = shutil.disk_usage(data_path)
-        database_path = data_path / "databases"
-        transaction_path = data_path / "transactions"
         return DiskSnapshot(
             data_path=data_path,
-            data_bytes=directory_size(data_path),
-            database_bytes=directory_size(database_path)
-            if database_path.exists()
-            else None,
-            transaction_bytes=directory_size(transaction_path)
-            if transaction_path.exists()
-            else None,
+            database_bytes=database_bytes,
+            pair_table_bytes=pair_table_bytes,
             filesystem_total_bytes=usage.total,
             filesystem_used_bytes=usage.used,
             filesystem_free_bytes=usage.free,
@@ -196,9 +181,8 @@ def get_disk_snapshot(data_path: Path) -> DiskSnapshot:
     except OSError as exc:
         return DiskSnapshot(
             data_path=data_path,
-            data_bytes=None,
-            database_bytes=None,
-            transaction_bytes=None,
+            database_bytes=database_bytes,
+            pair_table_bytes=pair_table_bytes,
             filesystem_total_bytes=None,
             filesystem_used_bytes=None,
             filesystem_free_bytes=None,
@@ -251,10 +235,6 @@ def calculate_blocks_per_second(
     return max(checkpoint_block - previous_block, 0) / elapsed
 
 
-def _scalar(record: Any, key: str, default: Any = None) -> Any:
-    return record[key] if record and record[key] is not None else default
-
-
 def collect_snapshot(config: MonitorConfig) -> Snapshot:
     timestamp = time.time()
     previous = load_previous_sample(config.state_file)
@@ -262,7 +242,7 @@ def collect_snapshot(config: MonitorConfig) -> Snapshot:
         config.service_name,
         user_service=config.user_service,
     )
-    disk = get_disk_snapshot(config.neo4j_data_path)
+    disk = get_disk_snapshot(config.postgres_data_path)
     head_block: int | None = None
     error: str | None = None
     try:
@@ -271,48 +251,67 @@ def collect_snapshot(config: MonitorConfig) -> Snapshot:
         error = f"RPC head check failed: {exc}"
 
     try:
-        from neo4j import GraphDatabase
-
-        with GraphDatabase.driver(
-            config.neo4j_uri,
-            auth=(config.neo4j_user, config.neo4j_password),
-        ) as driver:
-            checkpoint_records, _, _ = driver.execute_query(
-                """
-                MATCH (checkpoint:IndexerCheckpoint {id: $id})
-                RETURN checkpoint.lastProcessedBlock AS block,
-                       toString(checkpoint.updatedAt) AS updatedAt
-                """,
-                id=config.checkpoint_id,
-            )
-            if config.include_counts:
-                count_records, _, _ = driver.execute_query(
+        with psycopg.connect(config.postgres_dsn) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
                     """
-                    MATCH (a:Address)
-                    WITH count(a) AS addresses
-                    MATCH ()-[r:INTERACTION]->()
-                    RETURN addresses, count(r) AS interactions
+                    SELECT last_processed_block, updated_at
+                    FROM public.indexer_checkpoints
+                    WHERE id = %s
+                    """,
+                    (config.checkpoint_id,),
+                )
+                checkpoint = cursor.fetchone()
+                cursor.execute(
+                    """
+                    SELECT
+                        pg_database_size(current_database()),
+                        COALESCE(sum(pg_total_relation_size(tree.relid)), 0),
+                        COALESCE(sum(classes.reltuples), 0)::bigint
+                    FROM pg_partition_tree(
+                        'public.pair_ranges'::regclass
+                    ) AS tree
+                    JOIN pg_class AS classes ON classes.oid = tree.relid
+                    WHERE tree.isleaf
                     """
                 )
-            else:
-                count_records = []
+                storage = cursor.fetchone()
+                if config.include_counts:
+                    cursor.execute(
+                        "SELECT count(*) FROM public.pair_ranges"
+                    )
+                    count_record = cursor.fetchone()
+                else:
+                    count_record = None
     except Exception as exc:
         return Snapshot(
             service_state=service_state,
             checkpoint_block=None,
             checkpoint_updated_at=None,
             head_block=head_block,
-            address_count=None,
-            interaction_count=None,
-            max_interaction_block=None,
+            pair_count=None,
+            pair_count_exact=False,
+            max_pair_block=None,
             disk=disk,
             blocks_per_second=None,
-            error=f"Neo4j check failed: {exc}",
+            error=f"PostgreSQL check failed: {exc}",
         )
 
-    checkpoint = checkpoint_records[0] if checkpoint_records else None
-    counts = count_records[0] if count_records else None
-    checkpoint_block = _scalar(checkpoint, "block")
+    checkpoint_block = int(checkpoint[0]) if checkpoint else None
+    checkpoint_updated_at = (
+        checkpoint[1].isoformat() if checkpoint and checkpoint[1] else None
+    )
+    database_bytes = int(storage[0]) if storage else None
+    pair_table_bytes = int(storage[1]) if storage else None
+    estimated_pair_count = int(storage[2]) if storage else None
+    pair_count = (
+        int(count_record[0]) if count_record else estimated_pair_count
+    )
+    disk = get_disk_snapshot(
+        config.postgres_data_path,
+        database_bytes=database_bytes,
+        pair_table_bytes=pair_table_bytes,
+    )
     blocks_per_second = calculate_blocks_per_second(
         previous,
         checkpoint_block=checkpoint_block,
@@ -322,19 +321,11 @@ def collect_snapshot(config: MonitorConfig) -> Snapshot:
     return Snapshot(
         service_state=service_state,
         checkpoint_block=checkpoint_block,
-        checkpoint_updated_at=_scalar(checkpoint, "updatedAt"),
+        checkpoint_updated_at=checkpoint_updated_at,
         head_block=head_block,
-        address_count=(
-            int(_scalar(counts, "addresses"))
-            if counts is not None
-            else None
-        ),
-        interaction_count=(
-            int(_scalar(counts, "interactions"))
-            if counts is not None
-            else None
-        ),
-        max_interaction_block=checkpoint_block,
+        pair_count=pair_count,
+        pair_count_exact=count_record is not None,
+        max_pair_block=checkpoint_block,
         disk=disk,
         blocks_per_second=blocks_per_second,
         error=error,
@@ -406,7 +397,7 @@ def render(snapshot: Snapshot, *, now: datetime | None = None) -> str:
     disk = snapshot.disk
     rows = [
         "=" * width,
-        "Ethereum Neo4j Indexer".center(width),
+        "Ethereum PostgreSQL Pair Indexer".center(width),
         "=" * width,
         f"{badge} {snapshot.service_state.upper()}   {timestamp}",
     ]
@@ -420,8 +411,8 @@ def render(snapshot: Snapshot, *, now: datetime | None = None) -> str:
                 field("Rate", format_rate(snapshot.blocks_per_second)),
                 field("Updated", snapshot.checkpoint_updated_at or "-"),
                 field(
-                    "Max graph block",
-                    format_number(snapshot.max_interaction_block),
+                    "Max indexed block",
+                    format_number(snapshot.max_pair_block),
                 ),
             ],
             width,
@@ -429,22 +420,24 @@ def render(snapshot: Snapshot, *, now: datetime | None = None) -> str:
     )
     rows.extend(
         box(
-            "Graph",
+            "Pair ranges",
             [
-                field("Address nodes", format_number(snapshot.address_count)),
                 field(
-                    "Interactions",
-                    format_number(snapshot.interaction_count),
+                    "Directed pairs",
+                    format_number(snapshot.pair_count),
+                ),
+                field(
+                    "Count type",
+                    "exact" if snapshot.pair_count_exact else "estimated",
                 ),
             ],
             width,
         )
     )
     disk_rows = [
-        field("Neo4j data path", str(disk.data_path)),
-        field("Neo4j data", format_bytes(disk.data_bytes)),
-        field("Databases", format_bytes(disk.database_bytes)),
-        field("Transactions", format_bytes(disk.transaction_bytes)),
+        field("PostgreSQL path", str(disk.data_path)),
+        field("Database", format_bytes(disk.database_bytes)),
+        field("Pair partitions", format_bytes(disk.pair_table_bytes)),
         field(
             "Filesystem",
             (
@@ -478,12 +471,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Check the indexer with systemctl --user instead of systemctl.",
     )
-    parser.add_argument("--neo4j-data-path", type=Path)
+    parser.add_argument("--postgres-data-path", type=Path)
     parser.add_argument("--state-file", type=Path)
     parser.add_argument(
         "--counts",
         action="store_true",
-        help="Include graph node/relationship counts; can be slow on large graphs.",
+        help="Count pair rows exactly; can be very slow on large databases.",
     )
     parser.add_argument("--interval", type=float, default=5.0)
     parser.add_argument("--once", action="store_true")
@@ -501,7 +494,7 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint_id=args.checkpoint_id,
             service_name=args.service_name,
             user_service=args.user_service,
-            neo4j_data_path=args.neo4j_data_path,
+            postgres_data_path=args.postgres_data_path,
             state_file=args.state_file,
             include_counts=args.counts,
         )

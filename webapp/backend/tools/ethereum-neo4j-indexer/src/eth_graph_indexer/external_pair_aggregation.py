@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -11,10 +12,8 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterator
-import hashlib
 
 from .logging_config import configure_logging
-from .models import address_bytes_to_hex
 from .migrate_pair_schema import (
     DEFAULT_STATE_FILE,
     FETCH_NEXT_BLOCK_QUERY,
@@ -22,6 +21,7 @@ from .migrate_pair_schema import (
     parse_env_file,
     wait_for_index_online,
 )
+from .models import address_bytes_to_hex
 from .neo4j_store import RELATIONSHIP_CONSTRAINT_QUERY
 
 LOGGER = logging.getLogger(__name__)

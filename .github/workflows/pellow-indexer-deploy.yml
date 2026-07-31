@@ -1,0 +1,30 @@
+name: Deploy Ethereum interaction indexer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/pellow-indexer-deploy.yml"
+      - "webapp/backend/tools/ethereum-neo4j-indexer/**"
+  workflow_dispatch:
+
+concurrency:
+  group: pellow-ethereum-indexer-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, pellow-backend-api-on-cc-prod]
+    timeout-minutes: 10
+    steps:
+      - name: Pull latest code
+        run: git -C /home/crystal-clear-prod/crystal-clear pull --ff-only
+
+      - name: Install indexer
+        working-directory: /home/crystal-clear-prod/crystal-clear/webapp/backend/tools/ethereum-neo4j-indexer
+        run: |
+          test -x .venv/bin/python || python3.12 -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check .
+
+      - name: Restart and verify indexer
+        run: sudo /usr/local/sbin/restart-eth-graph-indexer
