@@ -81,7 +81,8 @@ def test_evaluate_pair_seen_risk_checks_exact_candidate_pairs(monkeypatch):
     transitive = direct | {(sender, target)}
 
     class _History:
-        def has_pairs_seen(self, entries, *, block):
+        def has_pairs_seen(self, session, entries, *, block):
+            assert isinstance(session, _Session)
             assert set(entries) == transitive
             assert block == 100
             return {
@@ -92,7 +93,7 @@ def test_evaluate_pair_seen_risk_checks_exact_candidate_pairs(monkeypatch):
 
     monkeypatch.setattr(
         analysis,
-        "get_pair_seen_interaction_history",
+        "get_postgres_interaction_history",
         lambda: _History(),
     )
     (
@@ -103,6 +104,7 @@ def test_evaluate_pair_seen_risk_checks_exact_candidate_pairs(monkeypatch):
         contract_missing,
         sender_missing,
     ) = analysis._evaluate_pair_seen_risk(
+        session=_Session([]),
         sender_address=sender,
         touched_addresses=[root, target],
         checked_interaction_types=[
@@ -139,10 +141,11 @@ def test_evaluate_pair_seen_risk_marks_lookup_failure_missing(monkeypatch):
 
     monkeypatch.setattr(
         analysis,
-        "get_pair_seen_interaction_history",
+        "get_postgres_interaction_history",
         lambda: _History(),
     )
     result = analysis._evaluate_pair_seen_risk(
+        session=_Session([]),
         sender_address=sender,
         touched_addresses=[root, target],
         checked_interaction_types=["contract_direct"],

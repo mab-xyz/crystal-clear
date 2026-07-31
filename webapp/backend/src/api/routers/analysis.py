@@ -1,22 +1,31 @@
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+from typing import Any, Dict, Literal, Optional, Union
+
+import rlp
+from eth_account import Account
+from eth_account.typed_transactions import TypedTransaction
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi_cache.decorator import cache
+from hexbytes import HexBytes
+from loguru import logger
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
 from src.api.core.config import settings
 from src.api.core.database import get_session
-from src.api.models.interaction_scan_state import InteractionScanState
+from src.api.integrations.crystal_clear_adapter import get_risk_engine
+from src.api.integrations.risk_engine import RiskEngine
 from src.api.models.interaction_scan_skipped_range import (
     InteractionScanSkippedRange,
 )
+from src.api.models.interaction_scan_state import InteractionScanState
 from src.api.schemas.analysis import (
     ContractDependenciesRequest,
     ContractDependenciesResponse,
     ContractRiskRequest,
+    RawTxRiskRequest,
+    RiskAnalysisResponse,
     SimulationRequest,
     SimulationResponse,
-    RiskAnalysisResponse,
-    RawTxRiskRequest,
 )
 from src.api.schemas.response import ErrorResponse
 from src.api.services.analysis_service import (
@@ -30,22 +39,14 @@ from src.api.services.neo4j_interaction_history import (
     InteractionKey,
     get_neo4j_interaction_history,
 )
-from src.api.services.pair_seen_interaction_history import (
+from src.api.services.postgres_interaction_history import (
     PairKey,
-    get_pair_seen_interaction_history,
+    get_postgres_interaction_history,
 )
 from src.api.services.tx_risk_assessment import (
     _has_allowlisted_verification,
     _has_unverified_dangerous,
 )
-from src.api.integrations.crystal_clear_adapter import get_risk_engine
-from src.api.integrations.risk_engine import RiskEngine
-from eth_account import Account
-from eth_account.typed_transactions import TypedTransaction
-from hexbytes import HexBytes
-from typing import Literal, Optional, Any, Dict, List, Union
-import rlp
-from loguru import logger
 
 router = APIRouter(
     prefix="/v1/analysis",
@@ -133,6 +134,7 @@ def _evaluate_interaction_scan_risk(
 ]:
     if direct_pairs is not None and transitive_pairs is not None:
         return _evaluate_pair_seen_risk(
+            session=session,
             sender_address=sender_address,
             touched_addresses=touched_addresses,
             checked_interaction_types=checked_interaction_types,
@@ -389,6 +391,7 @@ def _build_transaction_interaction_candidates(
 
 def _evaluate_pair_seen_risk(
     *,
+    session: Session,
     sender_address: str,
     touched_addresses: list[str],
     checked_interaction_types: list[str],
@@ -419,13 +422,16 @@ def _evaluate_pair_seen_risk(
     history_available = history_to_block is not None
     if history_available and all_candidates:
         try:
-            pair_history = get_pair_seen_interaction_history().has_pairs_seen(
+            pair_history = get_postgres_interaction_history().has_pairs_seen(
+                session,
                 all_candidates,
                 block=history_to_block,
             )
         except Exception as exc:
             history_available = False
-            logger.warning("Pair-seen interaction history lookup failed: {}", exc)
+            logger.warning(
+                "PostgreSQL interaction history lookup failed: {}", exc
+            )
 
     first_time_map: dict[str, dict[str, bool]] = {}
     state_map: dict[str, dict[str, str]] = {}

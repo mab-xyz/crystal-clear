@@ -72,18 +72,10 @@ class Settings(BaseSettings):
     neo4j_password: str | None = Field(default=None, alias="NEO4J_PASSWORD")
     neo4j_database: str | None = Field(default=None, alias="NEO4J_DATABASE")
 
-    # Pre-indexed directed interaction history service
-    pair_seen_service_url: str = Field(
-        ...,
-        alias="PAIR_SEEN_SERVICE_URL",
-    )
-    pair_seen_timeout_seconds: float = Field(
-        10.0,
-        alias="PAIR_SEEN_TIMEOUT_SECONDS",
-    )
-    pair_seen_batch_size: int = Field(
+    # Pre-indexed directed interaction history
+    pair_history_batch_size: int = Field(
         1000,
-        alias="PAIR_SEEN_BATCH_SIZE",
+        alias="PAIR_HISTORY_BATCH_SIZE",
     )
 
     # Request logging
@@ -109,6 +101,8 @@ def get_eth_node_url() -> str:
     urls = settings.eth_node_urls.split("|")
     if len(urls) == 1:
         return urls[0]
-    from src.api.core.rpc_health import tracker  # avoid circular import at module load
+    from src.api.core.rpc_health import (
+        tracker,  # avoid circular import at module load
+    )
     weights = [tracker.health_ratio(url) for url in urls]
     return random.choices(urls, weights=weights, k=1)[0]
