@@ -39,7 +39,7 @@ palettable==3.3.3
 pandas==2.2.3
 parso==0.8.4
 pexpect==4.9.0
-pillow==12.2.0
+pillow==12.3.0
 platformdirs==4.3.7
 plotly==6.0.1
 prompt_toolkit==3.0.50
@@ -57,11 +57,11 @@ requests==2.33.0
 requests-cache==1.2.1
 rpds-py==0.24.0
 seaborn==0.13.2
-setuptools==78.1.1
+setuptools==83.0.0
 six==1.17.0
-soupsieve==2.6
+soupsieve==2.8.4
 stack-data==0.6.3
-tornado==6.5.5
+tornado==6.5.8
 traitlets==5.14.3
 typing_extensions==4.12.2
 tzdata==2025.2
