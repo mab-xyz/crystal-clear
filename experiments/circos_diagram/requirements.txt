@@ -17,7 +17,7 @@ nxviz==0.7.6
 packaging==24.2
 palettable==3.3.3
 pandas==2.2.3
-pillow==12.2.0
+pillow==12.3.0
 platformdirs==4.3.6
 pyparsing==3.2.1
 python-dateutil==2.9.0.post0
