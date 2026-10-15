@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 from typing import Any, Callable
 
 import rlp
@@ -20,7 +21,10 @@ from sqlalchemy.orm import Session
 
 from src.api.core.config import settings
 from src.api.core.database import get_session
-from src.api.integrations.crystal_clear_adapter import get_risk_engine
+from src.api.integrations.crystal_clear_adapter import (
+    SimulationFailed,
+    get_risk_engine,
+)
 from src.api.integrations.risk_engine import RiskEngine
 from src.api.routers.analysis import get_tx_risk_from_raw
 from src.api.schemas.analysis import RawTxRiskRequest
@@ -72,6 +76,57 @@ _ERRORS: dict[int | str, dict[str, Any]] = {
 }
 
 
+# Node errors caused by the submitted transaction itself (spec: "Simulation
+# cannot be run", code 3). Anything else is treated as an infrastructure error.
+_TX_REJECTED = re.compile(
+    r"intrinsic gas too low|tip higher than fee cap|fee cap less than|"
+    r"max fee per gas less than|insufficient funds|nonce too (low|high)|"
+    r"exceeds block gas limit|gas limit reached|gas uint64 overflow",
+    re.IGNORECASE,
+)
+
+
+class _CannotRun(Exception):
+    """Simulation cannot be run for this transaction (-> 422 code 3)."""
+
+
+class _StrictEngine:
+    """Engine view whose simulation raises instead of returning empty."""
+
+    def __init__(self, engine: RiskEngine) -> None:
+        self._engine = engine
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._engine, name)
+
+    def simulate_and_check_with_edges(self, call_object, **kwargs):
+        strict = getattr(
+            self._engine, "simulate_and_check_with_edges_strict", None
+        )
+        fn = strict or self._engine.simulate_and_check_with_edges
+        try:
+            return fn(call_object, **kwargs)
+        except SimulationFailed as exc:
+            if _TX_REJECTED.search(str(exc)):
+                raise _CannotRun(f"Simulation cannot be run: {exc}") from exc
+            raise
+
+
+def _precheck_account(
+    engine: RiskEngine, sender: str, raw_hex: str, block: int
+) -> None:
+    """trace_call does not enforce nonce/balance; the spec wants code 3."""
+    state = getattr(engine, "get_account_state", None)
+    if not callable(state):
+        return
+    f = lh.evm_tx_fields(raw_hex)
+    nonce, balance = state(sender, block)
+    if f["nonce"] < nonce:
+        raise _CannotRun("Simulation cannot be run: field nonce is incorrect")
+    if balance < f["value"] + f["gas"] * f["fee"]:
+        raise _CannotRun("Simulation cannot be run: insufficient funds")
+
+
 def _err(status: int, code: int, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status, content={"code": code, "message": message}
@@ -101,13 +156,15 @@ def _resolve_block(risk_engine: RiskEngine, block: int | None) -> int:
 
 async def _simulate(
     raw_hex: str, sender: str, block: int, risk_engine: RiskEngine,
-    session: Session,
+    session: Session, check_account: bool = True,
 ):
+    if check_account:
+        _precheck_account(risk_engine, sender, raw_hex, block)
     return await get_tx_risk_from_raw(
         RawTxRiskRequest(
             raw_tx=raw_hex, sender_address=sender, block_tag=hex(block)
         ),
-        risk_engine=risk_engine,
+        risk_engine=_StrictEngine(risk_engine),  # type: ignore[arg-type]
         session=session,
     )
 
@@ -157,6 +214,8 @@ def _finish(
 
 
 def _handle_failure(exc: Exception) -> JSONResponse:
+    if isinstance(exc, _CannotRun):
+        return _err(422, ERR_CANNOT_RUN, str(exc))
     if isinstance(exc, HTTPException):
         if exc.status_code == 422:  # decode failure in the shared core
             return _bad(str(exc.detail))
@@ -266,7 +325,7 @@ async def scan_eip712(
         if isinstance(verifying, str) and verifying.startswith("0x") and len(verifying) == 42:
             sim = await _simulate(
                 _unsigned_call_raw(chain_id, verifying), body.msg.from_,
-                block, risk_engine, session,
+                block, risk_engine, session, check_account=False,
             )
         else:  # nothing on-chain to assess
             from src.api.schemas.analysis import SimulationResponse

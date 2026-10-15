@@ -109,3 +109,17 @@ def solana_decode(value: str, expected_len: int | None = None) -> bytes:
     if expected_len is not None and len(b) != expected_len:
         raise ValueError(f"expected {expected_len} bytes")
     return b
+
+
+def evm_tx_fields(raw_hex: str) -> dict[str, int]:
+    """nonce / gas / value / max fee per gas of an unsigned or signed tx."""
+    raw = _hex_to_bytes(raw_hex)
+    num = lambda b: int.from_bytes(b, "big")  # noqa: E731
+    if raw[0] >= 0xC0:  # legacy
+        i = rlp.decode(raw)
+        return {"nonce": num(i[0]), "fee": num(i[1]), "gas": num(i[2]), "value": num(i[4])}
+    i = rlp.decode(raw[1:])
+    if raw[0] == 1:  # [chain, nonce, gasPrice, gas, to, value, ...]
+        return {"nonce": num(i[1]), "fee": num(i[2]), "gas": num(i[3]), "value": num(i[5])}
+    # types 2/3/4: [chain, nonce, tip, maxFee, gas, to, value, ...]
+    return {"nonce": num(i[1]), "fee": num(i[3]), "gas": num(i[4]), "value": num(i[6])}

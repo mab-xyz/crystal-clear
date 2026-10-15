@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from threading import RLock
 from typing import Any, Mapping
@@ -12,6 +13,23 @@ from src.api.services.verification_cache import (
     AllowlistedContractVerificationCache,
     ContractVerificationCache,
 )
+
+
+class SimulationFailed(Exception):
+    """The node rejected/failed the trace_call (message is the node's)."""
+
+
+class _TraceErrorCapture(logging.Handler):
+    """Collects the SDK's swallowed ``Error during trace_call`` log lines."""
+
+    def __init__(self) -> None:
+        super().__init__(level=logging.ERROR)
+        self.messages: list[str] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        msg = record.getMessage()
+        if "Error during trace_call" in msg:
+            self.messages.append(msg.split("trace_call:", 1)[-1].strip())
 
 
 class _NoFirstTimeCache:
@@ -130,6 +148,40 @@ class CrystalClearRiskEngine(RiskEngine):
                 collector.get_edges_from_simulation = original_get_edges
                 self._client.first_time_cache = original_cache
         return results, captured_edges
+
+    def simulate_and_check_with_edges_strict(
+        self, call_object: Mapping[str, Any], **kwargs: Any
+    ) -> tuple[dict[str, Any], list[tuple[str, str]]]:
+        """Like ``simulate_and_check_with_edges`` but raises
+        ``SimulationFailed`` when the node's trace_call errored (the SDK
+        otherwise logs it and returns an empty result)."""
+        collector = self._client.simulation_collector
+        if collector is None:
+            raise ValueError("SimulationCollector is not initialized.")
+        capture = _TraceErrorCapture()
+        with self._simulate_lock:
+            collector.logger.addHandler(capture)
+            try:
+                out = self.simulate_and_check_with_edges(call_object, **kwargs)
+            finally:
+                collector.logger.removeHandler(capture)
+        if capture.messages:
+            raise SimulationFailed(capture.messages[0])
+        return out
+
+    def get_account_state(
+        self, address: str, block: int
+    ) -> tuple[int, int]:
+        """(nonce, balance_wei) of ``address`` at ``block``."""
+        collector = self._client.simulation_collector
+        if collector is None:
+            raise ValueError("SimulationCollector is not initialized.")
+        w3 = collector.w3
+        addr = w3.to_checksum_address(address)
+        return (
+            int(w3.eth.get_transaction_count(addr, block)),
+            int(w3.eth.get_balance(addr, block)),
+        )
 
     def get_latest_block_number(self) -> int:
         collector = self._client.simulation_collector

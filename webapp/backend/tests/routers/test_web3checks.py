@@ -10,6 +10,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from src.api.core.config import settings
 from src.api.core.database import get_session
+from src.api.integrations.crystal_clear_adapter import SimulationFailed
 from src.api.integrations.crystal_clear_adapter import get_risk_engine
 from src.api.models.ledger_report import LedgerReport
 from src.api.routers import analysis, web3checks
@@ -252,3 +253,69 @@ def test_rolling_purge(ctx):
         assert ledger_reports.purge_expired(s, 30, now=now) == 1
         assert s.get(LedgerReport, "fresh") is None
         assert s.get(LedgerReport, "old") is not None
+
+
+class StateEngine(Engine):
+    """Engine exposing account state and the strict simulation entry."""
+
+    def __init__(self, nonce=0, balance=10**30, trace_error=None):
+        super().__init__()
+        self.state = (nonce, balance)
+        self.trace_error = trace_error
+
+    def get_account_state(self, address, block):
+        return self.state
+
+    def simulate_and_check_with_edges_strict(self, call_object, **kw):
+        if self.trace_error:
+            raise SimulationFailed(self.trace_error)
+        return self.simulate_and_check_with_edges(call_object, **kw)
+
+
+def _use(ctx, engine):
+    client = ctx[0]
+    client.app.dependency_overrides[get_risk_engine] = lambda: engine
+    return client
+
+
+def test_account_state_ok(ctx):
+    client = _use(ctx, StateEngine(nonce=0))
+    assert client.post("/ethereum/scan/tx", json=_tx()).status_code == 200
+
+
+def test_nonce_too_low_is_422_code_3(ctx):
+    client = _use(ctx, StateEngine(nonce=41))  # fixture tx nonce is 0x28=40
+    r = client.post("/ethereum/scan/tx", json=_tx())
+    assert r.status_code == 422 and r.json()["code"] == 3
+    assert "nonce" in r.json()["message"]
+
+
+def test_nonce_equal_or_higher_than_state_is_accepted(ctx):
+    client = _use(ctx, StateEngine(nonce=40))
+    assert client.post("/ethereum/scan/tx", json=_tx()).status_code == 200
+
+
+def test_insufficient_funds_is_422_code_3(ctx):
+    client = _use(ctx, StateEngine(balance=1))
+    r = client.post("/ethereum/scan/tx", json=_tx())
+    assert r.status_code == 422 and r.json()["code"] == 3
+    assert "insufficient funds" in r.json()["message"]
+
+
+@pytest.mark.parametrize(
+    "err",
+    [
+        "{'code': -32000, 'message': 'intrinsic gas too low: have 21000, want 22580'}",
+        "{'code': -32000, 'message': 'tip higher than fee cap: tipCap: 2, feeCap: 1'}",
+    ],
+)
+def test_node_rejection_is_422_code_3(ctx, err):
+    client = _use(ctx, StateEngine(trace_error=err))
+    r = client.post("/ethereum/scan/tx", json=_tx())
+    assert r.status_code == 422 and r.json()["code"] == 3
+
+
+def test_other_trace_failure_is_500_code_100(ctx):
+    client = _use(ctx, StateEngine(trace_error="Connection refused"))
+    r = client.post("/ethereum/scan/tx", json=_tx())
+    assert r.status_code == 500 and r.json()["code"] == 100

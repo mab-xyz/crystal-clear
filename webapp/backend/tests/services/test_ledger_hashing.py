@@ -99,3 +99,13 @@ def test_solana_decode():
         lh.solana_decode("0OIl")
     with pytest.raises(ValueError):
         lh.solana_decode("1111", 32)
+
+
+def test_evm_tx_fields_typed_and_legacy():
+    raw = json.loads((FIX / "ledger_eth_tx.json").read_text())["tx"]["raw"]
+    f = lh.evm_tx_fields(raw)
+    assert f == {"nonce": 0x28, "fee": 0x12C44E32BA, "gas": 0x9FE8, "value": 0}
+    legacy = rlp.encode([b"\x07", b"\x05", b"\x52\x08", b"\x11" * 20, b"\x09", b""])
+    assert lh.evm_tx_fields("0x" + legacy.hex()) == {
+        "nonce": 7, "fee": 5, "gas": 0x5208, "value": 9,
+    }
