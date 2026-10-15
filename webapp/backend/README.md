@@ -200,3 +200,17 @@ Redis, fail-open to per-process memory), answering `429` + `Retry-After`:
 
 `RATE_LIMIT_ENABLED=false` disables. `/`, `/health*` are exempt. The client IP
 comes from `X-Real-IP` only when the peer is the local nginx.
+
+### API key usage
+
+Every authenticated, non-rate-limited request increments Redis counters
+(`usage:<UTC day>` hash, one pipeline per request; 100-day TTL), so reading
+usage costs N small hash reads for N days, independent of traffic:
+
+- `GET /keys/usage?days=7` (admin key): per key `total`, `scan`, 2xx/4xx/5xx,
+  per-day totals, joined with key name/id; sorted by usage.
+- `GET /keys/usage/me?days=7` (any valid key): the caller's own numbers.
+
+Key files on pellow are JSON in `~/.config/crystal-clear/keys/<name>.json`
+(`id`, `name`, `prefix`, `created_at`, `environment`, `key`; mode 600) so they
+carry rotation metadata. `~/bin/key-usage [days]` prints one line per file.

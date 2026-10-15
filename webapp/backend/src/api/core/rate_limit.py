@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from src.api.core.config import settings
+from src.api.core.key_usage import UsageStore
 
 WINDOW_SECONDS = 60
 EXEMPT_PATHS = {"/", "/health", "/ping"}
@@ -38,6 +39,10 @@ class RateLimiter:
         self._clock = clock
         self._mem: dict[tuple[str, int], int] = {}
         self._warned = False
+
+    @property
+    def redis(self) -> Any | None:
+        return self._redis
 
     def _window(self) -> tuple[int, int]:
         now = int(self._clock())
@@ -79,6 +84,7 @@ class RateLimiter:
 
 
 _limiter: RateLimiter | None = None
+_usage: UsageStore | None = None
 
 
 def get_limiter() -> RateLimiter:
@@ -93,6 +99,19 @@ def get_limiter() -> RateLimiter:
             logger.warning("rate limiter without redis: {}", exc)
         _limiter = RateLimiter(redis)
     return _limiter
+
+
+def get_usage() -> UsageStore:
+    global _usage
+    if _usage is None:
+        _usage = UsageStore(get_limiter().redis)
+    return _usage
+
+
+def presented_key(request: Request) -> str | None:
+    return request.headers.get(settings.api_key_header) or request.query_params.get(
+        "api_key"
+    )
 
 
 def client_ip(request: Request) -> str:
@@ -119,7 +138,7 @@ async def rate_limit_middleware(request: Request, call_next):
 
     limiter = get_limiter()
     ip = client_ip(request)
-    api_key = request.headers.get(settings.api_key_header)
+    api_key = presented_key(request)
 
     if await limiter.count(f"authfail:{ip}") >= settings.rate_limit_authfail_per_min:
         return _limited(WINDOW_SECONDS)
@@ -146,6 +165,11 @@ async def rate_limit_middleware(request: Request, call_next):
         return _limited(retry)
 
     response = await call_next(request)
-    if response.status_code == 401:
+    code = response.status_code
+    if code in (401, 403):  # missing (401) or invalid/revoked (403) key
         await limiter.hit(f"authfail:{ip}", settings.rate_limit_authfail_per_min)
+    elif api_key and bucket != "report":
+        await get_usage().record(
+            api_key[:8], scan=bucket == "scan", status=code
+        )
     return response

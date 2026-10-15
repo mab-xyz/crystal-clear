@@ -75,6 +75,10 @@ def app_client(monkeypatch):
     async def health():
         return {"status": "healthy"}
 
+    @app.get("/forbidden")
+    async def forbidden():
+        return JSONResponse({"detail": "Invalid or revoked API key"}, status_code=403)
+
     @app.get("/secure")
     async def secure():
         return JSONResponse({"detail": "API key required"}, status_code=401)
@@ -120,3 +124,8 @@ def test_rotating_fake_keys_get_locked_out_by_auth_failures(app_client):
 def test_disabled_flag_bypasses(app_client, monkeypatch):
     monkeypatch.setattr(settings, "rate_limit_enabled", False)
     assert all(app_client.get(f"/r/{i}").status_code == 200 for i in range(10))
+
+
+def test_invalid_keys_403_also_count_as_auth_failures(app_client):
+    codes = [app_client.get("/forbidden", headers={"X-API-Key": f"bad{i}"}).status_code for i in range(4)]
+    assert codes == [403, 403, 429, 429]

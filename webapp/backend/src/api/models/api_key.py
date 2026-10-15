@@ -40,3 +40,20 @@ class ApiKeyListResponse(SQLModel):
     total: int
     items: list[ApiKeyResponse]
 
+
+
+class KeyUsageResponse(SQLModel):
+    prefix: str
+    id: Optional[int] = None
+    name: Optional[str] = None
+    total: int = 0
+    scan: int = 0
+    ok_2xx: int = 0
+    client_error_4xx: int = 0
+    server_error_5xx: int = 0
+    by_day: dict[str, int] = {}
+
+
+class KeyUsageListResponse(SQLModel):
+    days: int
+    keys: list[KeyUsageResponse]

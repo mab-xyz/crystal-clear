@@ -36,6 +36,14 @@ RAW = (
 )
 
 
+def read_key(name: str) -> str:
+    """Key from ``keys/<name>.json`` (``{"key": ...}``), legacy ``<name>.key``."""
+    js = CONF / "keys" / f"{name}.json"
+    if js.exists():
+        return json.loads(js.read_text())["key"]
+    return (CONF / f"{name}.key").read_text().strip()
+
+
 def call(method: str, url: str, key: str | None = None, body: dict | None = None):
     req = urllib.request.Request(url, method=method)
     req.add_header("Accept", "application/json")
@@ -64,7 +72,7 @@ def read_der(buf: bytes, i: int):
 
 
 def check() -> None:
-    key = (CONF / "ledger-probe.key").read_text().strip()
+    key = read_key("ledger-probe")
     pub = (CONF / "ledger-public-key.hex").read_text().strip()
     status, js = call("POST", f"{BASE}/ethereum/scan/tx", key,
                       {"tx": {"from": FROM, "raw": RAW}, "chain": 1})
