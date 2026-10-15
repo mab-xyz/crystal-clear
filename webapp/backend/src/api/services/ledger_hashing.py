@@ -123,3 +123,30 @@ def evm_tx_fields(raw_hex: str) -> dict[str, int]:
         return {"nonce": num(i[1]), "fee": num(i[2]), "gas": num(i[3]), "value": num(i[5])}
     # types 2/3/4: [chain, nonce, tip, maxFee, gas, to, value, ...]
     return {"nonce": num(i[1]), "fee": num(i[3]), "gas": num(i[4]), "value": num(i[6])}
+
+
+SIMULATION_GAS = 30_000_000
+
+
+def with_own_gas(raw_hex: str, gas: int = SIMULATION_GAS) -> str:
+    """Unsigned re-encoding of ``raw_hex`` with our own gas parameters.
+
+    The spec asks the partner to use its own gas parameters: gas limit is
+    ``gas`` and all fee fields are 0 (no base-fee/balance gating). Only for
+    simulation; ``evm_tx_hash`` is always computed on the original payload.
+    """
+    raw = _hex_to_bytes(raw_hex)
+    g = gas.to_bytes((gas.bit_length() + 7) // 8, "big")
+    if raw[0] >= 0xC0:  # legacy: [nonce, gasPrice, gas, to, value, data, ...]
+        i = rlp.decode(raw)
+        out = rlp.encode([i[0], b"", g, i[3], i[4], i[5]])
+        return "0x" + out.hex()
+    t = raw[0]
+    if t not in _UNSIGNED_LEN:
+        raise UnsupportedPayload(f"unsupported transaction type 0x{t:02x}")
+    i = rlp.decode(raw[1:])[: _UNSIGNED_LEN[t]]
+    if t == 1:  # [chain, nonce, gasPrice, gas, ...]
+        i[2], i[3] = b"", g
+    else:  # [chain, nonce, tip, maxFee, gas, ...]
+        i[2], i[3], i[4] = b"", b"", g
+    return "0x" + (bytes([t]) + rlp.encode(i)).hex()

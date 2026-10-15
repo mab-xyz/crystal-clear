@@ -301,10 +301,26 @@ def test_nonce_equal_or_higher_than_state_is_accepted(ctx):
 
 
 def test_insufficient_funds_is_422_code_3(ctx):
-    client = _use(ctx, StateEngine(balance=1))
-    r = client.post("/ethereum/scan/tx", json=_tx())
+    # fixture tx sends value 0, so balance only matters for value transfers
+    client = _use(ctx, StateEngine(balance=0))
+    assert client.post("/ethereum/scan/tx", json=_tx()).status_code == 200
+    body = _tx()
+    body["tx"]["raw"] = "0x" + lh.with_own_gas(body["tx"]["raw"])[2:]
+    items = __import__("rlp").decode(bytes.fromhex(body["tx"]["raw"][4:]))
+    items[6] = b"\x01"  # value = 1 wei
+    body["tx"]["raw"] = "0x02" + __import__("rlp").encode(items).hex()
+    r = client.post("/ethereum/scan/tx", json=body)
     assert r.status_code == 422 and r.json()["code"] == 3
     assert "insufficient funds" in r.json()["message"]
+
+
+def test_simulation_uses_own_gas_parameters(ctx):
+    client, engine, _, _ = ctx
+    assert client.post("/ethereum/scan/tx", json=_tx()).status_code == 200
+    call = engine.calls[0][0]
+    assert int(call["gas"], 16) == lh.SIMULATION_GAS
+    assert int(call["maxFeePerGas"], 16) == 0
+    assert int(call["maxPriorityFeePerGas"], 16) == 0
 
 
 @pytest.mark.parametrize(

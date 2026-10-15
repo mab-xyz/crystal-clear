@@ -11,6 +11,12 @@ from typing import Optional
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.utils import (
+    decode_dss_signature,
+    encode_dss_signature,
+)
+
+_SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
 STRUCTURE_TYPE = 0x01
 VERSION = 0x02
@@ -129,7 +135,10 @@ def sign_descriptor(
 ) -> bytes:
     """Full descriptor: signed TLV fields followed by DER_SIGNATURE."""
     body = encode_fields(f)
-    sig = key.sign(body, ec.ECDSA(hashes.SHA256()))
+    r, s = decode_dss_signature(key.sign(body, ec.ECDSA(hashes.SHA256())))
+    if s > _SECP256K1_N // 2:  # canonical low-S
+        s = _SECP256K1_N - s
+    sig = encode_dss_signature(r, s)
     return body + tlv(DER_SIGNATURE, sig)
 
 

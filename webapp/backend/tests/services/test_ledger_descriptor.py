@@ -77,3 +77,15 @@ def test_limits_enforced():
         ld.encode_fields(_fields(tx_hash=b"\x00" * 31))
     with pytest.raises(ValueError):
         ld.encode_fields(_fields(risk=3))
+
+
+def test_signatures_are_low_s_and_verify():
+    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+
+    key = ld.load_private_key("33" * 32)
+    pub = ld.public_key_compressed_hex(key)
+    for n in range(40):  # ~half of raw signatures would be high-S
+        desc = ld.sign_descriptor(_fields(tx_hash=bytes([n]) * 32), key)
+        assert ld.verify_descriptor(desc, pub)
+        _, s = decode_dss_signature(ld.parse_descriptor(desc)[ld.DER_SIGNATURE])
+        assert s <= ld._SECP256K1_N // 2

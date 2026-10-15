@@ -127,7 +127,7 @@ def _precheck_account(
     nonce, balance = state(sender, block)
     if f["nonce"] < nonce:
         raise _CannotRun("Simulation cannot be run: field nonce is incorrect")
-    if balance < f["value"] + f["gas"] * f["fee"]:
+    if balance < f["value"]:  # we use our own gas params: fees are not charged
         raise _CannotRun("Simulation cannot be run: insufficient funds")
 
 
@@ -167,7 +167,10 @@ async def _simulate(
     strict = _StrictEngine(risk_engine)
     sim = await get_tx_risk_from_raw(
         RawTxRiskRequest(
-            raw_tx=raw_hex, sender_address=sender, block_tag=hex(block)
+            # spec: partner uses its own gas parameters
+            raw_tx=lh.with_own_gas(raw_hex) if check_account else raw_hex,
+            sender_address=sender,
+            block_tag=hex(block),
         ),
         risk_engine=strict,  # type: ignore[arg-type]
         session=session,

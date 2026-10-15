@@ -109,3 +109,25 @@ def test_evm_tx_fields_typed_and_legacy():
     assert lh.evm_tx_fields("0x" + legacy.hex()) == {
         "nonce": 7, "fee": 5, "gas": 0x5208, "value": 9,
     }
+
+
+def test_with_own_gas_zeroes_fees_sets_gas_and_keeps_rest():
+    raw = json.loads((FIX / "ledger_eth_tx.json").read_text())["tx"]["raw"]
+    out = lh.with_own_gas(raw)
+    f = lh.evm_tx_fields(out)
+    assert f["fee"] == 0 and f["gas"] == lh.SIMULATION_GAS
+    assert f["nonce"] == 0x28 and f["value"] == 0
+    a = rlp.decode(bytes.fromhex(raw[4:]))
+    b = rlp.decode(bytes.fromhex(out[4:]))
+    assert a[0:2] == b[0:2] and a[5:] == b[5:]  # chain, nonce, to, value, data...
+    assert b[2] == b"" and b[3] == b""
+
+
+def test_with_own_gas_strips_signature_and_handles_legacy():
+    raw = json.loads((FIX / "ledger_eth_tx.json").read_text())["tx"]["raw"]
+    items = rlp.decode(bytes.fromhex(raw[4:]))
+    signed = "0x02" + rlp.encode(items + [b"\x01", b"\x02" * 32, b"\x03" * 32]).hex()
+    assert lh.with_own_gas(signed) == lh.with_own_gas(raw)
+    legacy = rlp.encode([b"\x07", b"\x05", b"\x52\x08", b"\x11" * 20, b"\x09", b"\xab"])
+    f = lh.evm_tx_fields(lh.with_own_gas("0x" + legacy.hex()))
+    assert f == {"nonce": 7, "fee": 0, "gas": lh.SIMULATION_GAS, "value": 9}
