@@ -299,3 +299,55 @@ class TestBuildRequestLogger:
         ]
         assert len(github_backends) == 1
         assert github_backends[0]._repo == "custom/repo"
+
+
+class TestSensitiveRequests:
+    def _record(self, path="/ethereum/scan/tx", body=b'{"tx":{"raw":"0xabc"}}'):
+        return RequestRecord(
+            timestamp=datetime(2026, 10, 15, tzinfo=timezone.utc),
+            method="POST", path=path, query_string="api_key=secret",
+            headers={"x-api-key": "abcd1234"}, request_body=body,
+            status_code=200, response_time_ms=3.0,
+        )
+
+    @pytest.mark.parametrize("path,expected", [
+        ("/ethereum/scan/tx", True), ("/ethereum/scan/eip-712", True),
+        ("/solana/scan/tx", True), ("/ethereum/tx-risk-raw", False),
+        ("/r/abc", False), ("/keys/", False), ("/scan/tx", False),
+    ])
+    def test_is_sensitive_path(self, path, expected):
+        from src.api.services.request_logger import is_sensitive_path
+        assert is_sensitive_path(path) is expected
+
+    def test_scan_requests_are_metadata_only_and_never_leave_the_host(self):
+        from src.api.services.request_logger import RequestLogger, StorageBackend
+
+        class Spy(StorageBackend):
+            def __init__(self, external):
+                self.external, self.saved = external, []
+
+            async def save(self, record):
+                self.saved.append(record)
+
+        local, remote = Spy(False), Spy(True)
+        logger_ = RequestLogger([local, remote])
+        asyncio.run(logger_.log(self._record()))
+        assert remote.saved == []
+        d = local.saved[0].to_dict()
+        assert d["request_body"] is None and d["query_string"] == ""
+        assert d["path"] == "/ethereum/scan/tx" and d["status_code"] == 200
+
+    def test_other_requests_unchanged(self):
+        from src.api.services.request_logger import RequestLogger, StorageBackend
+
+        class Spy(StorageBackend):
+            def __init__(self, external):
+                self.external, self.saved = external, []
+
+            async def save(self, record):
+                self.saved.append(record)
+
+        local, remote = Spy(False), Spy(True)
+        asyncio.run(RequestLogger([local, remote]).log(self._record("/ethereum/tx-risk-raw")))
+        assert len(local.saved) == len(remote.saved) == 1
+        assert local.saved[0].to_dict()["request_body"] is not None

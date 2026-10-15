@@ -11,6 +11,7 @@ Backends:
 import asyncio
 import base64
 import json
+import re
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
@@ -70,11 +71,40 @@ class RequestRecord:
 
 
 # ---------------------------------------------------------------------------
+# Sensitive requests (Ledger scans carry end-user transactions / messages)
+# ---------------------------------------------------------------------------
+
+_SENSITIVE_PATH = re.compile(r"^/[^/]+/scan/")
+
+
+def is_sensitive_path(path: str) -> bool:
+    """True for requests whose body is end-user data we must not retain."""
+    return bool(_SENSITIVE_PATH.match(path))
+
+
+def redact(record: RequestRecord) -> RequestRecord:
+    """Metadata-only copy: no body, no query string."""
+    return RequestRecord(
+        timestamp=record.timestamp,
+        method=record.method,
+        path=record.path,
+        query_string="",
+        headers=record.headers,
+        request_body=b"",
+        status_code=record.status_code,
+        response_time_ms=record.response_time_ms,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Abstract backend
 # ---------------------------------------------------------------------------
 
 
 class StorageBackend(ABC):
+    #: True when records leave this host (never receives sensitive requests)
+    external: bool = False
+
     @abstractmethod
     async def save(self, record: RequestRecord) -> None:
         """Persist *record*.  Must not raise – log and swallow errors."""
@@ -123,6 +153,7 @@ class GitHubBackend(StorageBackend):
     """
 
     _API_ROOT = "https://api.github.com"
+    external = True
 
     def __init__(self, token: str, repo: str = "mab-xyz/database") -> None:
         self._token = token
@@ -207,11 +238,16 @@ class RequestLogger:
         self._backends = backends
 
     async def log(self, record: RequestRecord) -> None:
+        backends = self._backends
+        if is_sensitive_path(record.path):
+            # keep local metadata only; nothing leaves the host
+            record = redact(record)
+            backends = [b for b in backends if not b.external]
         results = await asyncio.gather(
-            *[b.save(record) for b in self._backends],
+            *[b.save(record) for b in backends],
             return_exceptions=True,
         )
-        for backend, result in zip(self._backends, results):
+        for backend, result in zip(backends, results):
             if isinstance(result, Exception):
                 logger.warning(
                     f"RequestLogger: backend "
