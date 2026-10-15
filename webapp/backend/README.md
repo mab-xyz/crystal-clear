@@ -154,3 +154,30 @@ curl -X DELETE https://https://api.mab.xyz/keys/4 \
          -H "X-API-Key: ${ROOT_API_KEY}"
 ```
 
+
+## Ledger Web3checks on-device API
+
+Implements OpenAPI *Web3checks on device* v0.0.11 (`POST /{family}/scan/tx`,
+`POST /ethereum/scan/eip-712`, same `X-API-Key` auth). Mainnet only; Solana
+answers `422 code 2`. Responses carry a signed TLV descriptor whose tiny URL
+points to `GET /r/{id}` (public, 8-char id, deleted 30 days after last access).
+
+```
+LEDGER_SIGNER_PRIVATE_KEY_HEX=<32-byte secp256k1 key, hex>
+LEDGER_PUBLIC_KEY_ID=<partner name registered at Ledger>
+LEDGER_REPORT_BASE_URL=https://<short-host>/r   # full URL must be <= 30 chars
+LEDGER_REPORT_RETENTION_DAYS=30
+```
+
+Test keypair (spec commands; never commit the private key):
+
+```bash
+openssl ecparam -name secp256k1 -genkey -noout -out private_key.pem
+openssl ec -in private_key.pem -outform DER | tail -c +8 | head -c 32 | xxd -p -c 32 > private_key.hex
+openssl ec -in private_key.pem -pubout -conv_form compressed -outform DER | tail -c 33 | xxd -p -c 65 > public_key.hex
+```
+
+Verdict mapping: unverified contract / unverified EIP-7702 delegate → Threat;
+contract never interacted with by anyone → Risk; first time for this sender
+only → Benign; incomplete history → Risk (Others). EIP-712 is assessed through
+its `verifyingContract`.

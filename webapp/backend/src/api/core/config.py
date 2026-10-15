@@ -66,6 +66,20 @@ class Settings(BaseSettings):
         60 * 60 * 24 * 180, alias="FIRST_TIME_CACHE_TTL_SECONDS"
     )
 
+    # Ledger Web3checks on-device API
+    ledger_signer_private_key_hex: str | None = Field(
+        default=None, alias="LEDGER_SIGNER_PRIVATE_KEY_HEX"
+    )
+    ledger_public_key_id: str = Field(
+        "crystal_clear", alias="LEDGER_PUBLIC_KEY_ID"
+    )
+    ledger_report_base_url: str = Field(
+        "https://cc.example/r", alias="LEDGER_REPORT_BASE_URL"
+    )
+    ledger_report_retention_days: int = Field(
+        30, alias="LEDGER_REPORT_RETENTION_DAYS"
+    )
+
     # Neo4j interaction graph
     neo4j_uri: str | None = Field(default=None, alias="NEO4J_URI")
     neo4j_user: str = Field("neo4j", alias="NEO4J_USER")

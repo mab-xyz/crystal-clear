@@ -11,10 +11,14 @@ from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 
 from src.api.core.config import settings
-from src.api.core.database import create_db_and_tables
+from loguru import logger
+from sqlmodel import Session
+
+from src.api.core.database import create_db_and_tables, engine
+from src.api.services import ledger_reports
 from src.api.core.logging import setup_logging
 from src.api.routers import analysis, audit, contract, health, info, repository
-from src.api.routers import keys
+from src.api.routers import keys, web3checks
 from src.api.core.security import require_api_key
 from src.api.services.request_logger import RequestRecord, build_request_logger
 
@@ -43,14 +47,28 @@ def _sanitize_headers_for_logging(headers: list[tuple[str, str]]) -> dict[str, s
     return sanitized
 
 
+async def _purge_ledger_reports_loop() -> None:
+    """Rolling retention for Ledger report URLs (at startup, then hourly)."""
+    while True:
+        try:
+            with Session(engine) as session:
+                ledger_reports.purge_expired(
+                    session, settings.ledger_report_retention_days
+                )
+        except Exception as exc:  # noqa: BLE001 - never kill the loop
+            logger.warning("ledger report purge failed: {}", exc)
+        await asyncio.sleep(3600)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: create tables
     create_db_and_tables()
+    purge_task = asyncio.create_task(_purge_ledger_reports_loop())
     redis = aioredis.from_url(settings.cache_url)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     yield
-    # Shutdown: add cleanup here if needed
+    purge_task.cancel()
 
 
 # Create FastAPI app
@@ -146,6 +164,10 @@ app.include_router(
     dependencies=[Depends(require_api_key)],
     include_in_schema=False,
 )
+app.include_router(
+    web3checks.router, dependencies=[Depends(require_api_key)]
+)
+app.include_router(web3checks.public_router)
 
 
 @app.get("/")

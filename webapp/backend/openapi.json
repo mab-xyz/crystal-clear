@@ -81,6 +81,248 @@
           }
         }
       }
+    },
+    "/v1/analysis/tx-risk-hash/{tx_hash}": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Transaction risk: from existing on-chain transaction",
+        "description": "Fetch an existing mainnet transaction by hash, simulate it at its block, list all touched contracts (including DELEGATECALL), and report risk identically to tx-risk-raw.",
+        "operationId": "get_tx_risk_hash_v1_analysis_tx_risk_hash__tx_hash__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          },
+          {
+            "APIKeyQuery": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tx_hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tx Hash"
+            }
+          },
+          {
+            "name": "interaction_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "sender_direct",
+                    "sender_transitive",
+                    "contract_direct",
+                    "contract_transitive"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Interaction type to check",
+              "title": "Interaction Type"
+            },
+            "description": "Interaction type to check"
+          },
+          {
+            "name": "latest_offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limit first-time checks to N latest blocks",
+              "default": 100,
+              "title": "Latest Offset"
+            },
+            "description": "Limit first-time checks to N latest blocks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{family}/scan/tx": {
+      "post": {
+        "tags": [
+          "transaction"
+        ],
+        "summary": "Submit a transaction for simulation and validation",
+        "operationId": "scan_tx__family__scan_tx_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          },
+          {
+            "APIKeyQuery": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TxScanInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input fields do not pass validation"
+          },
+          "401": {
+            "description": "API key is missing or invalid"
+          },
+          "422": {
+            "description": "Not supported (2) or cannot be run (3)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error"
+          }
+        }
+      }
+    },
+    "/{family}/scan/eip-712": {
+      "post": {
+        "tags": [
+          "EIP-712"
+        ],
+        "summary": "Submit an EIP-712 typed message for simulation and validation",
+        "operationId": "scan_eip712__family__scan_eip_712_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          },
+          {
+            "APIKeyQuery": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "family",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Eip712ScanInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input fields do not pass validation"
+          },
+          "401": {
+            "description": "API key is missing or invalid"
+          },
+          "422": {
+            "description": "Not supported (2) or cannot be run (3)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -379,6 +621,173 @@
         ],
         "title": "SimulationResultItem",
         "description": "Risk analysis result for a single contract touched during the transaction."
+      },
+      "Eip712Input": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "title": "From"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from",
+          "data"
+        ],
+        "title": "Eip712Input"
+      },
+      "Eip712ScanInput": {
+        "properties": {
+          "msg": {
+            "$ref": "#/components/schemas/Eip712Input"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "block": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block"
+          }
+        },
+        "type": "object",
+        "required": [
+          "msg"
+        ],
+        "title": "Eip712ScanInput"
+      },
+      "ProviderError": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ProviderError"
+      },
+      "ScanResponse": {
+        "properties": {
+          "public_key_id": {
+            "type": "string",
+            "title": "Public Key Id"
+          },
+          "descriptor": {
+            "type": "string",
+            "title": "Descriptor"
+          },
+          "block": {
+            "type": "integer",
+            "title": "Block"
+          },
+          "simulation": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Simulation",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_key_id",
+          "descriptor",
+          "block"
+        ],
+        "title": "ScanResponse"
+      },
+      "TxInput": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "title": "From",
+            "description": "Signer address"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw",
+            "description": "Unsigned tx: RLP hex (EVM) / base58 message (Solana)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from",
+          "raw"
+        ],
+        "title": "TxInput"
+      },
+      "TxScanInput": {
+        "properties": {
+          "tx": {
+            "$ref": "#/components/schemas/TxInput"
+          },
+          "chain": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chain",
+            "description": "EVM chain id (required for ethereum); Solana 900/901/902"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "block": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block",
+            "description": "Block (EVM) / slot (Solana); tests only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tx"
+        ],
+        "title": "TxScanInput"
       }
     },
     "securitySchemes": {

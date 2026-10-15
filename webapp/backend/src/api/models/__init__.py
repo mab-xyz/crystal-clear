@@ -7,6 +7,7 @@ from src.api.models.interaction_scan_hot import InteractionScanHot
 from src.api.models.interaction_scan_state import InteractionScanState
 from src.api.models.deployment import Deployment
 from src.api.models.label import Label
+from src.api.models.ledger_report import LedgerReport
 from src.api.models.repository import Repository
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "InteractionScanState",
     "Deployment",
     "Label",
+    "LedgerReport",
     "Repository",
 ]
