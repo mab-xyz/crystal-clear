@@ -5,18 +5,17 @@ from pathlib import Path
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from src.api.core.config import settings
 from src.api.core.database import get_session
 from src.api.integrations.crystal_clear_adapter import SimulationFailed
-from src.api.integrations.crystal_clear_adapter import get_risk_engine
 from src.api.models.ledger_report import LedgerReport
 from src.api.routers import analysis, web3checks
 from src.api.services import ledger_descriptor as ld
 from src.api.services import ledger_hashing as lh
 from src.api.services import ledger_reports
+from src.api.services.ledger_engine_pool import EnginePool, get_ledger_pool
 
 FIX = Path(__file__).parent.parent / "fixtures"
 KEY_HEX = "22" * 32
@@ -49,11 +48,11 @@ class Engine:
 
 
 @pytest.fixture
-def ctx(monkeypatch):
+def ctx(monkeypatch, tmp_path):
+    # file DB + one connection per session, like Postgres in production
     db = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
+        f"sqlite:///{tmp_path}/t.db",
+        connect_args={"check_same_thread": False, "timeout": 30},
     )
     SQLModel.metadata.create_all(db)
     monkeypatch.setattr(settings, "ledger_signer_private_key_hex", KEY_HEX)
@@ -74,7 +73,9 @@ def ctx(monkeypatch):
             yield s
 
     app.dependency_overrides[get_session] = _session
-    app.dependency_overrides[get_risk_engine] = lambda: engine
+    app.dependency_overrides[get_ledger_pool] = lambda: EnginePool(
+        lambda: engine, 2, 1.0
+    )
     return TestClient(app), engine, state, db
 
 
@@ -277,9 +278,16 @@ class StateEngine(Engine):
         return self.simulate_and_check_with_edges(call_object, **kw)
 
 
+_POOLS: dict[int, EnginePool] = {}
+
+
+def _pool_for(engine, size=2, timeout=1.0):
+    return _POOLS.setdefault(id(engine), EnginePool(lambda: engine, size, timeout))
+
+
 def _use(ctx, engine):
     client = ctx[0]
-    client.app.dependency_overrides[get_risk_engine] = lambda: engine
+    client.app.dependency_overrides[get_ledger_pool] = lambda: _pool_for(engine)
     return client
 
 
@@ -361,3 +369,52 @@ def test_revert_does_not_downgrade_threat(ctx):
     p = _parsed(_use(ctx, engine).post("/ethereum/scan/tx", json=_tx()))
     assert p[ld.W3C_NORMALIZED_RISK] == b"\x02"
     assert p[ld.W3C_NORMALIZED_CATEGORY] == b"\x03"
+
+
+class BlockingEngine(StateEngine):
+    """Simulation waits at a barrier: passes only if requests overlap."""
+
+    def __init__(self, barrier=None, gate=None):
+        super().__init__()
+        self.barrier, self.gate = barrier, gate
+
+    def simulate_and_check_with_edges_strict(self, call_object, **kw):
+        if self.barrier is not None:
+            self.barrier.wait(timeout=5)
+        if self.gate is not None:
+            self.gate.wait(timeout=5)
+        return self.simulate_and_check_with_edges(call_object, **kw)
+
+
+def test_scans_run_in_parallel_up_to_pool_size(ctx):
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    engine = BlockingEngine(barrier=threading.Barrier(2))
+    client = ctx[0]
+    pool = EnginePool(lambda: engine, 2, 2.0)
+    client.app.dependency_overrides[get_ledger_pool] = lambda: pool
+    with ThreadPoolExecutor(2) as ex:
+        codes = list(ex.map(lambda _: client.post("/ethereum/scan/tx", json=_tx()).status_code, range(2)))
+    assert codes == [200, 200]  # a serialized server would deadlock the barrier
+
+
+def test_pool_is_bounded_and_overflow_gets_503_code_100(ctx):
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    gate = threading.Event()
+    engine = BlockingEngine(gate=gate)
+    client = ctx[0]
+    pool = EnginePool(lambda: engine, 1, 0.2)
+    client.app.dependency_overrides[get_ledger_pool] = lambda: pool
+    with ThreadPoolExecutor(2) as ex:
+        first = ex.submit(lambda: client.post("/ethereum/scan/tx", json=_tx()))
+        import time
+
+        time.sleep(0.5)  # first request now holds the only slot
+        second = client.post("/ethereum/scan/tx", json=_tx())
+        gate.set()
+        assert first.result().status_code == 200
+    assert second.status_code == 503 and second.json()["code"] == 100
+    assert client.post("/ethereum/scan/tx", json=_tx()).status_code == 200  # slot freed

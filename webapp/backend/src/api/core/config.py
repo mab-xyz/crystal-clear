@@ -80,6 +80,26 @@ class Settings(BaseSettings):
         30, alias="LEDGER_REPORT_RETENTION_DAYS"
     )
 
+    # Ledger endpoints: bounded parallel simulations (one SDK client each)
+    ledger_max_concurrency: int = Field(4, alias="LEDGER_MAX_CONCURRENCY")
+    ledger_queue_timeout_seconds: float = Field(
+        20.0, alias="LEDGER_QUEUE_TIMEOUT_SECONDS"
+    )
+
+    # Rate limiting (requests per minute; fixed window, shared via Redis)
+    rate_limit_enabled: bool = Field(True, alias="RATE_LIMIT_ENABLED")
+    rate_limit_scan_per_min: int = Field(120, alias="RATE_LIMIT_SCAN_PER_MIN")
+    rate_limit_report_per_min: int = Field(
+        60, alias="RATE_LIMIT_REPORT_PER_MIN"
+    )
+    rate_limit_default_per_min: int = Field(
+        1200, alias="RATE_LIMIT_DEFAULT_PER_MIN"
+    )
+    rate_limit_anon_per_min: int = Field(300, alias="RATE_LIMIT_ANON_PER_MIN")
+    rate_limit_authfail_per_min: int = Field(
+        30, alias="RATE_LIMIT_AUTHFAIL_PER_MIN"
+    )
+
     # Neo4j interaction graph
     neo4j_uri: str | None = Field(default=None, alias="NEO4J_URI")
     neo4j_user: str = Field("neo4j", alias="NEO4J_USER")

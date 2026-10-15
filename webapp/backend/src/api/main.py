@@ -17,6 +17,7 @@ from sqlmodel import Session
 from src.api.core.database import create_db_and_tables, engine
 from src.api.services import ledger_reports
 from src.api.core.logging import setup_logging
+from src.api.core.rate_limit import rate_limit_middleware
 from src.api.routers import analysis, audit, contract, health, info, repository
 from src.api.routers import keys, web3checks
 from src.api.core.security import require_api_key
@@ -90,6 +91,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.middleware("http")(rate_limit_middleware)
 
 
 @app.middleware("http")

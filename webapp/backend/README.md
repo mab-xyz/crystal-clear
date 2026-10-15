@@ -181,3 +181,22 @@ Verdict mapping: unverified contract / unverified EIP-7702 delegate → Threat;
 contract never interacted with by anyone → Risk; first time for this sender
 only → Benign; incomplete history → Risk (Others). EIP-712 is assessed through
 its `verifyingContract`.
+
+### Concurrency and rate limits
+
+Ledger scans run in a bounded pool of `LEDGER_MAX_CONCURRENCY` (default 4)
+engines, each in a worker thread; extra requests wait up to
+`LEDGER_QUEUE_TIMEOUT_SECONDS` (20) and then get `503` with `code 100` and
+`Retry-After`. All endpoints are rate limited (fixed 60 s window, counters in
+Redis, fail-open to per-process memory), answering `429` + `Retry-After`:
+
+| setting | default | scope |
+|---|---|---|
+| `RATE_LIMIT_SCAN_PER_MIN` | 120 | `/{family}/scan/*`, per API key |
+| `RATE_LIMIT_REPORT_PER_MIN` | 60 | `/r/{id}` (unauthenticated by design), per IP |
+| `RATE_LIMIT_DEFAULT_PER_MIN` | 1200 | all other routes, per API key |
+| `RATE_LIMIT_ANON_PER_MIN` | 300 | all other routes without a key, per IP |
+| `RATE_LIMIT_AUTHFAIL_PER_MIN` | 30 | 401 responses per IP, then 429 for that IP |
+
+`RATE_LIMIT_ENABLED=false` disables. `/`, `/health*` are exempt. The client IP
+comes from `X-Real-IP` only when the peer is the local nginx.

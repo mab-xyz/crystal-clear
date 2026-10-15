@@ -6,6 +6,7 @@ descriptor; GET /r/{id} serves the report behind the descriptor's tiny URL.
 
 from __future__ import annotations
 
+import asyncio
 import html
 import json
 import re
@@ -23,7 +24,6 @@ from src.api.core.config import settings
 from src.api.core.database import get_session
 from src.api.integrations.crystal_clear_adapter import (
     SimulationFailed,
-    get_risk_engine,
 )
 from src.api.integrations.risk_engine import RiskEngine
 from src.api.routers.analysis import get_tx_risk_from_raw
@@ -37,6 +37,11 @@ from src.api.schemas.ledger import (
 from src.api.services import ledger_descriptor as ld
 from src.api.services import ledger_hashing as lh
 from src.api.services import ledger_reports
+from src.api.services.ledger_engine_pool import (
+    EnginePool,
+    PoolBusy,
+    get_ledger_pool,
+)
 from src.api.services.ledger_mapping import map_verdict
 
 MAINNET = 1
@@ -226,6 +231,15 @@ def _finish(
 
 
 def _handle_failure(exc: Exception) -> JSONResponse:
+    if isinstance(exc, PoolBusy):
+        return JSONResponse(
+            status_code=503,
+            content={
+                "code": ERR_INTERNAL,
+                "message": "Too many simulations in progress, retry shortly",
+            },
+            headers={"Retry-After": "2"},
+        )
     if isinstance(exc, _CannotRun):
         return _err(422, ERR_CANNOT_RUN, str(exc))
     if isinstance(exc, HTTPException):
@@ -245,7 +259,7 @@ def _handle_failure(exc: Exception) -> JSONResponse:
 async def scan_tx(
     family: str,
     body: TxScanInput,
-    risk_engine: RiskEngine = Depends(get_risk_engine),
+    pool: EnginePool = Depends(get_ledger_pool),
     session: Session = Depends(get_session),
 ):
     if family == "solana":
@@ -276,10 +290,14 @@ async def scan_tx(
         return _err(500, ERR_INTERNAL, "Signer key not configured")
 
     try:
-        block = _resolve_block(risk_engine, body.block)
-        sim, revert_error = await _simulate(
-            body.tx.raw, body.tx.from_, block, risk_engine, session
-        )
+        def job(engine):
+            blk = _resolve_block(engine, body.block)
+            sim_, rev_ = asyncio.run(
+                _simulate(body.tx.raw, body.tx.from_, blk, engine, session)
+            )
+            return blk, sim_, rev_
+
+        block, sim, revert_error = await pool.run(job)
         return _finish(
             session=session, sim=sim, revert_error=revert_error,
             family="ethereum", kind="tx",
@@ -314,7 +332,7 @@ def _unsigned_call_raw(chain_id: int, to: str) -> str:
 async def scan_eip712(
     family: str,
     body: Eip712ScanInput,
-    risk_engine: RiskEngine = Depends(get_risk_engine),
+    pool: EnginePool = Depends(get_ledger_pool),
     session: Session = Depends(get_session),
 ):
     if family != "ethereum":
@@ -336,16 +354,27 @@ async def scan_eip712(
 
     verifying = data.get("domain", {}).get("verifyingContract")
     try:
-        block = _resolve_block(risk_engine, body.block)
-        if isinstance(verifying, str) and verifying.startswith("0x") and len(verifying) == 42:
-            sim, _ = await _simulate(
-                _unsigned_call_raw(chain_id, verifying), body.msg.from_,
-                block, risk_engine, session, check_account=False,
-            )
-        else:  # nothing on-chain to assess
-            from src.api.schemas.analysis import SimulationResponse
+        def job(engine):
+            blk = _resolve_block(engine, body.block)
+            if (
+                isinstance(verifying, str)
+                and verifying.startswith("0x")
+                and len(verifying) == 42
+            ):
+                sim_, _ = asyncio.run(
+                    _simulate(
+                        _unsigned_call_raw(chain_id, verifying),
+                        body.msg.from_, blk, engine, session,
+                        check_account=False,
+                    )
+                )
+            else:  # nothing on-chain to assess
+                from src.api.schemas.analysis import SimulationResponse
 
-            sim = SimulationResponse(status="OK", details=[])
+                sim_ = SimulationResponse(status="OK", details=[])
+            return blk, sim_
+
+        block, sim = await pool.run(job)
         return _finish(
             session=session, sim=sim, family="ethereum", kind="eip-712",
             block=block, key=key,
