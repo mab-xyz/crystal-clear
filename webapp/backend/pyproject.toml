@@ -7,7 +7,9 @@ requires-python = ">=3.12.1,<4"
 
 [tool.poetry.dependencies]
 python = ">=3.12.1,<4"
-fastapi = "^0.128.0"
+fastapi = ">=0.128.0,<1.0"
+starlette = ">=1.3.1"
+jinja2 = ">=3.1"  # imported by fastapi-cache2 via starlette.templating (no longer implied by starlette 1.x)
 loguru = ">=0.7.3,<0.8.0"
 pydantic-settings = ">=2.11.0,<3.0.0"
 web3 = ">=7.13.0,<8.0.0"
