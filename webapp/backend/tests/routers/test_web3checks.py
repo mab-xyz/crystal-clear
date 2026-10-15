@@ -263,6 +263,11 @@ class StateEngine(Engine):
         self.state = (nonce, balance)
         self.trace_error = trace_error
 
+    revert_error = None
+
+    def pop_revert_error(self):
+        return self.revert_error
+
     def get_account_state(self, address, block):
         return self.state
 
@@ -319,3 +324,24 @@ def test_other_trace_failure_is_500_code_100(ctx):
     client = _use(ctx, StateEngine(trace_error="Connection refused"))
     r = client.post("/ethereum/scan/tx", json=_tx())
     assert r.status_code == 500 and r.json()["code"] == 100
+
+
+def test_reverting_tx_is_risk_losing_operation(ctx):
+    engine = StateEngine()
+    engine.revert_error = "Reverted"
+    client = _use(ctx, engine)
+    r = client.post("/ethereum/scan/tx", json=_tx())
+    assert r.status_code == 200
+    p = _parsed(r)
+    assert p[ld.W3C_NORMALIZED_RISK] == b"\x01"
+    assert p[ld.W3C_NORMALIZED_CATEGORY] == b"\x04"
+    assert r.json()["simulation"]["reverted"] == "Reverted"
+
+
+def test_revert_does_not_downgrade_threat(ctx):
+    engine = StateEngine()
+    engine.revert_error = "Reverted"
+    engine.verification = "not-verified"
+    p = _parsed(_use(ctx, engine).post("/ethereum/scan/tx", json=_tx()))
+    assert p[ld.W3C_NORMALIZED_RISK] == b"\x02"
+    assert p[ld.W3C_NORMALIZED_CATEGORY] == b"\x03"

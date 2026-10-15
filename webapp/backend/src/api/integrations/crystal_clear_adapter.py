@@ -1,6 +1,6 @@
 import logging
 from functools import lru_cache
-from threading import RLock
+from threading import RLock, local
 from typing import Any, Mapping
 
 from crystal_clear import CrystalClear
@@ -32,6 +32,20 @@ class _TraceErrorCapture(logging.Handler):
             self.messages.append(msg.split("trace_call:", 1)[-1].strip())
 
 
+def root_trace_error(resp: Any) -> str | None:
+    """Error of the top-level call in a raw ``trace_call`` response."""
+    traces = resp
+    if hasattr(resp, "get"):
+        traces = resp.get("trace") or resp.get("traces") or []
+    if not isinstance(traces, list):
+        return None
+    for tr in traces:
+        if hasattr(tr, "get") and not tr.get("traceAddress"):
+            err = tr.get("error")
+            return str(err) if err else None
+    return None
+
+
 class _NoFirstTimeCache:
     def get_many(self, entries):
         return {entry: False for entry in entries}
@@ -52,6 +66,7 @@ class CrystalClearRiskEngine(RiskEngine):
         )
         self._first_time_cache = FirstInteractionCache()
         self._simulate_lock = RLock()
+        self._tls = local()
         self._client = CrystalClear(
             url=get_eth_node_url(),
             allium_api_key=settings.allium_api_key,
@@ -159,15 +174,33 @@ class CrystalClearRiskEngine(RiskEngine):
         if collector is None:
             raise ValueError("SimulationCollector is not initialized.")
         capture = _TraceErrorCapture()
+        self._tls.revert_error = None
+        tracing = collector.w3.tracing
+        original = tracing.trace_call
+
+        def recording_trace_call(*args: Any, **kw: Any) -> Any:
+            resp = original(*args, **kw)
+            self._tls.revert_error = root_trace_error(resp)
+            return resp
+
         with self._simulate_lock:
             collector.logger.addHandler(capture)
+            tracing.trace_call = recording_trace_call
             try:
                 out = self.simulate_and_check_with_edges(call_object, **kwargs)
             finally:
+                tracing.__dict__.pop("trace_call", None)
                 collector.logger.removeHandler(capture)
         if capture.messages:
             raise SimulationFailed(capture.messages[0])
         return out
+
+    def pop_revert_error(self) -> str | None:
+        """Root-call error (e.g. "Reverted") of the last strict simulation
+        run on this thread, then cleared."""
+        err = getattr(self._tls, "revert_error", None)
+        self._tls.revert_error = None
+        return err
 
     def get_account_state(
         self, address: str, block: int

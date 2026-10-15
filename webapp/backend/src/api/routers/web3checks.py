@@ -95,6 +95,7 @@ class _StrictEngine:
 
     def __init__(self, engine: RiskEngine) -> None:
         self._engine = engine
+        self.revert_error: str | None = None
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._engine, name)
@@ -105,7 +106,10 @@ class _StrictEngine:
         )
         fn = strict or self._engine.simulate_and_check_with_edges
         try:
-            return fn(call_object, **kwargs)
+            out = fn(call_object, **kwargs)
+            pop = getattr(self._engine, "pop_revert_error", None)
+            self.revert_error = pop() if callable(pop) else None
+            return out
         except SimulationFailed as exc:
             if _TX_REJECTED.search(str(exc)):
                 raise _CannotRun(f"Simulation cannot be run: {exc}") from exc
@@ -160,19 +164,22 @@ async def _simulate(
 ):
     if check_account:
         _precheck_account(risk_engine, sender, raw_hex, block)
-    return await get_tx_risk_from_raw(
+    strict = _StrictEngine(risk_engine)
+    sim = await get_tx_risk_from_raw(
         RawTxRiskRequest(
             raw_tx=raw_hex, sender_address=sender, block_tag=hex(block)
         ),
-        risk_engine=_StrictEngine(risk_engine),  # type: ignore[arg-type]
+        risk_engine=strict,  # type: ignore[arg-type]
         session=session,
     )
+    return sim, strict.revert_error
 
 
 def _finish(
     *,
     session: Session,
     sim: Any,
+    revert_error: str | None = None,
     fields: dict[str, Any],
     family: str,
     kind: str,
@@ -180,8 +187,10 @@ def _finish(
     request_json: dict[str, Any],
     key,
 ) -> JSONResponse:
-    verdict = map_verdict(sim.status, sim.danger_reason)
+    verdict = map_verdict(sim.status, sim.danger_reason, revert_error)
     simulation = json.loads(sim.model_dump_json())
+    if revert_error:
+        simulation["reverted"] = revert_error
     report = ledger_reports.store_report(
         session,
         family=family,
@@ -265,9 +274,12 @@ async def scan_tx(
 
     try:
         block = _resolve_block(risk_engine, body.block)
-        sim = await _simulate(body.tx.raw, body.tx.from_, block, risk_engine, session)
+        sim, revert_error = await _simulate(
+            body.tx.raw, body.tx.from_, block, risk_engine, session
+        )
         return _finish(
-            session=session, sim=sim, family="ethereum", kind="tx",
+            session=session, sim=sim, revert_error=revert_error,
+            family="ethereum", kind="tx",
             block=block, key=key,
             request_json=body.model_dump(by_alias=True),
             fields=dict(
@@ -323,7 +335,7 @@ async def scan_eip712(
     try:
         block = _resolve_block(risk_engine, body.block)
         if isinstance(verifying, str) and verifying.startswith("0x") and len(verifying) == 42:
-            sim = await _simulate(
+            sim, _ = await _simulate(
                 _unsigned_call_raw(chain_id, verifying), body.msg.from_,
                 block, risk_engine, session, check_account=False,
             )
