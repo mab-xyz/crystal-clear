@@ -313,7 +313,7 @@ class TestSensitiveRequests:
     @pytest.mark.parametrize("path,expected", [
         ("/ethereum/scan/tx", True), ("/ethereum/scan/eip-712", True),
         ("/solana/scan/tx", True), ("/ethereum/tx-risk-raw", False),
-        ("/r/abc", False), ("/keys/", False), ("/scan/tx", False),
+        ("/r/abc", True), ("/r", False), ("/keys/", False), ("/scan/tx", False),
     ])
     def test_is_sensitive_path(self, path, expected):
         from src.api.services.request_logger import is_sensitive_path

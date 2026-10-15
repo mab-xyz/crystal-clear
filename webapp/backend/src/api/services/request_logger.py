@@ -74,7 +74,9 @@ class RequestRecord:
 # Sensitive requests (Ledger scans carry end-user transactions / messages)
 # ---------------------------------------------------------------------------
 
-_SENSITIVE_PATH = re.compile(r"^/[^/]+/scan/")
+# /{family}/scan/*: user transactions/messages; /r/<id>: the id is an access
+# link to a stored report.
+_SENSITIVE_PATH = re.compile(r"^(/[^/]+/scan/|/r/)")
 
 
 def is_sensitive_path(path: str) -> bool:
