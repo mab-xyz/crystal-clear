@@ -1,25 +1,45 @@
 #!/bin/bash
 # Liveness probe for hung (not crashed) processes. Run every minute by
 # cc-healthcheck.timer. Silent when healthy. After THRESHOLD consecutive
-# failures the unit is restarted and a human is told.
+# failures the unit is restarted (or, for Postgres, only reported) and a
+# human is told.
 THRESHOLD=${THRESHOLD:-3}
 STATE=/run/cc-healthcheck
+notify() { echo "$(hostname): $*" | /usr/local/sbin/cc-notify; }
 
-check() { # name  command...
+# check NAME CMD...  -> returns 1 exactly when NAME has failed THRESHOLD times in a row
+check() {
   local name=$1; shift
   local f="$STATE.$name" n
-  if "$@" >/dev/null 2>&1; then
-    rm -f "$f"; return 0
-  fi
+  if "$@" >/dev/null 2>&1; then rm -f "$f"; return 0; fi
   n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" >"$f"
   logger -t cc-healthcheck -p daemon.warning "$name check failed ($n/$THRESHOLD)"
-  if [ "$n" -ge "$THRESHOLD" ]; then
-    rm -f "$f"
-    logger -t cc-healthcheck -p daemon.err "$name unhealthy for $n checks: restarting"
-    echo "$(hostname): $name failed $n consecutive health checks -- restarting it" | /usr/local/sbin/cc-notify
-    return 1
-  fi
+  [ "$n" -lt "$THRESHOLD" ] && return 0
+  rm -f "$f"; return 1
 }
 
-check redis redis-cli -h 127.0.0.1 ping || systemctl restart redis-server
-check backend curl -fsS -m 10 -o /dev/null http://127.0.0.1:8000/health || systemctl restart crystal-clear-backend
+check redis redis-cli -h 127.0.0.1 ping || {
+  logger -t cc-healthcheck -p daemon.err "redis unhealthy: restarting"
+  notify "redis failed $THRESHOLD consecutive health checks -- restarting it"
+  systemctl restart redis-server
+}
+
+check backend curl -fsS -m 10 -o /dev/null http://127.0.0.1:8000/health || {
+  logger -t cc-healthcheck -p daemon.err "backend unhealthy: restarting"
+  notify "crystal-clear-backend failed $THRESHOLD consecutive health checks -- restarting it"
+  systemctl restart crystal-clear-backend
+  exit 0
+}
+
+# Backend answers but cannot query Postgres. Restarting the backend only helps
+# if Postgres itself is fine (stale connection pool); never restart Postgres.
+check backend_db curl -fsS -m 10 -o /dev/null http://127.0.0.1:8000/health/db || {
+  if pg_isready -q -h /var/run/postgresql; then
+    logger -t cc-healthcheck -p daemon.err "backend cannot use postgres (pg_isready ok): restarting backend"
+    notify "backend DB check failed $THRESHOLD times while Postgres is up -- restarting crystal-clear-backend"
+    systemctl restart crystal-clear-backend
+  else
+    logger -t cc-healthcheck -p daemon.err "postgres not accepting connections"
+    notify "Postgres is NOT accepting connections ($THRESHOLD checks) -- not restarting anything, needs a human"
+  fi
+}

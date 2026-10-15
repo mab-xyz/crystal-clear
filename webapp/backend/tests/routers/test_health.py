@@ -50,3 +50,23 @@ def test_eth_node_health_check_exception(monkeypatch):
     assert body["status"] == "unhealthy"
     assert body["eth_node"] == "disconnected"
     assert "boom" in body["error"]
+
+
+def test_db_health_ok(monkeypatch):
+    from sqlalchemy import create_engine
+
+    monkeypatch.setattr(health, "engine", create_engine("sqlite://"))
+    response = _build_client().get("/health/db")
+    assert response.status_code == 200
+    assert response.json() == {"status": "healthy"}
+
+
+def test_db_health_unhealthy_is_503(monkeypatch):
+    class _Broken:
+        def connect(self):
+            raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(health, "engine", _Broken())
+    response = _build_client().get("/health/db")
+    assert response.status_code == 503
+    assert response.json() == {"status": "unhealthy", "component": "postgres"}

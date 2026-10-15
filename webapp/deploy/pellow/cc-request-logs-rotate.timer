@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily crystal-clear request-log rotation
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

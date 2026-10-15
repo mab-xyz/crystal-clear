@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Rotate backend request logs: gzip finished days, delete after RETAIN_DAYS.
+
+Files are ``YYYY-MM-DD.jsonl`` (one per UTC day, written by LocalDiskBackend).
+Age is taken from the date in the file name, never from mtime.
+  * ``YYYY-MM-DD.jsonl``      older than today        -> ``.jsonl.gz``
+  * ``*.jsonl`` / ``*.jsonl.gz`` older than RETAIN_DAYS -> deleted (after a
+    one-time safety archive of everything about to be deleted, see --archive)
+Silent unless it changed something (one line to stdout, i.e. the journal).
+
+usage: cc-request-logs-rotate DIR [--retain-days 14] [--archive FILE] [--dry-run]
+"""
+from __future__ import annotations
+
+import argparse
+import gzip
+import re
+import shutil
+import sys
+import tarfile
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+NAME = re.compile(r"^(\d{4}-\d{2}-\d{2})\.jsonl(\.gz)?$")
+
+
+def file_day(p: Path) -> date | None:
+    m = NAME.match(p.name)
+    return date.fromisoformat(m.group(1)) if m else None
+
+
+def rotate(directory: Path, retain_days: int, today: date,
+           archive: Path | None = None, dry_run: bool = False) -> dict[str, int]:
+    done = {"compressed": 0, "deleted": 0, "archived": 0}
+    files = sorted(p for p in directory.iterdir() if file_day(p))
+    expired = [p for p in files if (today - file_day(p)).days > retain_days]
+    if expired and archive is not None and not archive.exists() and not dry_run:
+        tmp = archive.with_suffix(archive.suffix + ".part")
+        with tarfile.open(tmp, "w:gz") as tar:
+            for p in expired:
+                tar.add(p, arcname=p.name)
+        tmp.replace(archive)
+        done["archived"] = len(expired)
+    for p in expired:
+        if not dry_run:
+            p.unlink()
+        done["deleted"] += 1
+    for p in files:
+        if p in expired or p.suffix == ".gz" or file_day(p) >= today:
+            continue
+        if not dry_run:
+            gz = p.with_name(p.name + ".gz")
+            with open(p, "rb") as src, gzip.open(gz, "wb", compresslevel=9) as dst:
+                shutil.copyfileobj(src, dst)
+            shutil.copystat(p, gz)
+            p.unlink()
+        done["compressed"] += 1
+    return done
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("directory", type=Path)
+    ap.add_argument("--retain-days", type=int, default=14)
+    ap.add_argument("--archive", type=Path, help="one-time tar.gz of files about to be deleted")
+    ap.add_argument("--dry-run", action="store_true")
+    a = ap.parse_args(argv)
+    if not a.directory.is_dir():
+        print(f"not a directory: {a.directory}", file=sys.stderr)
+        return 2
+    today = datetime.now(timezone.utc).date()
+    r = rotate(a.directory, a.retain_days, today, a.archive, a.dry_run)
+    if any(r.values()):
+        print(f"request-logs rotate{' (dry run)' if a.dry_run else ''}: {r}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

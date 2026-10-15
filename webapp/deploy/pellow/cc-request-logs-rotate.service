@@ -1,0 +1,9 @@
+[Unit]
+Description=Rotate crystal-clear request logs (gzip finished days, delete after 14 days)
+
+[Service]
+Type=oneshot
+User=crystal-clear-prod
+Group=crystal-clear-prod
+ExecStart=/usr/local/sbin/cc-request-logs-rotate /home/crystal-clear-prod/crystal-clear/webapp/backend/request_logs --retain-days 14 --archive /home/crystal-clear-prod/request_logs_archive_pre-rotation_2026-10-15.tar.gz
+Nice=10
