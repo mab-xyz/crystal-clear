@@ -17,7 +17,7 @@ from src.api.models.ledger_report import LedgerReport
 def new_report_id() -> str:
     # 5 random bytes -> 7 base64url chars (no padding): keeps
     # https://api2.mab.xyz/r/<id> within Ledger's 30-char tiny-URL limit.
-    return urlsafe_b64encode(secrets.token_bytes(5)).decode()
+    return urlsafe_b64encode(secrets.token_bytes(5)).decode().rstrip("=")
 
 
 def tiny_url(base_url: str, report_id: str) -> str:
