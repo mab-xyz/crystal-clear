@@ -56,7 +56,7 @@ def ctx(monkeypatch):
     )
     SQLModel.metadata.create_all(db)
     monkeypatch.setattr(settings, "ledger_signer_private_key_hex", KEY_HEX)
-    monkeypatch.setattr(settings, "ledger_report_base_url", "https://cc.io/r")
+    monkeypatch.setattr(settings, "ledger_report_base_url", "https://api2.mab.xyz/r")
     state = {"contract_dangerous": []}
     monkeypatch.setattr(
         analysis,
@@ -218,7 +218,8 @@ def test_report_url_serves_stored_simulation(ctx):
         ld.W3C_TINY_URL
     ].decode()
     rid = url.rsplit("/", 1)[1]
-    assert len(rid) == 8
+    assert len(rid) == 7
+    assert len(settings.ledger_report_base_url + '/' + rid) <= 30
     got = client.get(f"/r/{rid}")
     assert got.status_code == 200 and got.json()["block"] == 21680884
     html = client.get(f"/r/{rid}", headers={"accept": "text/html"})

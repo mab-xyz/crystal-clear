@@ -8,14 +8,16 @@ from datetime import datetime, timedelta
 from typing import Any, cast
 
 from sqlalchemy import CursorResult, delete
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col
 
 from src.api.models.ledger_report import LedgerReport
 
 
 def new_report_id() -> str:
-    # 6 random bytes -> 8 base64url chars, no padding.
-    return urlsafe_b64encode(secrets.token_bytes(6)).decode()
+    # 5 random bytes -> 7 base64url chars (no padding): keeps
+    # https://api2.mab.xyz/r/<id> within Ledger's 30-char tiny-URL limit.
+    return urlsafe_b64encode(secrets.token_bytes(5)).decode()
 
 
 def tiny_url(base_url: str, report_id: str) -> str:
@@ -32,17 +34,24 @@ def store_report(
     simulation_json: dict[str, Any],
     report_id: str | None = None,
 ) -> LedgerReport:
-    report = LedgerReport(
-        id=report_id or new_report_id(),
-        family=family,
-        kind=kind,
-        block=block,
-        request_json=request_json,
-        simulation_json=simulation_json,
-    )
-    session.add(report)
-    session.commit()
-    return report
+    for _ in range(5):
+        report = LedgerReport(
+            id=report_id or new_report_id(),
+            family=family,
+            kind=kind,
+            block=block,
+            request_json=request_json,
+            simulation_json=simulation_json,
+        )
+        session.add(report)
+        try:
+            session.commit()
+            return report
+        except IntegrityError:
+            session.rollback()
+            if report_id:
+                raise
+    raise RuntimeError("could not allocate a unique report id")
 
 
 def get_report(

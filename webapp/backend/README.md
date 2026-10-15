@@ -160,7 +160,7 @@ curl -X DELETE https://https://api.mab.xyz/keys/4 \
 Implements OpenAPI *Web3checks on device* v0.0.11 (`POST /{family}/scan/tx`,
 `POST /ethereum/scan/eip-712`, same `X-API-Key` auth). Mainnet only; Solana
 answers `422 code 2`. Responses carry a signed TLV descriptor whose tiny URL
-points to `GET /r/{id}` (public, 8-char id, deleted 30 days after last access).
+points to `GET /r/{id}` (public, 7-char id, deleted 30 days after last access).
 
 ```
 LEDGER_SIGNER_PRIVATE_KEY_HEX=<32-byte secp256k1 key, hex>
