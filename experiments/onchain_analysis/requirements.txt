@@ -46,7 +46,7 @@ prompt_toolkit==3.0.50
 psutil==7.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
-Pygments==2.19.1
+Pygments==2.20.0
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
@@ -59,9 +59,9 @@ rpds-py==0.24.0
 seaborn==0.13.2
 setuptools==83.0.0
 six==1.17.0
-soupsieve==2.8.4
+soupsieve==2.9
 stack-data==0.6.3
-tornado==6.5.9
+tornado==6.5.10
 traitlets==5.14.3
 typing_extensions==4.12.2
 tzdata==2025.2
