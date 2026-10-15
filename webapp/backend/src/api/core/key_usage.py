@@ -48,7 +48,7 @@ class UsageStore:
                 return
             except Exception as exc:  # noqa: BLE001 - never fail a request
                 if not self._warned:
-                    logger.warning("key usage redis unavailable: {}", exc)
+                    logger.error("key usage redis unavailable, using memory: {}", exc)
                     self._warned = True
         bucket = self._mem[day]
         for f in fields:

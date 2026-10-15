@@ -1,0 +1,25 @@
+#!/bin/bash
+# Liveness probe for hung (not crashed) processes. Run every minute by
+# cc-healthcheck.timer. Silent when healthy. After THRESHOLD consecutive
+# failures the unit is restarted and a human is told.
+THRESHOLD=${THRESHOLD:-3}
+STATE=/run/cc-healthcheck
+
+check() { # name  command...
+  local name=$1; shift
+  local f="$STATE.$name" n
+  if "$@" >/dev/null 2>&1; then
+    rm -f "$f"; return 0
+  fi
+  n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" >"$f"
+  logger -t cc-healthcheck -p daemon.warning "$name check failed ($n/$THRESHOLD)"
+  if [ "$n" -ge "$THRESHOLD" ]; then
+    rm -f "$f"
+    logger -t cc-healthcheck -p daemon.err "$name unhealthy for $n checks: restarting"
+    echo "$(hostname): $name failed $n consecutive health checks -- restarting it" | /usr/local/sbin/cc-notify
+    return 1
+  fi
+}
+
+check redis redis-cli -h 127.0.0.1 ping || systemctl restart redis-server
+check backend curl -fsS -m 10 -o /dev/null http://127.0.0.1:8000/health || systemctl restart crystal-clear-backend

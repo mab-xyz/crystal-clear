@@ -65,7 +65,7 @@ class RateLimiter:
                     await self._redis.expire(rkey, WINDOW_SECONDS + 5)
             except Exception as exc:  # noqa: BLE001 - fail open to memory
                 if not self._warned:
-                    logger.warning("rate limiter redis unavailable: {}", exc)
+                    logger.error("rate limiter redis unavailable, using memory: {}", exc)
                     self._warned = True
         if count is None:
             self._prune(wid)
@@ -96,7 +96,7 @@ def get_limiter() -> RateLimiter:
 
             redis = aioredis.from_url(settings.cache_url)
         except Exception as exc:  # noqa: BLE001
-            logger.warning("rate limiter without redis: {}", exc)
+            logger.error("rate limiter without redis: {}", exc)
         _limiter = RateLimiter(redis)
     return _limiter
 

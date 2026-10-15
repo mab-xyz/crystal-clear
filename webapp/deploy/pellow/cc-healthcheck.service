@@ -1,0 +1,6 @@
+[Unit]
+Description=Crystal Clear liveness probe (restarts hung backend/redis)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cc-healthcheck

@@ -1,0 +1,11 @@
+#!/bin/bash
+# ExecStopPost hook: alert when a supervised unit stopped abnormally.
+# systemd restarts it (Restart=always); this only tells a human, at most once
+# per 5 minutes per unit. Silent on operator stop/restart (SERVICE_RESULT=success).
+unit="${1:?unit}"
+[ "${SERVICE_RESULT:-success}" = success ] && exit 0
+f="/run/cc-crash-notify.$unit"
+now=$(date +%s); last=$(cat "$f" 2>/dev/null || echo 0)
+[ $((now - last)) -lt 300 ] && exit 0
+echo "$now" >"$f"
+echo "$(hostname): $unit crashed: result=${SERVICE_RESULT} exit_code=${EXIT_CODE:-?} status=${EXIT_STATUS:-?} -- systemd is restarting it" | /usr/local/sbin/cc-notify

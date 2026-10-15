@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -65,6 +66,15 @@ async def _purge_ledger_reports_loop() -> None:
 async def lifespan(app: FastAPI):
     # Startup: create tables
     create_db_and_tables()
+    logging.getLogger("uvicorn.error").info(
+        "crystal-clear started: ledger_signer=%s public_key_id=%s "
+        "ledger_concurrency=%d rate_limit=%s redis=%s",
+        "configured" if settings.ledger_signer_private_key_hex else "MISSING",
+        settings.ledger_public_key_id,
+        settings.ledger_max_concurrency,
+        settings.rate_limit_enabled,
+        settings.cache_url.split("@")[-1],
+    )
     purge_task = asyncio.create_task(_purge_ledger_reports_loop())
     redis = aioredis.from_url(settings.cache_url)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
